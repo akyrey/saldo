@@ -7,7 +7,19 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+argon2.workspace = true
+chrono = { workspace = true, features = ["clock", "std"] }
+rand.workspace = true
 saldo-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+utoipa = { workspace = true, features = ["chrono", "uuid"] }
+uuid = { workspace = true, features = ["v7"] }
 
 [lints]
 workspace = true

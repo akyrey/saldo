@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT seq, id, event_type, entity_type, entity_id, actor_user_id, origin,\n                    payload, occurred_at\n             FROM events\n             WHERE household_id = ?1 AND seq > ?2 AND (?3 IS NULL OR event_type = ?3)\n             ORDER BY seq\n             LIMIT ?4 OFFSET ?5",
+  "describe": {
+    "columns": [
+      {
+        "name": "seq",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "seq"
+          }
+        }
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "event_type",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "event_type"
+          }
+        }
+      },
+      {
+        "name": "entity_type",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "entity_type"
+          }
+        }
+      },
+      {
+        "name": "entity_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "entity_id"
+          }
+        }
+      },
+      {
+        "name": "actor_user_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "actor_user_id"
+          }
+        }
+      },
+      {
+        "name": "origin",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "name": "occurred_at",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "occurred_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3ab9e0d335b1b70df0488d38774f6c48392774733b30e08be55bd66624c484ab"
+}

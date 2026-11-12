@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO events (id, household_id, event_type, entity_type, entity_id,\n                             actor_user_id, origin, payload, occurred_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n         RETURNING seq AS \"seq!\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "seq!",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "seq"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b88f75267c6fc8189d763b7d0ceddb6d3a52ecf1a5cff564769e5dedafe55bba"
+}
