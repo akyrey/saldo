@@ -37,3 +37,26 @@ pub enum MoneyError {
         right: crate::currency::CurrencyCode,
     },
 }
+
+/// No split kind exists for this pair of account types (see ARCHITECTURE.md 4.1).
+///
+/// Written without `thiserror`: it treats a field called `source` as the
+/// underlying cause of the error, which is not what `source` means here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidAccountPair {
+    pub source: crate::account::AccountType,
+    pub destination: crate::account::AccountType,
+}
+
+impl std::fmt::Display for InvalidAccountPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "money cannot move from an account of type {} to an account of type {}",
+            self.source, self.destination
+        )
+    }
+}
+
+// An empty impl: `Error` only needs `Debug` and `Display`, which exist above.
+impl std::error::Error for InvalidAccountPair {}
