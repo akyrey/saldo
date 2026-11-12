@@ -56,7 +56,7 @@ Why `saldo-app` exists: the server and the importer both go through the same ser
 
 Rules for all crates:
 
-- `saldo-core` has no dependency that does I/O. Allowed: `uuid`, `chrono`, `serde`, `thiserror`.
+- `saldo-core` has no dependency that does I/O. Allowed: `uuid`, `chrono` (no `clock` feature), `serde`, `serde_json` (only for the free-form `SplitMeta` object), `thiserror`.
 - The current time and new IDs come from outside `core` (parameters or the `Clock` trait in `app`), so tests are deterministic.
 - Add dependencies with `cargo add`, so versions are current; shared ones go in `[workspace.dependencies]`.
 - `unsafe` is forbidden (`#![forbid(unsafe_code)]`); `unwrap()` and `expect()` only in tests.
@@ -73,7 +73,7 @@ pub struct AccountId(pub Uuid);       // same pattern: HouseholdId, UserId, Grou
                                       // SplitId, CategoryId, TagId, BudgetId, BillId, ...
 
 pub struct CurrencyCode(/* 3 uppercase ASCII letters */);
-pub struct Currency { pub code: CurrencyCode, pub decimal_places: u8 }
+pub struct Currency { code: CurrencyCode, decimal_places: u8 }   // private; Currency::new checks 0..=8
 
 pub struct Money { minor: i64, currency: CurrencyCode }
 // Money::parse_decimal("123.45", &eur) -> Ok(12345); "1.234" with 2 places -> Err
@@ -125,7 +125,21 @@ pub fn validate_group(
     input: NewTransactionGroup,
     accounts: &AccountLookup,         // the accounts referenced, loaded by the caller
 ) -> Result<ValidatedGroup, Vec<ValidationError>>;
+
+// What validation needs from the database, loaded by the caller: the household,
+// the referenced accounts, and the category/budget/bill/tag IDs that exist in that
+// household. Anything missing from the lookup counts as unknown.
+pub struct AccountLookup { /* private */ }
+// AccountLookup::new(household_id).with_account(a).with_category(id).with_tag(id)...
+
+// Balances: two deltas per split (source -amount, destination +amount, or the
+// foreign amount for an account in the foreign currency), folded into a map.
+pub fn balance_deltas(group: &ValidatedGroup, accounts: &AccountLookup) -> Vec<(AccountId, Money)>;
+pub fn apply_deltas(balances: BTreeMap<AccountId, Money>, deltas: &[(AccountId, Money)])
+    -> Result<BTreeMap<AccountId, Money>, MoneyError>;
 ```
+
+`ValidationError` has one variant per broken rule; each split-level variant carries the zero-based `split` index, and `code()` returns a stable string: `empty_group`, `amount_not_positive`, `same_account`, `unknown_account`, `account_outside_household`, `unknown_reference` (category, budget, bill or tag), `invalid_account_pair`, `account_inactive`, `currency_mismatch`, `foreign_amount_not_positive`, `foreign_currency_same_as_amount`, `foreign_amount_required`, `foreign_currency_mismatch`. Its JSON form is `{"code": "...", "split": 0, ...}`.
 
 ### 4.1 Split kind
 
@@ -141,6 +155,8 @@ Derived from the two account types and stored on the split. Account type never c
 | anything else | | `ValidationError::InvalidAccountPair` |
 
 A refund is a Deposit from a Revenue account, as in Firefly III.
+
+`SplitKind::derive(source: AccountType, destination: AccountType) -> Result<SplitKind, InvalidAccountPair>`, where `InvalidAccountPair { source, destination }` holds the two types; `validate_group` turns it into `ValidationError::InvalidAccountPair` with the split index.
 
 ### 4.2 Ledger invariants
 
