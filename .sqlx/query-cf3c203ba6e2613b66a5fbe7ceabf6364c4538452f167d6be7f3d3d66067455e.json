@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM household_members WHERE household_id = ? AND user_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "cf3c203ba6e2613b66a5fbe7ceabf6364c4538452f167d6be7f3d3d66067455e"
+}

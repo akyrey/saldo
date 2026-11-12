@@ -35,3 +35,11 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 unwrap_used = "warn"
 expect_used = "warn"
+
+# Argon2 is deliberately slow; unoptimised it makes every login test crawl.
+# Compile only the hashing crates with optimisations in dev and test builds.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3

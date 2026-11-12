@@ -56,7 +56,6 @@ impl AppError {
 
 /// Parses an ID read back from the database. A failure means a corrupt row,
 /// not bad user input, hence `Internal`.
-#[allow(dead_code)] // first used by the identity services (next commit)
 pub(crate) fn parse_stored<T: FromStr>(text: &str) -> Result<T, AppError> {
     text.parse()
         .map_err(|_| AppError::Internal(format!("corrupt value in database: {text:?}")))

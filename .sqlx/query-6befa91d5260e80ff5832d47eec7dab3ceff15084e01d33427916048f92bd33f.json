@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO households (id, name, primary_currency, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "6befa91d5260e80ff5832d47eec7dab3ceff15084e01d33427916048f92bd33f"
+}

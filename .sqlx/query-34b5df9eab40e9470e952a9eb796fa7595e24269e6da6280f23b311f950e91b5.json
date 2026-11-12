@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT decimal_places FROM currencies WHERE code = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "decimal_places",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "currencies",
+            "name": "decimal_places"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "34b5df9eab40e9470e952a9eb796fa7595e24269e6da6280f23b311f950e91b5"
+}
