@@ -6,6 +6,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Checked SQL macros use the committed .sqlx data instead of a live database.
+  SQLX_OFFLINE: "true"
 
 jobs:
   rust:

@@ -61,6 +61,14 @@ impl App {
     }
 }
 
+impl App {
+    /// Checks the database answers (for `/healthz`).
+    pub async fn ping(&self) -> Result<(), error::AppError> {
+        sqlx::query("SELECT 1").execute(&self.pool).await?;
+        Ok(())
+    }
+}
+
 /// Returns the application name from `saldo-core`.
 pub fn app_name() -> &'static str {
     saldo_core::APP_NAME
