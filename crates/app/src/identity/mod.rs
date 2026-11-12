@@ -4,6 +4,8 @@ mod household;
 mod secrets;
 mod sessions;
 
+pub use sessions::SESSION_LIFETIME;
+
 use serde::Serialize;
 use sqlx::SqlitePool;
 

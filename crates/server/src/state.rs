@@ -5,6 +5,7 @@ use std::sync::Arc;
 use saldo_app::App;
 
 use crate::config::Config;
+use crate::rate_limit::LoginLimiter;
 
 /// Cloned into every handler. `App` is already cheap to clone (a pool and a
 /// shared clock); `Arc` shares one `Config` between all threads without
@@ -13,6 +14,7 @@ use crate::config::Config;
 pub struct AppState {
     pub app: App,
     pub config: Arc<Config>,
+    pub login_limiter: Arc<LoginLimiter>,
 }
 
 impl AppState {
@@ -20,6 +22,7 @@ impl AppState {
         Self {
             app,
             config: Arc::new(config),
+            login_limiter: Arc::new(LoginLimiter::default()),
         }
     }
 }
