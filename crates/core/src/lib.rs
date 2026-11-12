@@ -12,5 +12,6 @@ pub mod money;
 pub mod transaction;
 pub mod validation;
 
+pub mod balance;
 #[cfg(test)]
 mod test_support;
