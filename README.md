@@ -16,4 +16,4 @@ cargo run -p saldo-importer      # binary `saldo-import`
 
 ## License
 
-Licensed under either of MIT or Apache-2.0, at your option.
+MIT, see `LICENSE`.

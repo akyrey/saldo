@@ -27,7 +27,7 @@ Record every place where the code differs from the architecture document, why, a
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
-- 2026-11-13 Phase 0: license `MIT OR Apache-2.0` (Rust ecosystem default); edition 2024, resolver 3; `publish = false` on every crate; `rust-toolchain.toml` pins `stable` (1.100.0 at scaffold time).
+- 2026-11-13 Phase 0: license `MIT` (owner's choice; single `LICENSE` file); edition 2024, resolver 3; `publish = false` on every crate; `rust-toolchain.toml` pins `stable` (1.100.0 at scaffold time).
 - 2026-11-13 Phase 0: internal crates (`saldo-core`, `saldo-app`) are declared once as path dependencies in `[workspace.dependencies]` and pulled in with `.workspace = true`.
 - 2026-11-13 Phase 0: CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2` for cargo caching.
 - 2026-11-11 Planning: app named Saldo; UUIDv7 over ULID; React + TypeScript SPA with PWA and Tauri 2; SQLite only; everything in a household is visible to every member.
