@@ -27,6 +27,7 @@ utoipa-axum.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+sqlx.workspace = true
 http-body-util.workspace = true
 tower.workspace = true
 

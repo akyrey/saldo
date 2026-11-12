@@ -1410,6 +1410,7 @@ dependencies = [
  "saldo-core",
  "serde",
  "serde_json",
+ "sqlx",
  "tokio",
  "tower",
  "tower-http",
