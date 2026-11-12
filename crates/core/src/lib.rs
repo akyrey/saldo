@@ -5,3 +5,4 @@
 pub mod currency;
 pub mod error;
 pub mod ids;
+pub mod money;
