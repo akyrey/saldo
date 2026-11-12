@@ -1,0 +1,3 @@
+# The workspace warns on unwrap()/expect(); tests may still use them.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
