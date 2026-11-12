@@ -92,3 +92,92 @@ pub async fn count(test: &TestApp, table: &str) -> i64 {
         .unwrap();
     n
 }
+
+use chrono::NaiveDate;
+use saldo_app::accounts::{AccountView, NewAccount};
+use saldo_app::transactions::{SplitInput, TransactionInput};
+use saldo_core::{AccountId, HouseholdId, UserId};
+use uuid::Uuid;
+
+/// A second, unrelated household, inserted directly (setup only works once).
+pub async fn other_household(test: &TestApp) -> HouseholdCtx {
+    let ctx = HouseholdCtx {
+        household_id: HouseholdId(Uuid::from_u128(0xB0B)),
+        user_id: UserId(Uuid::from_u128(0xB0B1)),
+        role: saldo_app::ctx::Role::Owner,
+    };
+    let (h, u) = (ctx.household_id.to_string(), ctx.user_id.to_string());
+    for sql in [
+        "INSERT INTO households (id, name, primary_currency, created_at, updated_at) VALUES (?1, 'Other', 'EUR', 't', 't')",
+        "INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?2, 'b@example.com', 'B', 'x', 't', 't')",
+        "INSERT INTO household_members (household_id, user_id, role, created_at) VALUES (?1, ?2, 'owner', 't')",
+    ] {
+        sqlx::query(sql)
+            .bind(&h)
+            .bind(&u)
+            .execute(&test.app.pool)
+            .await
+            .unwrap();
+    }
+    ctx
+}
+
+pub async fn account(
+    test: &TestApp,
+    ctx: &HouseholdCtx,
+    name: &str,
+    account_type: &str,
+    currency: Option<&str>,
+) -> AccountView {
+    let input = NewAccount {
+        name: name.to_string(),
+        account_type: account_type.to_string(),
+        currency: currency.map(str::to_string),
+        ..NewAccount::default()
+    };
+    test.app
+        .accounts
+        .create(ctx, Origin::Api, input)
+        .await
+        .unwrap()
+}
+
+pub fn account_id(view: &AccountView) -> AccountId {
+    view.id.parse().unwrap()
+}
+
+pub fn date(day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(2026, 11, day).unwrap()
+}
+
+pub fn split(
+    day: u32,
+    source: &AccountView,
+    destination: &AccountView,
+    amount: &str,
+) -> SplitInput {
+    SplitInput {
+        date: date(day),
+        description: format!("{} to {}", source.name, destination.name),
+        source_id: account_id(source),
+        destination_id: account_id(destination),
+        amount: amount.to_string(),
+        currency: None,
+        foreign_amount: None,
+        foreign_currency: None,
+        category_id: None,
+        budget_id: None,
+        bill_id: None,
+        tag_ids: Vec::new(),
+        reconciled: false,
+        notes: None,
+        meta: serde_json::Map::new(),
+    }
+}
+
+pub fn group(splits: Vec<SplitInput>) -> TransactionInput {
+    TransactionInput {
+        title: Some("Test".to_string()),
+        splits,
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE tags SET name = ?, description = ?, updated_at = ? WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "aa6f40679dbf6245c96bf39deacab1d5cf7316c9d4db6d5b8630d1228696e95d"
+}

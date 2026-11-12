@@ -68,3 +68,194 @@ pub(crate) async fn insert(conn: &mut SqliteConnection, row: &AccountRow) -> Res
     })?;
     Ok(())
 }
+
+/// One account of the household, or `None`.
+pub(crate) async fn get(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    id: &str,
+) -> Result<Option<AccountRow>, AppError> {
+    let row = sqlx::query_as!(
+        AccountRow,
+        r#"SELECT id, household_id, owner_user_id, name, type AS account_type, equity_role,
+                  asset_role, liability_type, liability_direction, interest_rate, interest_period,
+                  currency_code, iban, bic, account_number, virtual_balance_minor,
+                  include_net_worth AS "include_net_worth: bool", active AS "active: bool",
+                  sort_order, notes, created_at, updated_at
+           FROM accounts WHERE household_id = ? AND id = ?"#,
+        household_id,
+        id,
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    Ok(row)
+}
+
+/// The household's accounts whose IDs are in `ids` (a JSON array of strings).
+pub(crate) async fn get_many(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    ids_json: &str,
+) -> Result<Vec<AccountRow>, AppError> {
+    // `json_each` turns the JSON array into rows, so one checked query can
+    // take a list of any length.
+    let rows = sqlx::query_as!(
+        AccountRow,
+        r#"SELECT id, household_id, owner_user_id, name, type AS account_type, equity_role,
+                  asset_role, liability_type, liability_direction, interest_rate, interest_period,
+                  currency_code, iban, bic, account_number, virtual_balance_minor,
+                  include_net_worth AS "include_net_worth: bool", active AS "active: bool",
+                  sort_order, notes, created_at, updated_at
+           FROM accounts
+           WHERE household_id = ? AND id IN (SELECT value FROM json_each(?))"#,
+        household_id,
+        ids_json,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows)
+}
+
+/// Filters for [`list`]; `None` means "any".
+pub(crate) struct ListFilter {
+    pub account_type: Option<String>,
+    pub active: Option<bool>,
+    pub owner_user_id: Option<String>,
+    pub limit: i64,
+    pub offset: i64,
+}
+
+pub(crate) async fn list(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    filter: &ListFilter,
+) -> Result<(Vec<AccountRow>, i64), AppError> {
+    let rows = sqlx::query_as!(
+        AccountRow,
+        r#"SELECT id, household_id, owner_user_id, name, type AS account_type, equity_role,
+                  asset_role, liability_type, liability_direction, interest_rate, interest_period,
+                  currency_code, iban, bic, account_number, virtual_balance_minor,
+                  include_net_worth AS "include_net_worth: bool", active AS "active: bool",
+                  sort_order, notes, created_at, updated_at
+           FROM accounts
+           WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
+             AND (?4 IS NULL OR owner_user_id = ?4)
+           ORDER BY type, sort_order, name
+           LIMIT ?5 OFFSET ?6"#,
+        household_id,
+        filter.account_type,
+        filter.active,
+        filter.owner_user_id,
+        filter.limit,
+        filter.offset,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let total = sqlx::query_scalar!(
+        "SELECT count(*) FROM accounts
+         WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
+           AND (?4 IS NULL OR owner_user_id = ?4)",
+        household_id,
+        filter.account_type,
+        filter.active,
+        filter.owner_user_id,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok((rows, total))
+}
+
+/// Writes every changeable column of an existing row.
+pub(crate) async fn update(conn: &mut SqliteConnection, row: &AccountRow) -> Result<(), AppError> {
+    sqlx::query!(
+        "UPDATE accounts SET owner_user_id = ?, name = ?, asset_role = ?, liability_type = ?,
+            liability_direction = ?, interest_rate = ?, interest_period = ?, iban = ?, bic = ?,
+            account_number = ?, virtual_balance_minor = ?, include_net_worth = ?, active = ?,
+            sort_order = ?, notes = ?, updated_at = ?
+         WHERE household_id = ? AND id = ?",
+        row.owner_user_id,
+        row.name,
+        row.asset_role,
+        row.liability_type,
+        row.liability_direction,
+        row.interest_rate,
+        row.interest_period,
+        row.iban,
+        row.bic,
+        row.account_number,
+        row.virtual_balance_minor,
+        row.include_net_worth,
+        row.active,
+        row.sort_order,
+        row.notes,
+        row.updated_at,
+        row.household_id,
+        row.id,
+    )
+    .execute(&mut *conn)
+    .await
+    .map_err(|e| {
+        AppError::conflict_on_unique(e, "an account of this type with this name exists")
+    })?;
+    Ok(())
+}
+
+pub(crate) async fn delete(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    id: &str,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "DELETE FROM accounts WHERE household_id = ? AND id = ?",
+        household_id,
+        id
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+pub(crate) async fn has_splits(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    id: &str,
+) -> Result<bool, AppError> {
+    let found = sqlx::query_scalar!(
+        "SELECT EXISTS (SELECT 1 FROM splits WHERE household_id = ?1
+                        AND (source_account_id = ?2 OR destination_account_id = ?2))",
+        household_id,
+        id,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(found != 0)
+}
+
+/// Balance in minor units up to and including `date` (all time if `None`):
+/// incoming minus outgoing, using the foreign amount when the account is in
+/// the split's foreign currency (ARCHITECTURE.md 4.2).
+pub(crate) async fn balance_minor(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    account: &AccountRow,
+    date: Option<&str>,
+) -> Result<i64, AppError> {
+    let balance = sqlx::query_scalar!(
+        r#"SELECT COALESCE(SUM(
+                CASE WHEN destination_account_id = ?2 THEN moved ELSE -moved END), 0) AS "balance!: i64"
+           FROM (SELECT source_account_id, destination_account_id,
+                        CASE WHEN foreign_currency_code = ?3 THEN foreign_amount_minor
+                             ELSE amount_minor END AS moved
+                 FROM splits
+                 WHERE household_id = ?1
+                   AND (source_account_id = ?2 OR destination_account_id = ?2)
+                   AND (?4 IS NULL OR date <= ?4))"#,
+        household_id,
+        account.id,
+        account.currency_code,
+        date,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(balance)
+}

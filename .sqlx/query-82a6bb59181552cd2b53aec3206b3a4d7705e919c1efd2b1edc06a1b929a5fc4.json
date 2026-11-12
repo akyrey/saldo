@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(\n                CASE WHEN destination_account_id = ?2 THEN moved ELSE -moved END), 0) AS \"balance!: i64\"\n           FROM (SELECT source_account_id, destination_account_id,\n                        CASE WHEN foreign_currency_code = ?3 THEN foreign_amount_minor\n                             ELSE amount_minor END AS moved\n                 FROM splits\n                 WHERE household_id = ?1\n                   AND (source_account_id = ?2 OR destination_account_id = ?2)\n                   AND (?4 IS NULL OR date <= ?4))",
+  "describe": {
+    "columns": [
+      {
+        "name": "balance!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "82a6bb59181552cd2b53aec3206b3a4d7705e919c1efd2b1edc06a1b929a5fc4"
+}

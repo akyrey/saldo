@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE transaction_groups SET title = ?, updated_at = ? WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "1c4bacd11321460982ee91ab55f3d6c0a13dbf1c65b7205ec4a9ea32f63282be"
+}

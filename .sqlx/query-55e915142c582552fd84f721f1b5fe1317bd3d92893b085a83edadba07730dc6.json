@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT primary_currency FROM households WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "primary_currency",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "primary_currency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "55e915142c582552fd84f721f1b5fe1317bd3d92893b085a83edadba07730dc6"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT st.split_id, st.tag_id FROM split_tags st JOIN splits s ON s.id = st.split_id\n         WHERE s.household_id = ? AND s.group_id IN (SELECT value FROM json_each(?))\n         ORDER BY st.tag_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "split_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split_tags",
+            "name": "split_id"
+          }
+        }
+      },
+      {
+        "name": "tag_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split_tags",
+            "name": "tag_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "df22c1560714a10f01b66a00d2c6c096e24ef825695d6cca4e9a9f342eb18d82"
+}

@@ -160,6 +160,18 @@ fn check_password(password: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+/// The household's primary currency code.
+pub(crate) async fn primary_currency(
+    conn: &mut sqlx::SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<String, AppError> {
+    let id = ctx.household_id.to_string();
+    sqlx::query_scalar!("SELECT primary_currency FROM households WHERE id = ?", id)
+        .fetch_optional(&mut *conn)
+        .await?
+        .ok_or(AppError::NotFound)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

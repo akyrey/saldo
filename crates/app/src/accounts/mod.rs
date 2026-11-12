@@ -1,7 +1,235 @@
-//! Accounts: repository, view and service.
+//! Accounts: create, change, delete, list, and compute balances.
 
+mod input;
 pub(crate) mod repo;
 mod view;
 
+use chrono::NaiveDate;
+use saldo_core::{AccountId, Money};
+use serde::Serialize;
+use sqlx::SqlitePool;
+
+use crate::clock::{SharedClock, format_timestamp, new_id};
+use crate::ctx::{HouseholdCtx, Origin};
+use crate::error::AppError;
+use crate::events::{NewEvent, append_event};
+use crate::page::{Page, PageRequest};
+use crate::scope::Scope;
+use crate::{currencies, identity};
+
+pub(crate) use input::core_account;
+use input::{ALL_TYPES, CREATABLE_TYPES, apply_update, check_row, parse_virtual_balance};
+pub use input::{AccountUpdate, NewAccount};
+use repo::AccountRow;
 pub use view::AccountView;
 pub(crate) use view::view_of;
+
+/// Filters for listing accounts.
+#[derive(Debug, Clone, Default)]
+pub struct AccountFilter {
+    pub account_type: Option<String>,
+    pub active: Option<bool>,
+    pub scope: Scope,
+}
+
+/// An account's balance on a date (all time when `date` is `None`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct BalanceView {
+    pub account_id: String,
+    pub date: Option<String>,
+    pub balance: String,
+    pub currency: String,
+}
+
+#[derive(Clone)]
+pub struct AccountService {
+    pool: SqlitePool,
+    clock: SharedClock,
+}
+
+impl AccountService {
+    pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
+        Self { pool, clock }
+    }
+
+    pub async fn create(
+        &self,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        input: NewAccount,
+    ) -> Result<AccountView, AppError> {
+        if !CREATABLE_TYPES.contains(&input.account_type.as_str()) {
+            return Err(AppError::invalid(
+                "type",
+                format!("must be one of {}", CREATABLE_TYPES.join(", ")),
+            ));
+        }
+        let mut tx = self.pool.begin().await?;
+        let currency_code = match &input.currency {
+            Some(code) => currencies::find(&mut tx, code, "currency")
+                .await?
+                .code()
+                .to_string(),
+            None => identity::primary_currency(&mut tx, ctx).await?,
+        };
+        let virtual_balance_minor = match &input.virtual_balance {
+            Some(text) => parse_virtual_balance(&mut tx, &currency_code, text).await?,
+            None => 0,
+        };
+        let now = format_timestamp(self.clock.now());
+        let row = AccountRow {
+            id: new_id(&*self.clock).to_string(),
+            household_id: ctx.household_id.to_string(),
+            owner_user_id: input.owner_user_id.map(|u| u.to_string()),
+            name: identity::required("name", &input.name)?,
+            account_type: input.account_type,
+            equity_role: None,
+            asset_role: input.asset_role,
+            liability_type: input.liability_type,
+            liability_direction: input.liability_direction,
+            interest_rate: input.interest_rate,
+            interest_period: input.interest_period,
+            currency_code,
+            iban: input.iban,
+            bic: input.bic,
+            account_number: input.account_number,
+            virtual_balance_minor,
+            include_net_worth: input.include_net_worth.unwrap_or(true),
+            active: input.active.unwrap_or(true),
+            sort_order: input.sort_order.unwrap_or(0),
+            notes: input.notes,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+        check_row(&mut tx, ctx, &row).await?;
+        repo::insert(&mut tx, &row).await?;
+        let view = view_of(&mut tx, row).await?;
+        let event = NewEvent::new(&*self.clock, "account", "created", view.id.clone(), &view)?;
+        append_event(&mut tx, ctx, origin, event).await?;
+        tx.commit().await?;
+        Ok(view)
+    }
+
+    pub async fn update(
+        &self,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        id: AccountId,
+        update: AccountUpdate,
+    ) -> Result<AccountView, AppError> {
+        let mut tx = self.pool.begin().await?;
+        let current = self.find(&mut tx, ctx, id).await?;
+        let virtual_balance = update.virtual_balance.clone();
+        let mut row = apply_update(&current, update)?;
+        row.name = identity::required("name", &row.name)?;
+        if let Some(text) = virtual_balance {
+            row.virtual_balance_minor =
+                parse_virtual_balance(&mut tx, &row.currency_code, &text).await?;
+        }
+        row.updated_at = format_timestamp(self.clock.now());
+        check_row(&mut tx, ctx, &row).await?;
+        repo::update(&mut tx, &row).await?;
+        let view = view_of(&mut tx, row).await?;
+        let event = NewEvent::new(&*self.clock, "account", "updated", view.id.clone(), &view)?;
+        append_event(&mut tx, ctx, origin, event).await?;
+        tx.commit().await?;
+        Ok(view)
+    }
+
+    /// Deletes an account that has no transactions. System equity accounts
+    /// cannot be deleted.
+    pub async fn delete(
+        &self,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        id: AccountId,
+    ) -> Result<(), AppError> {
+        let mut tx = self.pool.begin().await?;
+        let row = self.find(&mut tx, ctx, id).await?;
+        if row.account_type == "equity" {
+            return Err(AppError::Conflict(
+                "system equity accounts cannot be deleted".to_string(),
+            ));
+        }
+        if repo::has_splits(&mut tx, &row.household_id, &row.id).await? {
+            return Err(AppError::Conflict(
+                "the account has transactions".to_string(),
+            ));
+        }
+        repo::delete(&mut tx, &row.household_id, &row.id).await?;
+        let view = view_of(&mut tx, row).await?;
+        let event = NewEvent::new(&*self.clock, "account", "deleted", view.id.clone(), &view)?;
+        append_event(&mut tx, ctx, origin, event).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    pub async fn get(&self, ctx: &HouseholdCtx, id: AccountId) -> Result<AccountView, AppError> {
+        let mut conn = self.pool.acquire().await?;
+        let row = self.find(&mut conn, ctx, id).await?;
+        view_of(&mut conn, row).await
+    }
+
+    /// Accounts ordered by type, sort order and name.
+    pub async fn list(
+        &self,
+        ctx: &HouseholdCtx,
+        filter: &AccountFilter,
+        page: PageRequest,
+    ) -> Result<Page<AccountView>, AppError> {
+        let unknown_type = |t: &String| !ALL_TYPES.contains(&t.as_str());
+        if filter.account_type.as_ref().is_some_and(unknown_type) {
+            return Err(AppError::invalid(
+                "type",
+                format!("must be one of {}", ALL_TYPES.join(", ")),
+            ));
+        }
+        let mut conn = self.pool.acquire().await?;
+        let repo_filter = repo::ListFilter {
+            account_type: filter.account_type.clone(),
+            active: filter.active,
+            owner_user_id: filter.scope.owner(ctx),
+            limit: page.limit(),
+            offset: page.offset(),
+        };
+        let (rows, total) =
+            repo::list(&mut conn, &ctx.household_id.to_string(), &repo_filter).await?;
+        let mut items = Vec::with_capacity(rows.len());
+        for row in rows {
+            items.push(view_of(&mut conn, row).await?);
+        }
+        Ok(Page::new(items, page, total))
+    }
+
+    /// The balance up to and including `date`, or of all time.
+    pub async fn balance(
+        &self,
+        ctx: &HouseholdCtx,
+        id: AccountId,
+        date: Option<NaiveDate>,
+    ) -> Result<BalanceView, AppError> {
+        let mut conn = self.pool.acquire().await?;
+        let row = self.find(&mut conn, ctx, id).await?;
+        let date = date.map(|d| d.to_string());
+        let minor =
+            repo::balance_minor(&mut conn, &row.household_id, &row, date.as_deref()).await?;
+        let currency = currencies::find(&mut conn, &row.currency_code, "currency").await?;
+        Ok(BalanceView {
+            account_id: row.id,
+            date,
+            balance: Money::new(minor, currency.code()).to_decimal_string(&currency),
+            currency: row.currency_code,
+        })
+    }
+
+    async fn find(
+        &self,
+        conn: &mut sqlx::SqliteConnection,
+        ctx: &HouseholdCtx,
+        id: AccountId,
+    ) -> Result<AccountRow, AppError> {
+        repo::get(conn, &ctx.household_id.to_string(), &id.to_string())
+            .await?
+            .ok_or(AppError::NotFound)
+    }
+}

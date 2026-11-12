@@ -49,6 +49,12 @@ pub async fn connect_in_memory() -> Result<SqlitePool, sqlx::Error> {
         .await
 }
 
+/// A list of IDs as a JSON array, for `... IN (SELECT value FROM json_each(?))`.
+pub(crate) fn json_list(ids: &[String]) -> Result<String, crate::error::AppError> {
+    serde_json::to_string(ids)
+        .map_err(|e| crate::error::AppError::Internal(format!("cannot encode id list: {e}")))
+}
+
 /// Applies every migration that has not run yet.
 pub async fn migrate(pool: &SqlitePool) -> Result<(), MigrateError> {
     MIGRATOR.run(pool).await

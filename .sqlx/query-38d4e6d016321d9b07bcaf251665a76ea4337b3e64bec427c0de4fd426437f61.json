@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE accounts SET owner_user_id = ?, name = ?, asset_role = ?, liability_type = ?,\n            liability_direction = ?, interest_rate = ?, interest_period = ?, iban = ?, bic = ?,\n            account_number = ?, virtual_balance_minor = ?, include_net_worth = ?, active = ?,\n            sort_order = ?, notes = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 18
+    },
+    "nullable": []
+  },
+  "hash": "38d4e6d016321d9b07bcaf251665a76ea4337b3e64bec427c0de4fd426437f61"
+}
