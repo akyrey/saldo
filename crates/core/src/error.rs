@@ -12,3 +12,28 @@ use thiserror::Error;
 pub struct IdError {
     pub input: String,
 }
+
+/// A currency code or currency definition is not valid.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum CurrencyError {
+    #[error("currency code must be three uppercase ASCII letters, got {input:?}")]
+    InvalidCode { input: String },
+    #[error("decimal places must be between 0 and 8, got {places}")]
+    InvalidDecimalPlaces { places: u8 },
+}
+
+/// Parsing or arithmetic on [`crate::money::Money`] failed.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum MoneyError {
+    #[error("not a decimal amount: {input:?}")]
+    InvalidFormat { input: String },
+    #[error("{input:?} has more than {allowed} decimal places")]
+    TooManyDecimalPlaces { input: String, allowed: u8 },
+    #[error("amount is too large")]
+    Overflow,
+    #[error("cannot combine amounts in {left} and {right}")]
+    CurrencyMismatch {
+        left: crate::currency::CurrencyCode,
+        right: crate::currency::CurrencyCode,
+    },
+}
