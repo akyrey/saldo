@@ -8,7 +8,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 |---|---|---|---|
 | 0 Scaffold | done | main / c3cc9b0 | Workspace, 4 crate skeletons, lints, toolchain, CI |
 | 1 Core | done | main / b2e1f5e | saldo-core: 75 unit/property tests + 1 doc test, 99.93% line coverage |
-| 2 Server | not started | | |
+| 2 Server | in progress | | |
 | 3 Importer + export | not started | | |
 | 4 Web | not started | | |
 | 5 Planning features | not started | | |
@@ -22,8 +22,8 @@ States: not started, in progress, blocked (say on what), done.
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
 - 2026-11-13 Phase 1: `SplitKind::derive` returns `Result<SplitKind, InvalidAccountPair>` instead of `Result<_, ValidationError>`, because `derive` has no split index to put in a `ValidationError`. Owner approved. ARCHITECTURE.md 4.1 updated.
-- 2026-11-13 Phase 1: `Currency` fields are private (built with `Currency::new`, which checks 0 to 8 places, also on deserialise), so `Money` maths never meets an unchecked scale. Not yet approved by the owner; ARCHITECTURE.md 4 updated.
-- 2026-11-13 Phase 1: `serde_json` is a normal dependency of `saldo-core`, for `SplitMeta(serde_json::Map)` (the `meta` JSON column, including nested `meta.firefly`). It does no I/O. Not yet approved by the owner; ARCHITECTURE.md 3 updated.
+- 2026-11-13 Phase 1: `Currency` fields are private (built with `Currency::new`, which checks 0 to 8 places, also on deserialise), so `Money` maths never meets an unchecked scale. Owner approved (2026-11-13). ARCHITECTURE.md 4 updated.
+- 2026-11-13 Phase 1: `serde_json` is a normal dependency of `saldo-core`, for `SplitMeta(serde_json::Map)` (the `meta` JSON column, including nested `meta.firefly`). It does no I/O. Owner approved (2026-11-13). ARCHITECTURE.md 3 updated.
 
 ## Decisions made during implementation
 
