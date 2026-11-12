@@ -6,5 +6,11 @@ pub mod account;
 pub mod currency;
 pub mod error;
 pub mod ids;
-pub mod money;
 pub mod kind;
+pub mod lookup;
+pub mod money;
+pub mod transaction;
+pub mod validation;
+
+#[cfg(test)]
+mod test_support;
