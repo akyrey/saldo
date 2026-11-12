@@ -1,0 +1,17 @@
+[package]
+name = "saldo-importer"
+description = "Imports Firefly III data into Saldo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "saldo-import"
+path = "src/main.rs"
+
+[dependencies]
+saldo-app.workspace = true
+
+[lints]
+workspace = true

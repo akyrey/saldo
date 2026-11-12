@@ -1,0 +1,24 @@
+# The workspace root: like a Composer monorepo root or a Go `go.work` file.
+# All crates share one Cargo.lock and one target/ directory.
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+# Fields every crate inherits with `field.workspace = true`.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Shared dependency versions; crates opt in with `dep.workspace = true`.
+[workspace.dependencies]
+saldo-core = { path = "crates/core" }
+saldo-app = { path = "crates/app" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"

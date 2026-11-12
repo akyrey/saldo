@@ -1,0 +1,10 @@
+[package]
+name = "saldo-core"
+description = "Saldo domain types and rules: no I/O, no async, no SQL"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
