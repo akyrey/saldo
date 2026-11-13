@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-rout
 import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { useLiveEvents } from "@/features/live/useLiveEvents";
 import { ScopeSwitch } from "./ScopeSwitch";
 
 const NAV = [
@@ -19,6 +20,7 @@ export function AppLayout() {
   const { me } = useRouteContext({ from: "/app" });
   const nav = me.role === "owner" ? [...NAV, ...OWNER_NAV] : NAV;
   const queryClient = useQueryClient();
+  useLiveEvents();
   const navigate = useNavigate();
   const logout = useMutation({
     mutationFn: () => call(api.POST("/api/v1/auth/logout")),
