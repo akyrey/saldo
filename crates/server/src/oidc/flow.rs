@@ -9,6 +9,7 @@ use openidconnect::{
 use saldo_app::identity::ExternalIdentity;
 
 use super::config::OidcConfig;
+use super::es256_p384::{self, Check};
 use super::http::OidcHttp;
 use super::pending::Pending;
 
@@ -89,8 +90,11 @@ pub async fn finish(
     code: String,
 ) -> Result<ExternalIdentity, OidcError> {
     let http = OidcHttp::new().map_err(provider)?;
+    let metadata = metadata(config, &http).await?;
+    // The provider's keys as plain JSON, for the Authentik P-384 check.
+    let jwks = serde_json::to_value(metadata.jwks()).map_err(provider)?;
     let client = CoreClient::from_provider_metadata(
-        metadata(config, &http).await?,
+        metadata,
         ClientId::new(config.client_id.clone()),
         Some(ClientSecret::new(config.client_secret.clone())),
     )
@@ -105,8 +109,17 @@ pub async fn finish(
     let id_token = tokens
         .id_token()
         .ok_or_else(|| OidcError::InvalidToken("no ID token in the answer".into()))?;
+    // Authentik's ES256-on-P-384 tokens: the signature is checked here, by
+    // hand (es256_p384.rs); issuer, audience, expiry and nonce still below.
+    let verifier = match es256_p384::check(&id_token.to_string(), &jwks) {
+        Check::NotApplicable => client.id_token_verifier(),
+        Check::Valid => client
+            .id_token_verifier()
+            .insecure_disable_signature_check(),
+        Check::Invalid(why) => return Err(OidcError::InvalidToken(why)),
+    };
     let claims = id_token
-        .claims(&client.id_token_verifier(), &Nonce::new(pending.nonce))
+        .claims(&verifier, &Nonce::new(pending.nonce))
         .map_err(|e| OidcError::InvalidToken(e.to_string()))?;
     Ok(ExternalIdentity {
         issuer: claims.issuer().to_string(),

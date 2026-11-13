@@ -346,3 +346,101 @@ async fn without_a_provider_only_passwords_are_offered() {
     let start = get_raw(&server, "/api/v1/auth/oidc/start", None).await;
     assert_eq!(start.location, "/login?error=oidc_disabled");
 }
+
+// --- Authentik's default certificate: ECDSA P-384, tokens labelled ES256 ---
+
+mod authentik_ec {
+    use base64ct::{Base64UrlUnpadded, Encoding};
+    use p384::ecdsa::signature::hazmat::PrehashSigner;
+    use p384::ecdsa::{Signature, SigningKey};
+    use sha2::{Digest, Sha256};
+
+    use super::*;
+
+    fn b64(bytes: &[u8]) -> String {
+        Base64UrlUnpadded::encode_string(bytes)
+    }
+
+    fn key() -> SigningKey {
+        SigningKey::from_slice(&[11u8; 48]).unwrap()
+    }
+
+    /// A fake Authentik publishing a P-384 key and announcing ES256.
+    async fn provider() -> (MockServer, String) {
+        let mock = MockServer::start().await;
+        let issuer = format!("{}/application/o/saldo/", mock.uri());
+        let discovery = json!({
+            "issuer": issuer,
+            "authorization_endpoint": format!("{}/authorize", mock.uri()),
+            "token_endpoint": format!("{}/token", mock.uri()),
+            "jwks_uri": format!("{}/jwks", mock.uri()),
+            "response_types_supported": ["code"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["ES256"],
+        });
+        Mock::given(method("GET"))
+            .and(path(
+                "/application/o/saldo/.well-known/openid-configuration",
+            ))
+            .respond_with(ResponseTemplate::new(200).set_body_json(discovery))
+            .mount(&mock)
+            .await;
+        let point = key().verifying_key().to_sec1_bytes();
+        let jwks = json!({ "keys": [{
+            "kty": "EC", "crv": "P-384", "alg": "ES256", "use": "sig", "kid": "ec1",
+            "x": b64(&point[1..49]), "y": b64(&point[49..97]),
+        }]});
+        Mock::given(method("GET"))
+            .and(path("/jwks"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(jwks))
+            .mount(&mock)
+            .await;
+        (mock, issuer)
+    }
+
+    /// Signed like Authentik: P-384 key, SHA-256 hash, header `ES256`.
+    fn id_token(issuer: &str, audience: &str, nonce: &str) -> String {
+        let now = Utc::now().timestamp();
+        let header = b64(json!({ "alg": "ES256", "kid": "ec1", "typ": "JWT" })
+            .to_string()
+            .as_bytes());
+        let claims = json!({
+            "iss": issuer, "aud": audience, "exp": now + 300, "iat": now,
+            "sub": "ak-1", "email": "owner@example.com", "email_verified": true, "nonce": nonce,
+        });
+        let signed = format!("{header}.{}", b64(claims.to_string().as_bytes()));
+        let signature: Signature = key()
+            .sign_prehash(&Sha256::digest(signed.as_bytes()))
+            .unwrap();
+        format!("{signed}.{}", b64(&signature.to_bytes()))
+    }
+
+    async fn login(audience: &str) -> String {
+        let (mock, issuer) = provider().await;
+        let server = saldo_with(&issuer, &[]).await;
+        let (url, cookie) = start_login(&server).await;
+        answer_tokens(
+            &mock,
+            id_token(&issuer, audience, &query_param(&url, "nonce")),
+        )
+        .await;
+        let state = query_param(&url, "state");
+        get_raw(
+            &server,
+            &format!("/api/v1/auth/oidc/callback?code=the-code&state={state}"),
+            Some(&cookie),
+        )
+        .await
+        .location
+    }
+
+    #[tokio::test]
+    async fn logs_in_with_authentiks_default_ec_certificate() {
+        assert_eq!(login(CLIENT_ID).await, "/budgets");
+    }
+
+    #[tokio::test]
+    async fn still_checks_the_audience_of_such_tokens() {
+        assert_eq!(login("another-app").await, "/login?error=oidc_invalid");
+    }
+}

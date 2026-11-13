@@ -6,6 +6,7 @@
 //! app using Socialite, but the provider is your own Authentik.
 
 pub mod config;
+mod es256_p384;
 mod flow;
 mod http;
 mod pending;

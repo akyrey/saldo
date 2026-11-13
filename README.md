@@ -57,7 +57,7 @@ To restore: stop the container, put the database copy in the volume as `saldo.db
 
 ## Log in with Authentik
 
-Saldo can log people in through Authentik (or any OpenID Connect provider). In Authentik create an OAuth2/OpenID provider (confidential client, signing key = an RSA certificate generated under System > Certificates, not the default ECDSA P-384 one, which Authentik mislabels as ES256, redirect URI `<SALDO_PUBLIC_URL>/api/v1/auth/oidc/callback`) and an application for it, then set `SALDO_OIDC_ISSUER` (for example `https://sso.example.com/application/o/saldo/`), `SALDO_OIDC_CLIENT_ID`, `SALDO_OIDC_CLIENT_SECRET` and usually `SALDO_OIDC_TRUST_EMAIL=true`. People log in when their email at the provider is the email of a household member. `SALDO_PASSWORD_LOGIN=false` then turns password login off.
+Saldo can log people in through Authentik (or any OpenID Connect provider). In Authentik create an OAuth2/OpenID provider (confidential client, any signing certificate: RSA, or Authentik's default ECDSA P-384 one, whose `ES256` label Saldo handles, redirect URI `<SALDO_PUBLIC_URL>/api/v1/auth/oidc/callback`) and an application for it, then set `SALDO_OIDC_ISSUER` (for example `https://sso.example.com/application/o/saldo/`), `SALDO_OIDC_CLIENT_ID`, `SALDO_OIDC_CLIENT_SECRET` and usually `SALDO_OIDC_TRUST_EMAIL=true`. People log in when their email at the provider is the email of a household member. `SALDO_PASSWORD_LOGIN=false` then turns password login off.
 
 ## Images
 
