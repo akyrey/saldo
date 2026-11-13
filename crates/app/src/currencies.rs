@@ -112,3 +112,22 @@ pub async fn ensure(
         }
     }
 }
+
+/// Every currency, inside the caller's transaction (sees currencies an
+/// import added moments ago).
+pub async fn all_in(conn: &mut SqliteConnection) -> Result<Vec<CurrencyView>, AppError> {
+    let rows =
+        sqlx::query!("SELECT code, name, symbol, decimal_places FROM currencies ORDER BY code")
+            .fetch_all(&mut *conn)
+            .await?;
+    rows.into_iter()
+        .map(|row| {
+            Ok(CurrencyView {
+                code: row.code,
+                name: row.name,
+                symbol: row.symbol,
+                decimal_places: places(row.decimal_places)?,
+            })
+        })
+        .collect()
+}

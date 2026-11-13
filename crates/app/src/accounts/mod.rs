@@ -224,6 +224,18 @@ impl AccountService {
         filter: &AccountFilter,
         page: PageRequest,
     ) -> Result<Page<AccountView>, AppError> {
+        let mut conn = self.pool.acquire().await?;
+        self.list_in(&mut conn, ctx, filter, page).await
+    }
+
+    /// Like [`Self::list`], inside the caller's transaction.
+    pub async fn list_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        filter: &AccountFilter,
+        page: PageRequest,
+    ) -> Result<Page<AccountView>, AppError> {
         let unknown_type = |t: &String| !ALL_TYPES.contains(&t.as_str());
         if filter.account_type.as_ref().is_some_and(unknown_type) {
             return Err(AppError::invalid(
@@ -231,7 +243,6 @@ impl AccountService {
                 format!("must be one of {}", ALL_TYPES.join(", ")),
             ));
         }
-        let mut conn = self.pool.acquire().await?;
         let repo_filter = repo::ListFilter {
             account_type: filter.account_type.clone(),
             active: filter.active,
@@ -240,10 +251,10 @@ impl AccountService {
             offset: page.offset(),
         };
         let (rows, total) =
-            repo::list(&mut conn, &ctx.household_id.to_string(), &repo_filter).await?;
+            repo::list(&mut *conn, &ctx.household_id.to_string(), &repo_filter).await?;
         let mut items = Vec::with_capacity(rows.len());
         for row in rows {
-            items.push(view_of(&mut conn, row).await?);
+            items.push(view_of(&mut *conn, row).await?);
         }
         Ok(Page::new(items, page, total))
     }

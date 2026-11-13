@@ -100,6 +100,16 @@ impl FireflyClient {
         path: &str,
         query: &[(&str, &str)],
     ) -> Result<Vec<Resource<T>>, FireflyError> {
+        Ok(self.list_with_total(path, query).await?.0)
+    }
+
+    /// Like [`Self::list`], plus the `meta.pagination.total` Firefly announced
+    /// (for transactions: the number of splits, not groups).
+    pub async fn list_with_total<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        query: &[(&str, &str)],
+    ) -> Result<(Vec<Resource<T>>, u64), FireflyError> {
         let page_size = PAGE_SIZE.to_string();
         let mut items: Vec<Resource<T>> = Vec::new();
         let mut seen = std::collections::HashSet::new();
@@ -115,7 +125,7 @@ impl FireflyClient {
                 }
             }
             if page >= response.meta.pagination.total_pages {
-                return Ok(items);
+                return Ok((items, response.meta.pagination.total));
             }
             page += 1;
         }
