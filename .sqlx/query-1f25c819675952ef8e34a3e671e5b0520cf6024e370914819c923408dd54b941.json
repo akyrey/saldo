@@ -1,0 +1,28 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(amount_minor), 0) AS \"total!: i64\",\n                  COALESCE(SUM(CASE WHEN account_id = ?2 THEN amount_minor END), 0) AS \"in_account!: i64\"\n           FROM piggy_bank_events WHERE piggy_bank_id = ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "total!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "in_account!: i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "1f25c819675952ef8e34a3e671e5b0520cf6024e370914819c923408dd54b941"
+}

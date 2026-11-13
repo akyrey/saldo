@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM piggy_bank_accounts WHERE household_id = ? AND piggy_bank_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b2e2d10b49ae681b9215e391d12f91e8c0e35ffc0ea2539f157289d5a5cd2eb8"
+}

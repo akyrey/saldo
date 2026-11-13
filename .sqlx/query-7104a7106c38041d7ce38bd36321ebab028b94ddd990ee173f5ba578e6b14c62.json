@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO piggy_bank_events (id, household_id, piggy_bank_id, account_id, amount_minor,\n            split_id, date, created_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "7104a7106c38041d7ce38bd36321ebab028b94ddd990ee173f5ba578e6b14c62"
+}

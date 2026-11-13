@@ -18,6 +18,7 @@ pub mod external_refs;
 pub mod identity;
 pub mod import_runs;
 pub mod page;
+pub mod piggy_banks;
 pub mod scope;
 pub mod tags;
 pub mod transactions;
@@ -34,6 +35,7 @@ use crate::currencies::CurrencyService;
 use crate::events::EventService;
 use crate::export::ExportService;
 use crate::identity::IdentityService;
+use crate::piggy_banks::PiggyBankService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
 
@@ -53,6 +55,7 @@ pub struct App {
     pub identity: IdentityService,
     pub tags: TagService,
     pub transactions: TransactionService,
+    pub piggy_banks: PiggyBankService,
 }
 
 impl App {
@@ -75,6 +78,7 @@ impl App {
             identity: IdentityService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             transactions: TransactionService::new(pool.clone(), clock.clone()),
+            piggy_banks: PiggyBankService::new(pool.clone(), clock.clone()),
             pool,
             clock,
         }
