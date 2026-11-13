@@ -3,6 +3,7 @@
 
 mod input;
 mod periods;
+mod scheduler;
 mod view;
 
 use saldo_core::BillId;
@@ -22,6 +23,7 @@ use input::{
     parse_frequency,
 };
 pub use periods::{OpenPeriod, existing, link_splits_in, release_group_in};
+pub use scheduler::{REMINDER_INTERVAL, run_reminders};
 pub use view::{BillPeriodView, BillView};
 use view::{BillRow, view_of};
 

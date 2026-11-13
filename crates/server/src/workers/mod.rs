@@ -10,6 +10,7 @@
 //! Every task keeps its progress in the database, so killing the process at
 //! any point and starting again is safe.
 
+mod reminders;
 mod signal;
 
 use std::future::Future;
@@ -119,8 +120,8 @@ async fn changed(wake: &mut Option<tokio::sync::watch::Receiver<u64>>) {
 /// Every background task of the server, registered in one place: later
 /// phases add their task here.
 pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
-    let workers = Workers::new(cancel);
-    let _ = state;
+    let mut workers = Workers::new(cancel);
+    reminders::spawn_bill_scheduler(&mut workers, state);
     workers
 }
 
