@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { Account, Currency } from "@/features/accounts/queries";
+import type { Budget } from "@/features/budgets/queries";
 import type { Category } from "@/features/categories/queries";
 import type { Tag } from "@/features/tags/queries";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ export interface SplitRowFieldsProps {
   errors: Record<string, string> | undefined;
   accounts: readonly Account[];
   categories: readonly Category[];
+  budgets: readonly Budget[];
   tags: readonly Tag[];
   currencies: readonly Currency[];
   canRemove: boolean;
@@ -33,6 +35,7 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
   const source = accounts.find((a) => a.id === row.source_id);
   const destination = accounts.find((a) => a.id === row.destination_id);
   const kind = deriveKind(source, destination);
+  const budgetAllowed = kind === undefined || kind === "withdrawal";
   const currency = [source, destination].find(
     (a) => a && a.type !== "expense" && a.type !== "revenue" && a.type !== "equity",
   )?.currency;
@@ -158,6 +161,25 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
                 {c.name}
               </option>
             ))}
+          </NativeSelect>
+        </Field>
+        <Field id={id("budget")} label="Budget" error={errors.budget_id}>
+          <NativeSelect
+            id={id("budget")}
+            value={row.budget_id}
+            // Only withdrawals count against a budget; other kinds keep none.
+            disabled={!budgetAllowed && row.budget_id === ""}
+            onChange={(e) => onChange({ budget_id: e.target.value })}
+            {...errorProps(id("budget"), errors.budget_id)}
+          >
+            <option value="">{budgetAllowed ? "None" : "Withdrawals only"}</option>
+            {props.budgets
+              .filter((b) => b.active || b.id === row.budget_id)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
           </NativeSelect>
         </Field>
         <Field id={id("tags")} label="Tags" error={errors.tag_ids} className="sm:col-span-2">

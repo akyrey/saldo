@@ -48,6 +48,7 @@ function loggedIn(extra: Record<string, unknown> = {}) {
       { id: "c1", name: "Groceries", created_at: "", updated_at: "" },
     ]),
     "GET /api/v1/tags": list([]),
+    "GET /api/v1/budgets": list([]),
     "GET /api/v1/transactions": list([GROUP]),
     ...extra,
   });
@@ -101,6 +102,7 @@ describe("route guard", () => {
       },
       "GET /api/v1/household/members": MEMBERS,
       "GET /api/v1/categories": list([]),
+      "GET /api/v1/budgets": list([]),
     });
     const { router } = renderApp("/categories");
     const user = userEvent.setup();
@@ -273,6 +275,7 @@ describe("categories and tags", () => {
   it("shows a conflict from the server", async () => {
     loggedIn({
       "GET /api/v1/categories": list([]),
+      "GET /api/v1/budgets": list([]),
       "POST /api/v1/categories": apiError(409, "conflict", "a category with this name exists"),
     });
     renderApp("/categories");

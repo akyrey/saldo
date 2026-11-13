@@ -14,6 +14,7 @@ import {
   placesOf,
   type Account,
 } from "@/features/accounts/queries";
+import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
 import { todayIso } from "@/lib/dates";
@@ -49,8 +50,8 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
   const queryClient = useQueryClient();
   const [state, setState] = useState(initial);
   const [errors, setErrors] = useState<EditorErrors>(NO_ERRORS);
-  const [accounts, categories, tags, currencies] = useQueries({
-    queries: [accountsQuery(), categoriesQuery, tagsQuery, currenciesQuery],
+  const [accounts, categories, tags, currencies, budgets] = useQueries({
+    queries: [accountsQuery(), categoriesQuery, tagsQuery, currenciesQuery, budgetsQuery],
   });
 
   const mutation = useMutation({
@@ -60,6 +61,9 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["transactions"] }),
         queryClient.invalidateQueries({ queryKey: ["balances"] }),
+        // Spent amounts and reports change too; refetched when next shown.
+        queryClient.invalidateQueries({ queryKey: ["budgets"], refetchType: "none" }),
+        queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "none" }),
       ]);
       onSaved();
     },
@@ -72,7 +76,8 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
     },
   });
 
-  const loadError = accounts.error ?? categories.error ?? tags.error ?? currencies.error;
+  const loadError =
+    accounts.error ?? categories.error ?? tags.error ?? currencies.error ?? budgets.error;
   if (!accounts.data || loadError) {
     return <QueryState isPending={accounts.isPending} error={loadError} />;
   }
@@ -113,6 +118,7 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
           errors={errors.rows[index]}
           accounts={accountList}
           categories={categories.data ?? []}
+          budgets={budgets.data ?? []}
           tags={tags.data ?? []}
           currencies={currencies.data ?? []}
           canRemove={state.splits.length > 1}
