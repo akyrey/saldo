@@ -2138,6 +2138,391 @@
         ]
       }
     },
+    "/api/v1/reports/budget-vs-actual": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Per budget: limits starting in each interval and withdrawals booked on it.",
+        "operationId": "budget_vs_actual",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/by-category": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Income and expenses per category.",
+        "operationId": "by_category",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BreakdownReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/by-tag": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Income and expenses per tag; a split counts once for each of its tags.",
+        "operationId": "by_tag",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BreakdownReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/cash-flow": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Income (deposits) and expenses (withdrawals) per interval and currency;\ntransfers between own accounts are neither.",
+        "operationId": "cash_flow",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CashFlowReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/net-worth": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Asset and liability balances counted in net worth, at the end of each\ninterval, per account currency.",
+        "operationId": "net_worth",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_NetWorthReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/setup": {
       "get": {
         "tags": [
@@ -3201,6 +3586,102 @@
           }
         }
       },
+      "BreakdownCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "items"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownItem"
+            },
+            "description": "Largest expenses first."
+          }
+        }
+      },
+      "BreakdownInterval": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "income",
+          "expenses"
+        ],
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        }
+      },
+      "BreakdownItem": {
+        "type": "object",
+        "required": [
+          "income",
+          "expenses",
+          "intervals"
+        ],
+        "properties": {
+          "expenses": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The category or tag; `null` for splits without one."
+          },
+          "income": {
+            "type": "string"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownInterval"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BreakdownReport": {
+        "type": "object",
+        "description": "Income and expenses per category or per tag. A split with several tags\ncounts once for each; `id: null` collects splits without one.",
+        "required": [
+          "range",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownCurrency"
+            }
+          },
+          "range": {
+            "$ref": "#/components/schemas/ReportRange"
+          }
+        }
+      },
       "BudgetLimitView": {
         "type": "object",
         "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
@@ -3297,6 +3778,100 @@
           }
         }
       },
+      "BudgetReport": {
+        "type": "object",
+        "description": "Per budget: the limits starting in each interval (budgeted) and the\nwithdrawals booked on it (spent). `budget_id: null` is spending without\na budget.",
+        "required": [
+          "range",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetReportCurrency"
+            }
+          },
+          "range": {
+            "$ref": "#/components/schemas/ReportRange"
+          }
+        }
+      },
+      "BudgetReportCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "items"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetReportItem"
+            }
+          }
+        }
+      },
+      "BudgetReportInterval": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "budgeted",
+          "spent"
+        ],
+        "properties": {
+          "budgeted": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "spent": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        }
+      },
+      "BudgetReportItem": {
+        "type": "object",
+        "required": [
+          "budgeted",
+          "spent",
+          "intervals"
+        ],
+        "properties": {
+          "budget_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "budgeted": {
+            "type": "string"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetReportInterval"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spent": {
+            "type": "string"
+          }
+        }
+      },
       "BudgetView": {
         "type": "object",
         "description": "A budget as the API returns it.",
@@ -3344,6 +3919,83 @@
           },
           "updated_at": {
             "type": "string"
+          }
+        }
+      },
+      "CashFlowCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "income",
+          "expenses",
+          "net",
+          "intervals"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashFlowInterval"
+            }
+          },
+          "net": {
+            "type": "string",
+            "description": "Income minus expenses."
+          }
+        }
+      },
+      "CashFlowInterval": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "income",
+          "expenses",
+          "net"
+        ],
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
+          },
+          "net": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        }
+      },
+      "CashFlowReport": {
+        "type": "object",
+        "description": "Income (deposits) and expenses (withdrawals) per interval. Transfers,\nopening balances and reconciliations are neither.",
+        "required": [
+          "range",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashFlowCurrency"
+            }
+          },
+          "range": {
+            "$ref": "#/components/schemas/ReportRange"
           }
         }
       },
@@ -3893,6 +4545,34 @@
           }
         }
       },
+      "Data_BreakdownReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Income and expenses per category or per tag. A split with several tags\ncounts once for each; `id: null` collects splits without one.",
+            "required": [
+              "range",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BreakdownCurrency"
+                }
+              },
+              "range": {
+                "$ref": "#/components/schemas/ReportRange"
+              }
+            }
+          }
+        }
+      },
       "Data_BudgetLimitView": {
         "type": "object",
         "description": "A single result.",
@@ -3956,6 +4636,34 @@
           }
         }
       },
+      "Data_BudgetReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Per budget: the limits starting in each interval (budgeted) and the\nwithdrawals booked on it (spent). `budget_id: null` is spending without\na budget.",
+            "required": [
+              "range",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BudgetReportCurrency"
+                }
+              },
+              "range": {
+                "$ref": "#/components/schemas/ReportRange"
+              }
+            }
+          }
+        }
+      },
       "Data_BudgetView": {
         "type": "object",
         "description": "A single result.",
@@ -4010,6 +4718,34 @@
               },
               "updated_at": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_CashFlowReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Income (deposits) and expenses (withdrawals) per interval. Transfers,\nopening balances and reconciliations are neither.",
+            "required": [
+              "range",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CashFlowCurrency"
+                }
+              },
+              "range": {
+                "$ref": "#/components/schemas/ReportRange"
               }
             }
           }
@@ -4210,6 +4946,34 @@
               },
               "user_id": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_NetWorthReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "The sum of the asset and liability balances counted in net worth, at the\nend of each interval, per account currency.",
+            "required": [
+              "range",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NetWorthCurrency"
+                }
+              },
+              "range": {
+                "$ref": "#/components/schemas/ReportRange"
               }
             }
           }
@@ -5414,6 +6178,73 @@
           }
         }
       },
+      "NetWorthCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "opening",
+          "intervals"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetWorthInterval"
+            }
+          },
+          "opening": {
+            "type": "string",
+            "description": "Net worth at the end of the day before `from`."
+          }
+        }
+      },
+      "NetWorthInterval": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "value",
+          "change"
+        ],
+        "properties": {
+          "change": {
+            "type": "string",
+            "description": "The change during the interval."
+          },
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "description": "Net worth at the end of the interval."
+          }
+        }
+      },
+      "NetWorthReport": {
+        "type": "object",
+        "description": "The sum of the asset and liability balances counted in net worth, at the\nend of each interval, per account currency.",
+        "required": [
+          "range",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetWorthCurrency"
+            }
+          },
+          "range": {
+            "$ref": "#/components/schemas/ReportRange"
+          }
+        }
+      },
       "NewMemberRequest": {
         "type": "object",
         "required": [
@@ -5431,6 +6262,27 @@
           "password": {
             "type": "string",
             "description": "The member's initial password."
+          }
+        }
+      },
+      "ReportRange": {
+        "type": "object",
+        "description": "What every report echoes back: the span and the interval it was cut into.",
+        "required": [
+          "from",
+          "to",
+          "interval"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "interval": {
+            "type": "string",
+            "description": "`day`, `week`, `month` or `year`."
+          },
+          "to": {
+            "type": "string"
           }
         }
       },

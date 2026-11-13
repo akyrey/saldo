@@ -434,6 +434,97 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reports/budget-vs-actual": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Per budget: limits starting in each interval and withdrawals booked on it. */
+    get: operations["budget_vs_actual"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/by-category": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Income and expenses per category. */
+    get: operations["by_category"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/by-tag": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Income and expenses per tag; a split counts once for each of its tags. */
+    get: operations["by_tag"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/cash-flow": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Income (deposits) and expenses (withdrawals) per interval and currency;
+     *     transfers between own accounts are neither.
+     */
+    get: operations["cash_flow"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/net-worth": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Asset and liability balances counted in net worth, at the end of each
+     *     interval, per account currency.
+     */
+    get: operations["net_worth"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/setup": {
     parameters: {
       query?: never;
@@ -638,6 +729,33 @@ export interface components {
       currency: string;
       date?: string | null;
     };
+    BreakdownCurrency: {
+      currency: string;
+      /** @description Largest expenses first. */
+      items: components["schemas"]["BreakdownItem"][];
+    };
+    BreakdownInterval: {
+      end: string;
+      expenses: string;
+      income: string;
+      start: string;
+    };
+    BreakdownItem: {
+      expenses: string;
+      /** @description The category or tag; `null` for splits without one. */
+      id?: string | null;
+      income: string;
+      intervals: components["schemas"]["BreakdownInterval"][];
+      name?: string | null;
+    };
+    /**
+     * @description Income and expenses per category or per tag. A split with several tags
+     *     counts once for each; `id: null` collects splits without one.
+     */
+    BreakdownReport: {
+      currencies: components["schemas"]["BreakdownCurrency"][];
+      range: components["schemas"]["ReportRange"];
+    };
     /**
      * @description A budget limit with what was spent against it (withdrawals booked on the
      *     budget, dated inside the limit, in its currency or with a foreign amount
@@ -665,6 +783,32 @@ export interface components {
       /** Format: int64 */
       sort_order?: number | null;
     };
+    /**
+     * @description Per budget: the limits starting in each interval (budgeted) and the
+     *     withdrawals booked on it (spent). `budget_id: null` is spending without
+     *     a budget.
+     */
+    BudgetReport: {
+      currencies: components["schemas"]["BudgetReportCurrency"][];
+      range: components["schemas"]["ReportRange"];
+    };
+    BudgetReportCurrency: {
+      currency: string;
+      items: components["schemas"]["BudgetReportItem"][];
+    };
+    BudgetReportInterval: {
+      budgeted: string;
+      end: string;
+      spent: string;
+      start: string;
+    };
+    BudgetReportItem: {
+      budget_id?: string | null;
+      budgeted: string;
+      intervals: components["schemas"]["BudgetReportInterval"][];
+      name?: string | null;
+      spent: string;
+    };
     /** @description A budget as the API returns it. */
     BudgetView: {
       active: boolean;
@@ -676,6 +820,29 @@ export interface components {
       /** Format: int64 */
       sort_order: number;
       updated_at: string;
+    };
+    CashFlowCurrency: {
+      currency: string;
+      expenses: string;
+      income: string;
+      intervals: components["schemas"]["CashFlowInterval"][];
+      /** @description Income minus expenses. */
+      net: string;
+    };
+    CashFlowInterval: {
+      end: string;
+      expenses: string;
+      income: string;
+      net: string;
+      start: string;
+    };
+    /**
+     * @description Income (deposits) and expenses (withdrawals) per interval. Transfers,
+     *     opening balances and reconciliations are neither.
+     */
+    CashFlowReport: {
+      currencies: components["schemas"]["CashFlowCurrency"][];
+      range: components["schemas"]["ReportRange"];
     };
     CategoryPatch: {
       name?: string | null;
@@ -822,6 +989,17 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_BreakdownReport: {
+      /**
+       * @description Income and expenses per category or per tag. A split with several tags
+       *     counts once for each; `id: null` collects splits without one.
+       */
+      data: {
+        currencies: components["schemas"]["BreakdownCurrency"][];
+        range: components["schemas"]["ReportRange"];
+      };
+    };
+    /** @description A single result. */
     Data_BudgetLimitView: {
       /**
        * @description A budget limit with what was spent against it (withdrawals booked on the
@@ -843,6 +1021,18 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_BudgetReport: {
+      /**
+       * @description Per budget: the limits starting in each interval (budgeted) and the
+       *     withdrawals booked on it (spent). `budget_id: null` is spending without
+       *     a budget.
+       */
+      data: {
+        currencies: components["schemas"]["BudgetReportCurrency"][];
+        range: components["schemas"]["ReportRange"];
+      };
+    };
+    /** @description A single result. */
     Data_BudgetView: {
       /** @description A budget as the API returns it. */
       data: {
@@ -855,6 +1045,17 @@ export interface components {
         /** Format: int64 */
         sort_order: number;
         updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_CashFlowReport: {
+      /**
+       * @description Income (deposits) and expenses (withdrawals) per interval. Transfers,
+       *     opening balances and reconciliations are neither.
+       */
+      data: {
+        currencies: components["schemas"]["CashFlowCurrency"][];
+        range: components["schemas"]["ReportRange"];
       };
     };
     /** @description A single result. */
@@ -912,6 +1113,17 @@ export interface components {
         joined_at: string;
         role: components["schemas"]["Role"];
         user_id: string;
+      };
+    };
+    /** @description A single result. */
+    Data_NetWorthReport: {
+      /**
+       * @description The sum of the asset and liability balances counted in net worth, at the
+       *     end of each interval, per account currency.
+       */
+      data: {
+        currencies: components["schemas"]["NetWorthCurrency"][];
+        range: components["schemas"]["ReportRange"];
       };
     };
     /** @description A single result. */
@@ -1221,11 +1433,40 @@ export interface components {
       role: components["schemas"]["Role"];
       user_id: string;
     };
+    NetWorthCurrency: {
+      currency: string;
+      intervals: components["schemas"]["NetWorthInterval"][];
+      /** @description Net worth at the end of the day before `from`. */
+      opening: string;
+    };
+    NetWorthInterval: {
+      /** @description The change during the interval. */
+      change: string;
+      end: string;
+      start: string;
+      /** @description Net worth at the end of the interval. */
+      value: string;
+    };
+    /**
+     * @description The sum of the asset and liability balances counted in net worth, at the
+     *     end of each interval, per account currency.
+     */
+    NetWorthReport: {
+      currencies: components["schemas"]["NetWorthCurrency"][];
+      range: components["schemas"]["ReportRange"];
+    };
     NewMemberRequest: {
       display_name: string;
       email: string;
       /** @description The member's initial password. */
       password: string;
+    };
+    /** @description What every report echoes back: the span and the interval it was cut into. */
+    ReportRange: {
+      from: string;
+      /** @description `day`, `week`, `month` or `year`. */
+      interval: string;
+      to: string;
     };
     /**
      * @description A member's role in their household.
@@ -2714,6 +2955,186 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  budget_vs_actual: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  by_category: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BreakdownReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  by_tag: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BreakdownReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  cash_flow: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CashFlowReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  net_worth: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_NetWorthReport"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };
