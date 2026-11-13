@@ -829,7 +829,7 @@ All tasks (dispatcher, delivery worker, scheduler, notifier, recurrence runner) 
 
 ### 9.1 Firefly III importer
 
-`saldo-import firefly --url <firefly url> --token <personal access token> --household <id or name> [--dry-run] [--only accounts,transactions,...] [--since YYYY-MM-DD]`. It opens the Saldo database directly (`SALDO_DATABASE_URL`) and calls `saldo-app` services with origin `import`. It can run while the server is running (WAL mode).
+`saldo-import firefly --url <firefly url> --token-env <VAR, default FIREFLY_TOKEN> --household <id or name> [--dry-run] [--only accounts,transactions,...] [--since YYYY-MM-DD] [--allow-mismatch]`. The token is read from an environment variable, never an argument. It opens the Saldo database directly (`SALDO_DATABASE_URL`, files under `SALDO_DATA_DIR`) and calls the `saldo-app` services' `<method>_in` variants with origin `import`, all in one database transaction per run (rolled back on `--dry-run`). It only ever sends GET requests to Firefly. It can run while the server is running (WAL mode).
 
 Facts from the Firefly III OpenAPI spec v6.7.8:
 
@@ -857,7 +857,7 @@ Idempotency: for every object, look up `external_refs (household, 'firefly-iii',
 
 Verification, printed at the end of every run and stored in `import_runs.summary`: counts per entity (created / updated / unchanged / skipped), every skipped or downgraded item with the reason, and a balance check comparing each asset and liability account's computed balance with Firefly's `current_balance`.
 
-Not confirmed from the spec (the documentation site blocked automated reading); Phase 3 must check these against the owner's instance and record the findings in `docs/STATUS.md`: how liability `liability_direction` (`credit`/`debit`) affects signs; the exact shape of piggy bank `accounts[]`; whether `/v1/transaction-links` exposes the link type on read; the maximum `limit`; whether Firefly really forces one shared source or destination per split group (Saldo does not care, but the kind comparison might).
+Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/STATUS.md` under "Findings about Firefly III" (notably: transactions are paged by split, list them with `type=all`, amounts carry 12 decimals). Originally unconfirmed: how liability `liability_direction` (`credit`/`debit`) affects signs; the exact shape of piggy bank `accounts[]`; whether `/v1/transaction-links` exposes the link type on read; the maximum `limit`; whether Firefly really forces one shared source or destination per split group (Saldo does not care, but the kind comparison might).
 
 ### 9.2 Export
 

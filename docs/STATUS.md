@@ -9,7 +9,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 0 Scaffold | done | main / c3cc9b0 | Workspace, 4 crate skeletons, lints, toolchain, CI |
 | 1 Core | done | main / b2e1f5e | saldo-core: 75 unit/property tests + 1 doc test, 99.93% line coverage |
 | 2 Server | done | main / 4d431a6 | 186 tests workspace-wide, 96.83% line coverage; manual curl flow passed |
-| 3 Importer + export | in progress | | |
+| 3 Importer + export | done | main / 2f4c6ba | Live import of the owner's Firefly passed twice (second run: no changes); 26/26 balances match; Docker image builds and runs |
 | 4 Web | in progress | branch phase-4-web (worktree) | Built in parallel by a delegated agent, minus the export page and the Docker web stage |
 | 5 Planning features | not started | | |
 | 6 Events | not started | | |
@@ -21,6 +21,10 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
+- 2026-11-13 Phase 3: `append_event` takes `&mut SqliteConnection` instead of `&mut Transaction<'_, Sqlite>`, so the `<method>_in` service variants can share the importer's transaction. Callers still pass `&mut tx` (a transaction dereferences to its connection). ARCHITECTURE.md unchanged (it did not spell the signature out).
+- 2026-11-13 Phase 3: imports (`Origin::Import`) may book splits on inactive accounts (rule 8 protects new entries; history may sit on accounts archived since). Not yet approved by the owner.
+- 2026-11-13 Phase 3: the export leaves out the event log, sessions/tokens and `import_runs` (audit trail, secrets, bookkeeping; not needed to rebuild the household); attachment files are referenced by SHA-256, not embedded. Not yet approved by the owner.
+- 2026-11-13 Phase 3: `saldo-import` takes `--token-env <VAR>` (the brief's contract) instead of ARCHITECTURE.md's `--token`, so the token never appears in shell history or `ps`. ARCHITECTURE.md 9.1 updated.
 - 2026-11-13 Phase 2: response types are `saldo-app` views deriving `utoipa::ToSchema` (not server DTOs), because events must carry "the entity as the API returns it" and are written in `saldo-app`. Request DTOs stay in the server. Owner approved. ARCHITECTURE.md 3 and 8.1 updated.
 - 2026-11-13 Phase 2: the session cookie is `Secure` only when `SALDO_PUBLIC_URL` is https, so a plain-http LAN or localhost setup can still log in from a browser. Not yet approved by the owner. ARCHITECTURE.md 7 updated.
 - 2026-11-13 Phase 2: login, logout and token create/revoke append no event (auth state, not household data; keeps session activity out of webhook payloads). Not yet approved by the owner. ARCHITECTURE.md 8.1 updated.
@@ -34,6 +38,14 @@ Record every place where the code differs from the architecture document, why, a
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
+- 2026-11-13 Phase 3: entity importer signature for Phase 5: `pub async fn import_<entity>(cx: &ImportCx, report: &mut ImportReport) -> Result<(), ImportError>` in `crates/importer/src/entities/<entity>.rs`, registered in `engine::ENTITIES` and the `match` in `engine::run_entities`. `ImportCx` holds `firefly: FireflyClient` (GET only), `app: App`, `ctx: HouseholdCtx`, `state: tokio::sync::Mutex<State { tx, refs: ExternalRefs }>`, `dry_run`, `since`. Lock `cx.state`, then call services' `*_in(&mut state.tx, ...)` with `Origin::Import`; resolve earlier entities with `state.refs.resolve(entity_type, firefly_id)` (types: `account`, `account.cash_expense`, `account.cash_revenue`, `category`, `tag`, `transaction_group`, `split`, `attachment`) and record new ones with `state.refs.upsert`. Report with `report.created/updated/unchanged/skipped/note`. Item-level problems: `entities::skippable(error)?` turns invalid/conflict/validation errors into a skip and lets database errors abort.
+- 2026-11-13 Phase 3: idempotency is by comparison: each importer builds the input it would write and compares it with the stored view (`same(...)`); only differences are written, and `ExternalRefs::upsert` skips unchanged mappings, so a second run leaves the database byte-for-byte identical (tested). Each real run appends one `import.completed` event.
+- 2026-11-13 Phase 3: every write service has a `<method>_in(&self, conn: &mut SqliteConnection, ...)` variant (also `get_in`, `list_in`, `balance_in`) that runs inside the caller's transaction; the public method is `begin`, `<method>_in`, `commit`.
+- 2026-11-13 Phase 3: Firefly mapping choices: all `initial-balance` accounts map to the one Equity(OpeningBalance) account and `reconciliation` accounts to Equity(Reconciliation); `cash` becomes a `(cash)` expense and a `(cash)` revenue account picked by direction; `import` accounts are skipped; `liabilities` → liability with `debit` → `i_owe`, `credit` → `owed_to_me`; split date = local date of Firefly's date-time (original kept in `meta.firefly.date`); same-currency and zero foreign amounts are dropped; budget and subscription links wait for Phase 5 (reported as notes); attachments on bills wait for Phase 5. Kind differences are notes, not errors: Firefly calls a payment into a liability a withdrawal, Saldo a transfer (41 on the owner's data).
+- 2026-11-13 Phase 3: crates: reqwest 0.13 (rustls, json, query, http2), wiremock 0.6 (tests), zip 9 (deflate) for the CSV export.
+- 2026-11-13 Phase 3: attachments: files at `SALDO_DATA_DIR/attachments/<sha256>` (written via a temporary file and rename; shared by equal content; deleted with the last reference), 20 MiB limit, MIME allow-list (PDF, PNG, JPEG, GIF, WebP, HEIC, text, CSV, XML, octet-stream), downloads always `attachment` + `nosniff`. Attachable types now: `split`, `account`, `tag`.
+- 2026-11-13 Phase 3: `saldo backup <path>` uses `VACUUM INTO` with the path as an escaped SQL literal and checks the file exists afterwards (SQLx's in-memory databases silently write nothing, so its test uses a file database).
+- 2026-11-13 Phase 3: Docker: `rust:1.100-slim-trixie` + cargo-chef 0.1.73 builder, `debian:trixie-slim` runtime with `ca-certificates` and `curl` (for the health check), user `saldo` uid 10001, image 207 MB. `.dockerignore` drops `rust-toolchain.toml` so the image's Rust is used.
 - 2026-11-13 Phase 2: service method pattern. Writes: `async fn create|update|replace|delete|add_member|... (&self, ctx: &HouseholdCtx, origin: Origin, ...) -> Result<T, AppError>`. Reads take no origin: `get|list|balance|me (&self, ctx, ...)`. Exceptions with no ctx yet: `IdentityService::setup(origin, input)`, `login(email, password)`, `authenticate(token)`; `CurrencyService::list()` is global. Services are public fields of `saldo_app::App` (`app.accounts`, `app.transactions`, ...); a new feature adds one field in `crates/app/src/lib.rs` and one `.merge(...)` in `crates/server/src/routes/mod.rs`.
 - 2026-11-13 Phase 2: crates: axum 0.8 (+ `macros`), sqlx 0.9 (sqlite, runtime-tokio, macros, migrate), tokio 1, utoipa 6 + utoipa-axum 0.3 (routes and OpenAPI registered together), tower-http 0.7 (trace, request-id), tracing-subscriber 0.3 (JSON logs), clap 4, argon2 0.6 (default Argon2id params; salt generated by the crate), sha2 0.11 (token hashes), rand 0.10 (`rand::fill` for 256-bit tokens). argon2 and blake2 build with `opt-level = 3` in dev so tests stay fast.
 - 2026-11-13 Phase 2: login rate limit is hand-written and in memory: 10 attempts per 15 minutes per email and per client IP (from the socket; behind a reverse proxy all clients share the proxy IP). Unknown emails are checked against a dummy Argon2 hash, so timing does not reveal which emails exist.
@@ -71,7 +83,29 @@ Defaults: `SALDO_DATABASE_URL=sqlite:///data/saldo.db`, `SALDO_BIND=0.0.0.0:8080
 
 Manual check (2026-11-13): fresh database, `saldo serve`, then setup, login, add member, three accounts, one group with two splits from different sources, balances (-42.50, -17.25, 59.75 EUR), nine events listed; a cookie write without the CSRF header got 403 and an unauthenticated list got 401; no token or password appeared in the log; SIGTERM logged `saldo stopped`.
 
+## Importing from Firefly III
+
+Native: `FIREFLY_TOKEN=... SALDO_DATABASE_URL=sqlite://$PWD/data/saldo.db SALDO_DATA_DIR=$PWD/data saldo-import firefly --url https://firefly.example.com --household Home [--dry-run]`.
+In the container (see README): `docker compose exec -T -e FIREFLY_TOKEN saldo saldo-import firefly --url ... --household Home`. The household must exist first (`saldo user create` or `POST /setup`).
+
+Live run on the owner's instance (2026-11-13, into a scratch database; counts only):
+
+| entity | first run | second run |
+|---|---|---|
+| currencies | 1 created, 2 unchanged | 3 unchanged |
+| accounts | 865 created, 12 mapped to equity | 877 unchanged |
+| categories | 98 created | 98 unchanged |
+| tags | 1,197 created | 1,197 unchanged |
+| transactions | 12,362 groups created (12,550 splits) | 12,362 unchanged |
+| attachments | 114 created, 9 skipped | 114 unchanged, 9 skipped |
+
+Balance check: 26 asset/liability accounts, 0 mismatches, both runs. `saldo export json` held 867 accounts, 12,362 groups and 12,550 splits (equal to the database), `transactions.csv` 12,550 rows. The token appeared nowhere in the database, the export, the reports or `import_runs.summary`. Notes: 41 liability payments are transfers in Saldo (withdrawals in Firefly); 1 same-currency foreign amount dropped; 1,986 budget and 449 subscription links and 7 bill attachments wait for Phase 5.
+
+Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 for their files (missing on the Firefly server). Groups deleted in Firefly after an import stay in Saldo (counted as a note). Budgets, subscriptions, piggy banks, rules, recurrences and transaction links are Phase 5.
+
 ## Open questions for the owner
+
+- Approve or reject the two Phase 3 deviations marked "not yet approved" (imports may book on archived accounts; what the export leaves out).
 
 - Approve or reject the two Phase 2 deviations marked "not yet approved" (cookie `Secure` only on https; no events for sessions and tokens).
 
