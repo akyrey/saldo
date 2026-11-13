@@ -2099,6 +2099,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "futures-util",
  "http-body-util",
  "rust-embed",
  "saldo-app",

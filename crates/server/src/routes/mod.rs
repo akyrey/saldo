@@ -7,6 +7,7 @@ pub mod auth;
 pub mod balances;
 pub mod categories;
 pub mod currencies;
+pub mod event_stream;
 pub mod events;
 pub mod export;
 pub mod health;
@@ -39,6 +40,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(attachments::router())
         .merge(export::router())
         .merge(webhooks::router())
+        .merge(event_stream::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

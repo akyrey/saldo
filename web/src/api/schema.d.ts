@@ -280,6 +280,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/events/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Each message is `id: <seq>` and `data: {"seq", "type", "entity_type",
+     *     "entity_id"}`. Reconnecting with `Last-Event-ID` resumes without gaps.
+     */
+    get: operations["stream_events"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/export/csv": {
     parameters: {
       query?: never;
@@ -1025,6 +1045,17 @@ export interface components {
     /** @description `{ "error": { "code", "message", "details" } }` */
     ErrorEnvelope: {
       error: components["schemas"]["ErrorBody"];
+    };
+    /**
+     * @description The short form of an event that live listeners (`GET /events/stream`)
+     *     receive: enough to know what changed, not the whole entity.
+     */
+    EventNotice: {
+      entity_id: string;
+      entity_type: string;
+      /** Format: int64 */
+      seq: number;
+      type: string;
     };
     /** @description One row of the event log, as `GET /events` returns it. */
     EventView: {
@@ -2200,6 +2231,40 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["List_EventView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  stream_events: {
+    parameters: {
+      query?: {
+        /**
+         * @description Start after this `seq`. The `Last-Event-ID` header wins; without
+         *     either, the stream starts with the next new event.
+         */
+        after_seq?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A `text/event-stream` of event notices */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/event-stream": components["schemas"]["EventNotice"];
         };
       };
       401: {

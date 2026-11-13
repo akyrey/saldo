@@ -40,6 +40,7 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "q
 wiremock = "0.6.5"
 chrono-tz = "0.10.4"
 hmac = "0.13.0"
+futures-util = "0.3.34"
 zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]

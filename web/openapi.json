@@ -1282,6 +1282,56 @@
         ]
       }
     },
+    "/api/v1/events/stream": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Each message is `id: <seq>` and `data: {\"seq\", \"type\", \"entity_type\",\n\"entity_id\"}`. Reconnecting with `Last-Event-ID` resumes without gaps.",
+        "operationId": "stream_events",
+        "parameters": [
+          {
+            "name": "after_seq",
+            "in": "query",
+            "description": "Start after this `seq`. The `Last-Event-ID` header wins; without\neither, the stream starts with the next new event.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A `text/event-stream` of event notices",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventNotice"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/export/csv": {
       "get": {
         "tags": [
@@ -4449,6 +4499,31 @@
         "properties": {
           "error": {
             "$ref": "#/components/schemas/ErrorBody"
+          }
+        }
+      },
+      "EventNotice": {
+        "type": "object",
+        "description": "The short form of an event that live listeners (`GET /events/stream`)\nreceive: enough to know what changed, not the whole entity.",
+        "required": [
+          "seq",
+          "type",
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "entity_id": {
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "string"
           }
         }
       },

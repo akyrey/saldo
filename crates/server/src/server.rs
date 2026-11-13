@@ -104,6 +104,7 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState::new(app, config.clone());
     let cancel = tokio_util::sync::CancellationToken::new();
     let workers = crate::workers::start(&state, cancel.clone());
+    let streams = state.shutdown.clone();
     let router = build_router(state);
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     info!(bind = %config.bind, public_url = %config.public_url, "saldo listening");
@@ -111,7 +112,11 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
         listener,
         router.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        // End open event streams, or the server would wait for them forever.
+        streams.cancel();
+    })
     .await?;
     // HTTP has drained; now stop the background tasks.
     workers.shutdown().await;
