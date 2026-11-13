@@ -374,3 +374,119 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
         "the rest of the import still happened"
     );
 }
+
+/// A fake Firefly whose accounts, categories and tags can be replaced.
+async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockServer {
+    let server = MockServer::start().await;
+    for (endpoint, body) in [
+        ("accounts", accounts),
+        ("categories", categories),
+        ("tags", tags),
+        ("currencies", fixture("currencies.json")),
+        ("attachments", fixture("attachments.json")),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(format!("/api/v1/{endpoint}")))
+            .respond_with(ResponseTemplate::new(200).set_body_json(body))
+            .mount(&server)
+            .await;
+    }
+    for page in ["1", "2"] {
+        Mock::given(method("GET"))
+            .and(path("/api/v1/transactions"))
+            .and(query_param("page", page))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(fixture(&format!("transactions-{page}.json"))),
+            )
+            .mount(&server)
+            .await;
+    }
+    Mock::given(method("GET"))
+        .and(path("/api/v1/attachments/1/download"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"receipt: 42.50 EUR".to_vec()))
+        .mount(&server)
+        .await;
+    server
+}
+
+#[tokio::test]
+async fn renamed_objects_are_updated_and_bad_ones_skipped() {
+    let (app, ctx) = household().await;
+    import(&app, ctx, &firefly(None, None).await, false).await;
+
+    let mut accounts = fixture("accounts.json");
+    accounts["data"][0]["attributes"]["name"] = "Main checking".into();
+    accounts["data"][0]["attributes"]["notes"] = "salary account".into();
+    // A Firefly account in a currency Saldo does not know is skipped, not fatal.
+    accounts["data"][4]["attributes"]["currency_code"] = "XYZ".into();
+    let mut categories = fixture("categories.json");
+    categories["data"][0]["attributes"]["name"] = "Salary".into();
+    // Renaming Housing to Food clashes with the existing Food category.
+    categories["data"][2]["attributes"]["name"] = "Food".into();
+    let mut tags = fixture("tags.json");
+    tags["data"][3]["attributes"]["description"] = "not used yet".into();
+
+    let report = import(
+        &app,
+        ctx,
+        &firefly_with(accounts, categories, tags).await,
+        false,
+    )
+    .await;
+
+    assert_eq!(
+        counts(&report, "accounts").updated,
+        1,
+        "{}",
+        report.render()
+    );
+    assert_eq!(
+        counts(&report, "accounts").skipped,
+        2,
+        "import account and unknown currency"
+    );
+    assert_eq!(
+        counts(&report, "categories"),
+        Counts {
+            created: 0,
+            updated: 1,
+            unchanged: 1,
+            skipped: 1
+        }
+    );
+    assert_eq!(
+        counts(&report, "tags"),
+        Counts {
+            created: 0,
+            updated: 1,
+            unchanged: 3,
+            skipped: 0
+        }
+    );
+    let (name, notes): (String, Option<String>) =
+        sqlx::query_as("SELECT name, notes FROM accounts WHERE name = 'Main checking'")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        (name.as_str(), notes.as_deref()),
+        ("Main checking", Some("salary account"))
+    );
+    assert!(
+        report
+            .messages
+            .iter()
+            .any(|m| m.contains("unknown currency XYZ")),
+        "{:?}",
+        report.messages
+    );
+    assert!(
+        report
+            .messages
+            .iter()
+            .any(|m| m.starts_with("categories:") && m.contains("exists")),
+        "{:?}",
+        report.messages
+    );
+}
