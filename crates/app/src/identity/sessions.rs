@@ -38,6 +38,12 @@ impl IdentityService {
             user_id: parse_stored::<UserId>(&user.id)?,
             role: Role::parse(&user.role)?,
         };
+        self.open_session(ctx).await
+    }
+
+    /// Opens a login session for `ctx` (after a password or an external
+    /// identity provider vouched for the person).
+    pub(super) async fn open_session(&self, ctx: HouseholdCtx) -> Result<LoginResult, AppError> {
         let now = self.clock.now();
         let expires_at = format_timestamp(now + SESSION_LIFETIME);
         let token = new_token();

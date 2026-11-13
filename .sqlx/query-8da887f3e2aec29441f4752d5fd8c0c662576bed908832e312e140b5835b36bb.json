@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT u.id AS user_id, m.household_id, m.role\n         FROM user_identities i\n         JOIN users u ON u.id = i.user_id\n         JOIN household_members m ON m.user_id = u.id\n         WHERE i.issuer = ? AND i.subject = ?\n         ORDER BY m.created_at LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "role",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "role"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8da887f3e2aec29441f4752d5fd8c0c662576bed908832e312e140b5835b36bb"
+}

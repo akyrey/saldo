@@ -1,11 +1,13 @@
 //! Identity: setup, household, members, login sessions and API tokens.
 
+mod external;
 mod household;
 mod secrets;
 mod sessions;
 mod status;
 mod time;
 
+pub use external::ExternalIdentity;
 pub(crate) use household::{household_view, members_in};
 pub use sessions::SESSION_LIFETIME;
 pub use time::today_in;

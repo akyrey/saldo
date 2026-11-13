@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT u.id AS user_id, m.household_id, m.role\n         FROM users u JOIN household_members m ON m.user_id = u.id\n         WHERE lower(u.email) = lower(?)\n         ORDER BY m.created_at LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "role",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "role"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "61224c880e714878e33c6967cf4a91af3579a48c6970b0949e790a54b350c8f0"
+}
