@@ -9,9 +9,11 @@ import {
   Tags,
   Wallet,
   Wand2,
+  Webhook,
 } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { useLiveEvents } from "@/features/live/useLiveEvents";
 import { ScopeSwitch } from "./ScopeSwitch";
 
 const NAV = [
@@ -23,20 +25,17 @@ const NAV = [
   { to: "/rules", label: "Rules", icon: Wand2 },
 ] as const;
 
-/** Tailwind needs whole class names in the source, so no `grid-cols-${n}`. */
-const MOBILE_COLUMNS: Record<number, string> = {
-  4: "grid-cols-4",
-  5: "grid-cols-5",
-  6: "grid-cols-6",
-};
-
 /** Only the owner can export, so only the owner sees the link. */
-const OWNER_NAV = [{ to: "/export", label: "Export", icon: Download }] as const;
+const OWNER_NAV = [
+  { to: "/export", label: "Export", icon: Download },
+  { to: "/webhooks", label: "Webhooks", icon: Webhook },
+] as const;
 
 export function AppLayout() {
   const { me } = useRouteContext({ from: "/app" });
   const nav = me.role === "owner" ? [...NAV, ...OWNER_NAV] : NAV;
   const queryClient = useQueryClient();
+  useLiveEvents();
   const navigate = useNavigate();
   const logout = useMutation({
     mutationFn: () => call(api.POST("/api/v1/auth/logout")),
@@ -88,9 +87,8 @@ export function AppLayout() {
       {/* Bottom tab bar on phones. */}
       <nav
         aria-label="Main mobile"
-        className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
-          MOBILE_COLUMNS[nav.length] ?? "grid-cols-6"
-        }`}
+        className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
       >
         {nav.map(({ to, label, icon: Icon }) => (
           <Link

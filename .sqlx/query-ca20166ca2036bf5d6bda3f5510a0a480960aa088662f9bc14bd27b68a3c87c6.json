@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO webhook_deliveries\n                         (id, endpoint_id, event_seq, next_attempt_at, created_at)\n                     VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "ca20166ca2036bf5d6bda3f5510a0a480960aa088662f9bc14bd27b68a3c87c6"
+}

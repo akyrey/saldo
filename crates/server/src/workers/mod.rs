@@ -11,6 +11,7 @@
 //! any point and starting again is safe.
 
 mod signal;
+mod webhooks;
 
 use std::future::Future;
 use std::time::Duration;
@@ -119,8 +120,8 @@ async fn changed(wake: &mut Option<tokio::sync::watch::Receiver<u64>>) {
 /// Every background task of the server, registered in one place: later
 /// phases add their task here.
 pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
-    let workers = Workers::new(cancel);
-    let _ = state;
+    let mut workers = Workers::new(cancel);
+    webhooks::register(&mut workers, state);
     workers
 }
 

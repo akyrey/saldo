@@ -384,6 +384,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/events/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Each message is `id: <seq>` and `data: {"seq", "type", "entity_type",
+     *     "entity_id"}`. Reconnecting with `Last-Event-ID` resumes without gaps.
+     */
+    get: operations["stream_events"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/export/csv": {
     parameters: {
       query?: never;
@@ -662,6 +682,109 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/webhook-deliveries/{id}/redeliver": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Queues a delivery again, now, with a fresh attempt budget. */
+    post: operations["redeliver"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/webhooks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every endpoint of the household, by name. Owner only. */
+    get: operations["list_webhooks"];
+    put?: never;
+    /** Creates an endpoint. The response carries the signing secret, once. */
+    post: operations["create_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/webhooks/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_webhook"];
+    put?: never;
+    post?: never;
+    /** Deletes the endpoint and its delivery log. */
+    delete: operations["delete_webhook"];
+    options?: never;
+    head?: never;
+    patch: operations["update_webhook"];
+    trace?: never;
+  };
+  "/api/v1/webhooks/{id}/deliveries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The endpoint's deliveries, newest event first. */
+    get: operations["list_webhook_deliveries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/webhooks/{id}/rotate-secret": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Replaces the signing secret; the new one is in the response, once. */
+    post: operations["rotate_webhook_secret"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/webhooks/{id}/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Appends a `webhook.test` event that only this endpoint receives. */
+    post: operations["test_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/healthz": {
     parameters: {
       query?: never;
@@ -914,6 +1037,15 @@ export interface components {
     CreateTokenRequest: {
       name: string;
     };
+    CreateWebhookRequest: {
+      /** @description Exact types, `<entity>.*` prefixes or `*`. Default `["*"]`. */
+      event_types?: string[] | null;
+      /** @description Also send events written by the importer. Default false. */
+      include_import_events?: boolean;
+      name: string;
+      /** @description `http` or `https`; private addresses are allowed. */
+      url: string;
+    };
     CreatedTokenResponse: {
       info: components["schemas"]["TokenView"];
       /** @description Shown only now; send it as `Authorization: Bearer <token>`. */
@@ -1051,6 +1183,28 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_DeliveryView: {
+      /** @description One delivery attempt record, as `GET /webhooks/{id}/deliveries` lists it. */
+      data: {
+        /** Format: int64 */
+        attempts: number;
+        created_at: string;
+        endpoint_id: string;
+        event_id: string;
+        /** Format: int64 */
+        event_seq: number;
+        event_type: string;
+        id: string;
+        last_attempt_at?: string | null;
+        last_error?: string | null;
+        /** Format: int64 */
+        last_status_code?: number | null;
+        next_attempt_at?: string | null;
+        /** @description `pending`, `succeeded` or `dead`. */
+        status: string;
+      };
+    };
+    /** @description A single result. */
     Data_HouseholdView: {
       data: {
         created_at: string;
@@ -1168,6 +1322,13 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_TestQueued: {
+      data: {
+        /** @description The `webhook.test` event that will be delivered to this endpoint only. */
+        event_id: string;
+      };
+    };
+    /** @description A single result. */
     Data_TransactionGroupView: {
       data: {
         created_at: string;
@@ -1260,6 +1421,82 @@ export interface components {
         name?: string | null;
       }[];
     };
+    /** @description A single result. */
+    Data_Vec_WebhookView: {
+      data: {
+        active: boolean;
+        /**
+         * Format: int64
+         * @description Dead deliveries in a row; 20 deactivate the endpoint.
+         */
+        consecutive_failures: number;
+        created_at: string;
+        /** @description Why the server deactivated the endpoint, if it did. */
+        disabled_reason?: string | null;
+        /** @description Exact types (`transaction.created`), prefixes (`transaction.*`) or `*`. */
+        event_types: string[];
+        id: string;
+        /** @description Also send events written by the Firefly importer. */
+        include_import_events: boolean;
+        name: string;
+        updated_at: string;
+        url: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_WebhookView: {
+      /** @description An endpoint as the API returns it. Never contains the secret. */
+      data: {
+        active: boolean;
+        /**
+         * Format: int64
+         * @description Dead deliveries in a row; 20 deactivate the endpoint.
+         */
+        consecutive_failures: number;
+        created_at: string;
+        /** @description Why the server deactivated the endpoint, if it did. */
+        disabled_reason?: string | null;
+        /** @description Exact types (`transaction.created`), prefixes (`transaction.*`) or `*`. */
+        event_types: string[];
+        id: string;
+        /** @description Also send events written by the Firefly importer. */
+        include_import_events: boolean;
+        name: string;
+        updated_at: string;
+        url: string;
+      };
+    };
+    /** @description A single result. */
+    Data_WebhookWithSecret: {
+      /**
+       * @description An endpoint together with its signing secret: returned once, by create
+       *     and rotate-secret.
+       */
+      data: {
+        /** @description The HMAC key. Store it now: it is never shown again. */
+        secret: string;
+        webhook: components["schemas"]["WebhookView"];
+      };
+    };
+    /** @description One delivery attempt record, as `GET /webhooks/{id}/deliveries` lists it. */
+    DeliveryView: {
+      /** Format: int64 */
+      attempts: number;
+      created_at: string;
+      endpoint_id: string;
+      event_id: string;
+      /** Format: int64 */
+      event_seq: number;
+      event_type: string;
+      id: string;
+      last_attempt_at?: string | null;
+      last_error?: string | null;
+      /** Format: int64 */
+      last_status_code?: number | null;
+      next_attempt_at?: string | null;
+      /** @description `pending`, `succeeded` or `dead`. */
+      status: string;
+    };
     ErrorBody: {
       /** @description Stable machine-readable code, for example `validation_failed`. */
       code: string;
@@ -1275,6 +1512,17 @@ export interface components {
     /** @description `{ "error": { "code", "message", "details" } }` */
     ErrorEnvelope: {
       error: components["schemas"]["ErrorBody"];
+    };
+    /**
+     * @description The short form of an event that live listeners (`GET /events/stream`)
+     *     receive: enough to know what changed, not the whole entity.
+     */
+    EventNotice: {
+      entity_id: string;
+      entity_type: string;
+      /** Format: int64 */
+      seq: number;
+      type: string;
     };
     /** @description One row of the event log, as `GET /events` returns it. */
     EventView: {
@@ -1425,6 +1673,28 @@ export interface components {
         name: string;
         notes?: string | null;
         updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_DeliveryView: {
+      data: {
+        /** Format: int64 */
+        attempts: number;
+        created_at: string;
+        endpoint_id: string;
+        event_id: string;
+        /** Format: int64 */
+        event_seq: number;
+        event_type: string;
+        id: string;
+        last_attempt_at?: string | null;
+        last_error?: string | null;
+        /** Format: int64 */
+        last_status_code?: number | null;
+        next_attempt_at?: string | null;
+        /** @description `pending`, `succeeded` or `dead`. */
+        status: string;
       }[];
       meta: components["schemas"]["ListMeta"];
     };
@@ -1667,6 +1937,10 @@ export interface components {
       name: string;
       updated_at: string;
     };
+    TestQueued: {
+      /** @description The `webhook.test` event that will be delivered to this endpoint only. */
+      event_id: string;
+    };
     /** @description A personal access token without its secret. */
     TokenView: {
       created_at: string;
@@ -1713,6 +1987,43 @@ export interface components {
       display_name: string;
       email: string;
       id: string;
+    };
+    WebhookPatch: {
+      /** @description `true` re-enables a deactivated endpoint and clears its failure count. */
+      active?: boolean | null;
+      event_types?: string[] | null;
+      include_import_events?: boolean | null;
+      name?: string | null;
+      url?: string | null;
+    };
+    /** @description An endpoint as the API returns it. Never contains the secret. */
+    WebhookView: {
+      active: boolean;
+      /**
+       * Format: int64
+       * @description Dead deliveries in a row; 20 deactivate the endpoint.
+       */
+      consecutive_failures: number;
+      created_at: string;
+      /** @description Why the server deactivated the endpoint, if it did. */
+      disabled_reason?: string | null;
+      /** @description Exact types (`transaction.created`), prefixes (`transaction.*`) or `*`. */
+      event_types: string[];
+      id: string;
+      /** @description Also send events written by the Firefly importer. */
+      include_import_events: boolean;
+      name: string;
+      updated_at: string;
+      url: string;
+    };
+    /**
+     * @description An endpoint together with its signing secret: returned once, by create
+     *     and rotate-secret.
+     */
+    WebhookWithSecret: {
+      /** @description The HMAC key. Store it now: it is never shown again. */
+      secret: string;
+      webhook: components["schemas"]["WebhookView"];
     };
   };
   responses: never;
@@ -2831,6 +3142,40 @@ export interface operations {
       };
     };
   };
+  stream_events: {
+    parameters: {
+      query?: {
+        /**
+         * @description Start after this `seq`. The `Last-Event-ID` header wins; without
+         *     either, the stream starts with the next new event.
+         */
+        after_seq?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A `text/event-stream` of event notices */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/event-stream": components["schemas"]["EventNotice"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   export_csv: {
     parameters: {
       query?: never;
@@ -3820,6 +4165,353 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  redeliver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_DeliveryView"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_webhooks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_WebhookView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateWebhookRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_WebhookWithSecret"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_WebhookView"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebhookPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_WebhookView"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_webhook_deliveries: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_DeliveryView"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  rotate_webhook_secret: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_WebhookWithSecret"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  test_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TestQueued"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
       };
       404: {
         headers: {

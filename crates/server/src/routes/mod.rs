@@ -8,6 +8,7 @@ pub mod balances;
 pub mod bills;
 pub mod categories;
 pub mod currencies;
+pub mod event_stream;
 pub mod events;
 pub mod export;
 pub mod health;
@@ -16,6 +17,7 @@ pub mod rules;
 pub mod setup;
 pub mod tags;
 pub mod transactions;
+pub mod webhooks;
 
 use saldo_app::error::AppError;
 use saldo_app::page::PageRequest;
@@ -41,6 +43,8 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(export::router())
         .merge(bills::router())
         .merge(rules::router())
+        .merge(webhooks::router())
+        .merge(event_stream::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

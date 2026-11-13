@@ -23,6 +23,7 @@ pub mod rules;
 pub mod scope;
 pub mod tags;
 pub mod transactions;
+pub mod webhooks;
 
 use std::path::PathBuf;
 
@@ -40,6 +41,7 @@ use crate::identity::IdentityService;
 use crate::rules::RuleService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
+use crate::webhooks::WebhookService;
 
 /// The entry point: one value holding every service. Built once at startup
 /// and cloned cheaply (the pool and the clock are shared pointers).
@@ -59,6 +61,7 @@ pub struct App {
     pub rules: RuleService,
     pub tags: TagService,
     pub transactions: TransactionService,
+    pub webhooks: WebhookService,
 }
 
 impl App {
@@ -87,6 +90,7 @@ impl App {
                 TransactionService::new(pool.clone(), clock.clone()),
             ),
             transactions: TransactionService::new(pool.clone(), clock.clone()),
+            webhooks: WebhookService::new(pool.clone(), clock.clone()),
             pool,
             clock,
         }

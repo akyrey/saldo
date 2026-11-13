@@ -2045,7 +2045,9 @@ dependencies = [
  "argon2",
  "chrono",
  "chrono-tz",
+ "hmac",
  "rand",
+ "reqwest",
  "saldo-core",
  "serde",
  "serde_json",
@@ -2056,6 +2058,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "uuid",
+ "wiremock",
  "zip",
 ]
 
@@ -2096,6 +2099,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "futures-util",
  "http-body-util",
  "rust-embed",
  "saldo-app",

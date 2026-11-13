@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE webhook_endpoints SET consecutive_failures = 0 WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "4f8df15633842d9ed33fba15fbd8cbb2247a5388ce8e275e84133514aacb9905"
+}

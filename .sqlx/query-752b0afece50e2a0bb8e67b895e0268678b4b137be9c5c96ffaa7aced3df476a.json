@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT user_id FROM household_members WHERE household_id = ? AND role = 'owner'\n         ORDER BY created_at, user_id LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "752b0afece50e2a0bb8e67b895e0268678b4b137be9c5c96ffaa7aced3df476a"
+}

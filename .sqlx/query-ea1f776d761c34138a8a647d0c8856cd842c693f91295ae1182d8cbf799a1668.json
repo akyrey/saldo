@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT seq, household_id, event_type, entity_id, origin, occurred_at\n         FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "seq",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "seq"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "event_type",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "event_type"
+          }
+        }
+      },
+      {
+        "name": "entity_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "entity_id"
+          }
+        }
+      },
+      {
+        "name": "origin",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "name": "occurred_at",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "occurred_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ea1f776d761c34138a8a647d0c8856cd842c693f91295ae1182d8cbf799a1668"
+}

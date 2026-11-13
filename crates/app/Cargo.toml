@@ -10,7 +10,9 @@ publish.workspace = true
 argon2.workspace = true
 chrono = { workspace = true, features = ["clock", "std"] }
 chrono-tz.workspace = true
+hmac.workspace = true
 rand.workspace = true
+reqwest.workspace = true
 saldo-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -27,4 +29,6 @@ zip.workspace = true
 workspace = true
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
 uuid = { workspace = true, features = ["v4"] }
+wiremock.workspace = true

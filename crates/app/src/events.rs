@@ -192,3 +192,49 @@ impl EventService {
         Ok(Page::new(items, page, total))
     }
 }
+
+/// The short form of an event that live listeners (`GET /events/stream`)
+/// receive: enough to know what changed, not the whole entity.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct EventNotice {
+    pub seq: i64,
+    #[serde(rename = "type")]
+    pub event_type: String,
+    pub entity_type: String,
+    pub entity_id: String,
+}
+
+impl EventService {
+    /// The household's newest `seq` (0 when it has no events).
+    pub async fn latest_seq(&self, ctx: &HouseholdCtx) -> Result<i64, AppError> {
+        let household_id = ctx.household_id.to_string();
+        let seq = sqlx::query_scalar!(
+            r#"SELECT coalesce(max(seq), 0) AS "seq!: i64" FROM events WHERE household_id = ?"#,
+            household_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(seq)
+    }
+
+    /// Up to `limit` notices of the household after `after_seq`, oldest first.
+    pub async fn notices_after(
+        &self,
+        ctx: &HouseholdCtx,
+        after_seq: i64,
+        limit: i64,
+    ) -> Result<Vec<EventNotice>, AppError> {
+        let household_id = ctx.household_id.to_string();
+        let rows = sqlx::query_as!(
+            EventNotice,
+            "SELECT seq, event_type, entity_type, entity_id FROM events
+             WHERE household_id = ? AND seq > ? ORDER BY seq LIMIT ?",
+            household_id,
+            after_seq,
+            limit,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+}
