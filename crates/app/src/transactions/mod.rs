@@ -1,5 +1,6 @@
 //! Transaction groups: always written as a whole (create, replace, delete).
 
+mod input;
 mod prepare;
 mod repo;
 mod view;
@@ -17,6 +18,7 @@ use crate::events::{NewEvent, append_event};
 use crate::page::{Page, PageRequest};
 use crate::scope::Scope;
 
+pub(crate) use input::input_from_view;
 pub use view::{SplitView, TransactionGroupView};
 
 pub const KINDS: [&str; 5] = [
@@ -124,7 +126,7 @@ impl TransactionService {
         append_event(&mut *conn, ctx, origin, event).await?;
         // Splits with a bill pay that bill's matching period (`bill.paid`).
         bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
-        Ok(view)
+        self.run_rules(conn, ctx, origin, "create", view).await
     }
 
     /// Replaces the title and all splits of a group (the splits get new IDs).
@@ -143,6 +145,57 @@ impl TransactionService {
 
     /// Like [`Self::replace`], inside the caller's transaction (used by imports).
     pub async fn replace_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        id: GroupId,
+        input: TransactionInput,
+    ) -> Result<TransactionGroupView, AppError> {
+        let view = self.write_replace_in(conn, ctx, origin, id, input).await?;
+        self.run_rules(conn, ctx, origin, "update", view).await
+    }
+
+    /// Runs the household's rules for `trigger_on` on a just-saved group and
+    /// saves their changes with `Origin::Rule`. Imports skip rules (Firefly
+    /// already applied its own), and changes made by rules do not run rules
+    /// again. A rule whose change breaks a ledger rule is logged and ignored,
+    /// so a misconfigured rule never blocks entering a transaction.
+    async fn run_rules(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        trigger_on: &str,
+        view: TransactionGroupView,
+    ) -> Result<TransactionGroupView, AppError> {
+        if matches!(origin, Origin::Import | Origin::Rule) {
+            return Ok(view);
+        }
+        let rules = crate::rules::engine::load(&mut *conn, ctx, trigger_on).await?;
+        let Some(changed) = crate::rules::engine::changes(&mut *conn, &rules, &view).await? else {
+            return Ok(view);
+        };
+        let id: GroupId = view
+            .id
+            .parse()
+            .map_err(|_| AppError::Internal(format!("bad group id {}", view.id)))?;
+        match self
+            .write_replace_in(conn, ctx, Origin::Rule, id, changed)
+            .await
+        {
+            Ok(updated) => Ok(updated),
+            Err(AppError::Validation(errors)) => {
+                let codes: Vec<_> = errors.iter().map(|e| e.code()).collect();
+                tracing::warn!(group = %view.id, ?codes, "rule changes break a ledger rule; not applied");
+                Ok(view)
+            }
+            Err(other) => Err(other),
+        }
+    }
+
+    /// Replaces a group without running rules (used by rules themselves).
+    pub(crate) async fn write_replace_in(
         &self,
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,

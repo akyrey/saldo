@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT kind, value, stop_processing AS \"stop_processing: bool\", active AS \"active: bool\"\n           FROM rule_actions WHERE rule_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rule_actions",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "value",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rule_actions",
+            "name": "value"
+          }
+        }
+      },
+      {
+        "name": "stop_processing: bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rule_actions",
+            "name": "stop_processing"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rule_actions",
+            "name": "active"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "df2eaf6bd0e3399d60fc7de925c50579178f3d03e6075ad4d2b012eee3e15bad"
+}

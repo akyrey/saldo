@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO rule_triggers (id, rule_id, position, kind, value, negate) VALUES (?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "51ff07aed1e6d3769bab4143ce816040016460223dd829bb6418f0452add2fc8"
+}
