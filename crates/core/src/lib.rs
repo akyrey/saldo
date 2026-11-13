@@ -72,6 +72,7 @@
 // `pub` makes it visible outside the crate: Go's capitalised names.
 pub mod account;
 pub mod balance;
+pub mod bills;
 pub mod currency;
 pub mod error;
 pub mod ids;
@@ -89,13 +90,16 @@ mod test_support;
 // exposes one flat API.
 pub use account::{Account, AccountType, EquityRole};
 pub use balance::{apply_deltas, balance_deltas};
+pub use bills::{
+    Bill, BillFrequency, BillPeriod, BillSchedule, PeriodStatus, ReminderKind, reminder_due,
+};
 pub use currency::{Currency, CurrencyCode, MAX_DECIMAL_PLACES};
 pub use error::{
     CurrencyError, IdError, InvalidAccountPair, MoneyError, Reference, ValidationError,
 };
 pub use ids::{
-    AccountId, AttachmentId, BillId, BudgetId, CategoryId, GroupId, HouseholdId, SplitId, TagId,
-    UserId,
+    AccountId, AttachmentId, BillId, BillPeriodId, BudgetId, CategoryId, GroupId, HouseholdId,
+    SplitId, TagId, UserId,
 };
 pub use kind::SplitKind;
 pub use lookup::AccountLookup;
