@@ -153,8 +153,9 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
       {Object.keys(errors.rows).length > 0 ? (
         <Alert>Some splits need attention; see the messages above.</Alert>
       ) : null}
-      <div>
-        <Button type="submit" disabled={mutation.isPending}>
+      {/* On phones the save button stays in reach above the tab bar, even with many splits. */}
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-4 border-t bg-background/95 px-4 py-2 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+        <Button type="submit" disabled={mutation.isPending} className="w-full sm:w-auto">
           {mutation.isPending ? "Saving…" : submitLabel}
         </Button>
       </div>

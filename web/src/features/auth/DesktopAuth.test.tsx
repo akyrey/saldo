@@ -62,7 +62,7 @@ describe("desktop first run", () => {
     const { router } = renderApp("/accounts");
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/connect"));
-    await userEvent.type(screen.getByLabelText("Server address"), "money.example.com/");
+    await userEvent.type(await screen.findByLabelText("Server address"), "money.example.com/");
     await userEvent.click(screen.getByRole("button", { name: "Connect" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/login"));
     expect(state.serverUrl).toBe("https://money.example.com");
