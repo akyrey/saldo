@@ -11,7 +11,20 @@ name = "saldo-import"
 path = "src/main.rs"
 
 [dependencies]
+chrono = { workspace = true, features = ["clock", "std"] }
+clap.workspace = true
+reqwest.workspace = true
 saldo-app.workspace = true
+saldo-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+wiremock.workspace = true
 
 [lints]
 workspace = true
