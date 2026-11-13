@@ -1,6 +1,6 @@
 # Saldo plan
 
-Saldo is built in eight phases. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
+Saldo is built in nine phases. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
 
 ## Phases
 
@@ -14,6 +14,7 @@ Saldo is built in eight phases. Each phase has a self-contained brief in `docs/p
 | 5 | [phase-5-planning.md](phases/phase-5-planning.md) | Budgets, bills, piggy banks, recurring transactions, rules, reports; their import and UI | 2 (import parts need 3, UI parts need 4) |
 | 6 | [phase-6-events.md](phases/phase-6-events.md) | Webhook delivery, bill reminders, notification channels, SSE stream | 2 (bill reminders need 5) |
 | 7 | [phase-7-clients.md](phases/phase-7-clients.md) | Tauri 2 desktop app, PWA install and Web Push polish, backup command | 4, 6 |
+| 8 | [phase-8-templates.md](phases/phase-8-templates.md) | Transaction templates, duplicating a transaction | 4, 5 |
 
 ## Order and parallel work
 
@@ -22,6 +23,8 @@ Saldo is built in eight phases. Each phase has a self-contained brief in `docs/p
               ├── 4 ───────────────┼── 7
               ├── 5 (backend first)┤
               └── 6A (webhooks) ── 6B (bill reminders, needs 5) ─┘
+
+8 (templates) needs 4 and 5 and can run beside 6 and 7.
 ```
 
 - Phases 0, 1 and 2 are strictly sequential.

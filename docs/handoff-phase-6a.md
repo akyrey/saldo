@@ -58,8 +58,8 @@ Branch `phase-6a-webhooks`, based on `a653d05`. Work packages 3 to 8 of `docs/ph
 1. Section 6: `GET /events/stream` also accepts `?after_seq=` (clients that cannot set `Last-Event-ID`), and starts at the newest event when neither is given.
 2. Section 6: the response shapes above (`{ webhook, secret }` for create and rotate, 202 `{ event_id }` for test, unpaginated webhook list) are not spelled out there.
 3. Section 8.2: added rules not in the document: endpoints skip events older than themselves; `webhook.test` bypasses the filter and reaches only its endpoint; pending deliveries of inactive endpoints wait; jitter is 0 to 10%.
-4. Section 7 / CLAUDE.md "every service function takes a `HouseholdCtx` first": `dispatch`, `dispatch_batch` and `deliver_due` take none (global cursor; see Decisions). Not yet approved by the owner.
-5. Section 8.1 "every state change appends an event": delivery status changes and redeliver append none (outbox bookkeeping, avoids a feedback loop). Not yet approved by the owner.
+4. Section 7 / CLAUDE.md "every service function takes a `HouseholdCtx` first": `dispatch`, `dispatch_batch` and `deliver_due` take none (global cursor; see Decisions). Approved by the owner on 2026-11-13.
+5. Section 8.1 "every state change appends an event": delivery status changes and redeliver append none (outbox bookkeeping, avoids a feedback loop). Approved by the owner on 2026-11-13.
 
 ## Test results (2026-11-13)
 
