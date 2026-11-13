@@ -634,7 +634,7 @@ export interface components {
     };
     AttachmentView: {
       attachable_id: string;
-      /** @description `split`, `account` or `tag`. */
+      /** @description `split`, `account`, `tag` or `bill`. */
       attachable_type: string;
       created_at: string;
       filename: string;
@@ -846,7 +846,7 @@ export interface components {
     Data_AttachmentView: {
       data: {
         attachable_id: string;
-        /** @description `split`, `account` or `tag`. */
+        /** @description `split`, `account`, `tag` or `bill`. */
         attachable_type: string;
         created_at: string;
         filename: string;

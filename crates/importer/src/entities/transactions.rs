@@ -13,6 +13,7 @@ use saldo_core::GroupId;
 use serde_json::{Map, Value};
 
 use super::accounts::{CASH_EXPENSE, CASH_REVENUE, REF as ACCOUNT_REF};
+use super::bills::REF as BILL_REF;
 use crate::amounts::normalize;
 use crate::engine::{ImportCx, ImportError, State};
 use crate::firefly::models::{Resource, Split, TransactionGroup};
@@ -305,9 +306,7 @@ fn to_split(
     if linked("budget_id") {
         report.note("budget link not imported (Phase 5)");
     }
-    if linked("subscription_id") || linked("bill_id") {
-        report.note("subscription link not imported (Phase 5)");
-    }
+    let bill_id = linked_bill(refs, s, report);
     Ok(SplitInput {
         date,
         description: s.description.trim().to_string(),
@@ -320,7 +319,7 @@ fn to_split(
         foreign_currency,
         category_id,
         budget_id: None,
-        bill_id: None,
+        bill_id,
         tag_ids,
         reconciled: s.reconciled,
         notes: s
@@ -331,6 +330,29 @@ fn to_split(
             .map(str::to_string),
         meta: meta(s),
     })
+}
+
+/// The imported bill of the split's Firefly subscription (`subscription_id`,
+/// formerly `bill_id`). Saving the split then pays the matching period.
+fn linked_bill(
+    refs: &ExternalRefs,
+    s: &Split,
+    report: &mut ImportReport,
+) -> Option<saldo_core::BillId> {
+    let id = ["subscription_id", "bill_id"]
+        .iter()
+        .find_map(|key| match s.other.get(*key) {
+            Some(Value::String(id)) => Some(id.clone()),
+            Some(Value::Number(id)) => Some(id.to_string()),
+            _ => None,
+        })?;
+    let local = refs
+        .resolve(BILL_REF, &id)
+        .and_then(|local| local.parse().ok());
+    if local.is_none() {
+        report.note("subscription not imported, split kept without it");
+    }
+    local
 }
 
 /// The foreign amount, unless it is missing, zero, or in the split's own
@@ -394,7 +416,7 @@ fn same(input: &TransactionInput, view: &TransactionGroupView) -> bool {
                 && s.foreign_currency == v.foreign_currency
                 && s.category_id.map(|c| c.to_string()) == v.category_id
                 && v.budget_id.is_none()
-                && v.bill_id.is_none()
+                && s.bill_id.map(|b| b.to_string()) == v.bill_id
                 && tags == stored
                 && s.reconciled == v.reconciled
                 && s.notes == v.notes

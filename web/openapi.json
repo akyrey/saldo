@@ -3021,7 +3021,7 @@
           },
           "attachable_type": {
             "type": "string",
-            "description": "`split`, `account` or `tag`."
+            "description": "`split`, `account`, `tag` or `bill`."
           },
           "created_at": {
             "type": "string"
@@ -3800,7 +3800,7 @@
               },
               "attachable_type": {
                 "type": "string",
-                "description": "`split`, `account` or `tag`."
+                "description": "`split`, `account`, `tag` or `bill`."
               },
               "created_at": {
                 "type": "string"
