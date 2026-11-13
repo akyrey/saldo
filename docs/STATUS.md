@@ -55,6 +55,9 @@ Record every place where the code differs from the architecture document, why, a
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
+- 2026-11-13 After Phase 8 (owner's request): login with Authentik over OpenID Connect, chosen by the owner over Authentik's proxy outpost so that the desktop app, API tokens and Web Push keep working. `openidconnect` 4.1 (no default features) on our `reqwest` 0.13 client with redirects off; tests use a wiremock provider and ID tokens signed with a test-only RSA key (`crates/server/tests/fixtures/oidc-test-key.pem`). Pending logins live in memory (a restart only means clicking again). Login and the identity link append no events, like password login. The desktop app does not offer the provider login yet (follow-up).
+- 2026-11-13 Deployment: the owner's k3s cluster runs Saldo from the Docker Hub image (`akyrey/saldo`, amd64 + arm64, built by `.github/workflows/docker.yml` on native runners), manifests in the owner's `diego-k8s` repository (`saldo/`): one pod with `Recreate`, SQLite on a Longhorn volume, Traefik IngressRoute straight to the service, cert-manager certificate for saldo.arsh79.me, Authentik at sso.arsh79.me as the OIDC provider. `.dockerignore` now leaves `desktop/` out of the build context.
+
 - 2026-11-13 Phase 8: built by a delegate in a worktree, merged after Phase 7 (one conflict: the editor's sticky save bar now also holds "Save as template"). Bug fixed on the way: the web editor dropped a split's bill link when saving an edited transaction; `SplitRow` now keeps `bill_id` (there is still no bill picker).
 
 - 2026-11-13 Phase 7: `web/src/platform/` is the one place that knows where the app runs: `Platform` (serverUrl, token, saveToken/clearToken, notify, openExternal) with a browser and a Tauri implementation; `initPlatform()` runs before the first render and loads the Tauri code only inside Tauri (a separate 1.4 kB chunk). The API client sends every request through `sendRequest`, which, on desktop, rewrites it to the chosen server, adds `Authorization: Bearer`, drops the CSRF header and omits cookies.
@@ -176,7 +179,7 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 - SQLite write contention: services open deferred transactions (`BEGIN`), so a transaction that reads and then writes fails with `database is locked` (code 517) if another connection wrote in between. Seen once in the Phase 7 backup check (the webhook dispatcher retried and lost nothing). It can also hit API writes while the importer runs. Fix: start write transactions with `BEGIN IMMEDIATE` in one `db` helper.
 - Desktop: code signing and notarisation (the builds are unsigned), auto-update, Windows and Linux builds in CI, Tauri mobile, catching up on reminders missed while closed.
 - Web Push: deactivate a channel whose subscription is gone (HTTP 404/410).
-- Single sign-on (OIDC) instead of passwords.
+- Login with Authentik in the desktop app (system browser plus a loopback or deep-link redirect).
 
 ## Open questions for the owner
 

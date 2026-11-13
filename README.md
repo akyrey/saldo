@@ -55,6 +55,14 @@ For regular backups, `scripts/backup.sh <folder>` (run from the compose folder) 
 
 To restore: stop the container, put the database copy in the volume as `saldo.db` (delete any `saldo.db-wal` and `saldo.db-shm` beside it), unpack the attachments tarball into the volume, and start it again.
 
+## Log in with Authentik
+
+Saldo can log people in through Authentik (or any OpenID Connect provider). In Authentik create an OAuth2/OpenID provider (confidential client, signing key = a certificate, redirect URI `<SALDO_PUBLIC_URL>/api/v1/auth/oidc/callback`) and an application for it, then set `SALDO_OIDC_ISSUER` (for example `https://sso.example.com/application/o/saldo/`), `SALDO_OIDC_CLIENT_ID`, `SALDO_OIDC_CLIENT_SECRET` and usually `SALDO_OIDC_TRUST_EMAIL=true`. People log in when their email at the provider is the email of a household member. `SALDO_PASSWORD_LOGIN=false` then turns password login off.
+
+## Images
+
+`.github/workflows/docker.yml` publishes the image to Docker Hub for amd64 and arm64 on every push to `main` (tags `main`, `sha-…`) and on `vX.Y.Z` tags (`X.Y.Z`, `X.Y`, `latest`). Set the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (and optionally the variable `DOCKERHUB_IMAGE`, default `<username>/saldo`).
+
 ## Apps
 
 **Phones (Android and iOS).** Open Saldo in the browser and install it: Chrome on Android offers "Install"; on iPhone and iPad use Safari, Share, "Add to Home Screen" (iOS 16.4 or later). Then open the installed app, go to Notifications (the bell) and enable notifications in this browser to receive bill reminders. Web Push needs Saldo on https.

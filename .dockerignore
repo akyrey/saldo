@@ -11,3 +11,7 @@ data/
 .env
 # The image's own Rust version is used; the toolchain file would download another.
 rust-toolchain.toml
+# The desktop app is built separately (desktop/, not part of the image).
+desktop/
+web/test-results/
+web/playwright-report/

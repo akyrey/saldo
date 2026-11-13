@@ -243,6 +243,19 @@ CREATE TABLE sessions (
 CREATE INDEX sessions_user ON sessions (user_id);
 ```
 
+Added after Phase 8 (login with Authentik):
+
+```sql
+-- Accounts at an external identity provider linked to Saldo users.
+CREATE TABLE user_identities (
+    issuer      TEXT NOT NULL,
+    subject     TEXT NOT NULL,
+    user_id     TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    created_at  TEXT NOT NULL,
+    PRIMARY KEY (issuer, subject)
+) STRICT;
+```
+
 ### 5.2 Ledger
 
 ```sql
@@ -758,7 +771,7 @@ Conventions:
 
 | Area | Endpoints | Phase |
 |---|---|---|
-| Setup, auth | `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login` (`client: "desktop"` returns the session token in the body and sets no cookie; Phase 7), `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
+| Setup, auth | `GET /auth/methods` (public: `{ password, oidc: { name } | null }`), `GET /auth/oidc/start?redirect=`, `GET /auth/oidc/callback` (public redirects), `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login` (`client: "desktop"` returns the session token in the body and sets no cookie; Phase 7), `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
 | Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}` | 2 |
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
@@ -782,6 +795,7 @@ Health: `GET /healthz` (no auth, checks the database): `{ status, app: "saldo", 
 ## 7. Auth and household
 
 - Passwords are hashed with Argon2id. Login is rate-limited per IP and per email.
+- Login with an identity provider (Authentik) over OpenID Connect, when `SALDO_OIDC_ISSUER`, `SALDO_OIDC_CLIENT_ID` and `SALDO_OIDC_CLIENT_SECRET` are set: `GET /auth/oidc/start` redirects to the provider (authorization code flow with PKCE; `state` kept in memory for 10 minutes and bound to the browser by an HttpOnly cookie on `/api/v1/auth/oidc`); `GET /auth/oidc/callback` exchanges the code, verifies the ID token (signature from the provider's JWKS, issuer, audience, expiry, nonce) and opens a normal session cookie. The first login links the provider's `sub` to the member whose email matches a verified email (case-insensitive; `SALDO_OIDC_TRUST_EMAIL=true` treats the provider's emails as verified); later logins use the link (`user_identities`). Nobody is created automatically. `SALDO_PASSWORD_LOGIN=false` turns password login off (403). `GET /auth/methods` (public) tells the login page which methods exist. The desktop app keeps password login for now.
 - A login creates a `sessions` row and returns a random 256-bit token. The web app receives it as a cookie `saldo_session` (HttpOnly, SameSite=Lax, and Secure when `SALDO_PUBLIC_URL` is https). The token is never in the login response body. Desktop, scripts and the importer send `Authorization: Bearer <token>`. Personal access tokens are rows of kind `token`, shown once at creation.
 - CSRF: a request authenticated by cookie that is not GET/HEAD must carry the header `X-Saldo-Csrf: 1` and an `Origin` matching `SALDO_PUBLIC_URL`. Bearer requests are exempt.
 - CORS is off unless `SALDO_ALLOWED_ORIGINS` lists origins (the desktop app: `tauri://localhost`, `http://tauri.localhost`). Allowed: GET, POST, PUT, PATCH, DELETE with `Authorization`, `Content-Type` and `Last-Event-ID`; never credentials, so cookies stay same-origin.
@@ -922,7 +936,8 @@ Chosen: React + TypeScript + Vite, TanStack Query (server state) and TanStack Ro
 - One image built in stages: Node builds `web/`, Rust builds the two binaries (with `cargo-chef` for layer caching), the final stage is a slim Debian image running as a non-root user.
 - One volume `/data`: `saldo.db` (plus WAL files) and `attachments/`.
 - `docker-compose.yml` with the single service, the volume, a health check on `/healthz`, and an `.env.example`.
-- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/TLS/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`) and `SALDO_VAPID_SUBJECT`, `SALDO_ALLOWED_ORIGINS` (CORS, for the desktop app), `SALDO_LOG` (level). The server refuses to start with invalid configuration and says which variable is wrong.
+- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/TLS/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`) and `SALDO_VAPID_SUBJECT`, `SALDO_ALLOWED_ORIGINS` (CORS, for the desktop app), `SALDO_OIDC_ISSUER/CLIENT_ID/CLIENT_SECRET/NAME/TRUST_EMAIL`, `SALDO_PASSWORD_LOGIN`, `SALDO_LOG` (level).
+- Images: GitHub Actions (`.github/workflows/docker.yml`) builds amd64 and arm64 natively and publishes one multi-arch tag to Docker Hub (`main`, `sha-…`, and `X.Y.Z`/`X.Y`/`latest` for `vX.Y.Z` tags). The owner's Kubernetes manifests live in their own repository. The server refuses to start with invalid configuration and says which variable is wrong.
 - Migrations run at startup. TLS is expected from a reverse proxy.
 - Logs are structured (`tracing`), one line per request with a request ID; secrets and tokens are never logged.
 
