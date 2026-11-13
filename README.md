@@ -89,7 +89,9 @@ cd web && npm ci && cd ../desktop && npm ci && npm run tauri build
 # macOS: desktop/src-tauri/target/release/bundle/macos/Saldo.app (and a .dmg)
 ```
 
-On first start it asks for the server's address and checks it, then shows the login. The builds are not signed: on macOS, right-click the app and choose Open the first time.
+On first start it asks for the server's address and checks it, then shows the login.
+
+The builds have no Apple or Windows certificate. The macOS app is signed ad-hoc (without that, Apple Silicon Macs call a downloaded app "damaged"), so macOS blocks it once: open **System Settings > Privacy & Security** and click **Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/Saldo.app`. Windows SmartScreen asks for **More info > Run anyway**.
 
 ## Development
 

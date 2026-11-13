@@ -6,8 +6,10 @@
 # - Run it by hand (Actions > Desktop release > Run workflow): the same builds,
 #   kept as workflow artifacts, no release.
 #
-# The builds are not signed (no Apple or Windows certificate): macOS asks for
-# right-click > Open the first time, Windows SmartScreen for "Run anyway".
+# No Apple or Windows certificate: the macOS app is signed ad-hoc (tauri.conf.json
+# signingIdentity "-"), which Apple Silicon requires for downloaded apps; without
+# it macOS calls the app "damaged". macOS still asks once to allow it in
+# System Settings, and Windows SmartScreen asks for "Run anyway".
 name: Desktop release
 
 on:
@@ -41,7 +43,7 @@ jobs:
               body: [
                 "Desktop app for Saldo. Download the file for your system:",
                 "",
-                "- **macOS**: `.dmg` (`aarch64` for Apple Silicon, `x64` for Intel). Unsigned: right-click the app, Open, the first time.",
+                "- **macOS**: `.dmg` (`aarch64` for Apple Silicon, `x64` for Intel). Not notarized: the first time macOS blocks it, open System Settings > Privacy & Security and click Open Anyway (or run `xattr -dr com.apple.quarantine /Applications/Saldo.app`).",
                 "- **Windows**: `.msi` or `-setup.exe`. Unsigned: SmartScreen > More info > Run anyway.",
                 "- **Linux**: `.AppImage`, `.deb` or `.rpm`.",
                 "",
