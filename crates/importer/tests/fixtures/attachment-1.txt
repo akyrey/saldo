@@ -1,0 +1,1 @@
+receipt: 42.50 EUR

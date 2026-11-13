@@ -1,0 +1,80 @@
+{
+ "data": [
+  {
+   "type": "currencies",
+   "id": "1",
+   "attributes": {
+    "code": "EUR",
+    "name": "Euro",
+    "symbol": "\u20ac",
+    "decimal_places": 2,
+    "enabled": true,
+    "default": true,
+    "native": false,
+    "primary": true,
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00"
+   }
+  },
+  {
+   "type": "currencies",
+   "id": "2",
+   "attributes": {
+    "code": "USD",
+    "name": "US dollar",
+    "symbol": "$",
+    "decimal_places": 2,
+    "enabled": true,
+    "default": false,
+    "native": false,
+    "primary": false,
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00"
+   }
+  },
+  {
+   "type": "currencies",
+   "id": "3",
+   "attributes": {
+    "code": "TKT",
+    "name": "Meal ticket",
+    "symbol": "T",
+    "decimal_places": 0,
+    "enabled": true,
+    "default": false,
+    "native": false,
+    "primary": false,
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00"
+   }
+  },
+  {
+   "type": "currencies",
+   "id": "4",
+   "attributes": {
+    "code": "GBP",
+    "name": "British pound",
+    "symbol": "\u00a3",
+    "decimal_places": 2,
+    "enabled": false,
+    "default": false,
+    "native": false,
+    "primary": false,
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 4,
+   "count": 4,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "https://firefly.example/api/v1/x"
+ }
+}

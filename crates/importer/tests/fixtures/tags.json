@@ -1,0 +1,60 @@
+{
+ "data": [
+  {
+   "type": "tags",
+   "id": "1",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "tag": "salary",
+    "date": null,
+    "description": null
+   }
+  },
+  {
+   "type": "tags",
+   "id": "2",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "tag": "weekly",
+    "date": null,
+    "description": null
+   }
+  },
+  {
+   "type": "tags",
+   "id": "3",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "tag": "food",
+    "date": null,
+    "description": null
+   }
+  },
+  {
+   "type": "tags",
+   "id": "4",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "tag": "unused",
+    "date": null,
+    "description": null
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 4,
+   "count": 4,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "https://firefly.example/api/v1/x"
+ }
+}
