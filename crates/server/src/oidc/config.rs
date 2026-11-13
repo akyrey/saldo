@@ -15,6 +15,10 @@ pub struct OidcConfig {
     pub client_secret: String,
     /// The provider's name on the login button.
     pub name: String,
+    /// Treat the provider's emails as verified (`SALDO_OIDC_TRUST_EMAIL`):
+    /// for your own Authentik, whose admin sets every email, but which may
+    /// report `email_verified: false`.
+    pub trust_email: bool,
 }
 
 // The secret never reaches a log line, even through `{:?}`.
@@ -25,6 +29,7 @@ impl fmt::Debug for OidcConfig {
             .field("client_id", &self.client_id)
             .field("client_secret", &"<redacted>")
             .field("name", &self.name)
+            .field("trust_email", &self.trust_email)
             .finish()
     }
 }
@@ -66,11 +71,17 @@ pub fn from_lookup(
         id.ok_or_else(|| error("SALDO_OIDC_CLIENT_ID", "is required with an issuer"))?;
     let client_secret =
         secret.ok_or_else(|| error("SALDO_OIDC_CLIENT_SECRET", "is required with an issuer"))?;
+    let trust_email = match get("SALDO_OIDC_TRUST_EMAIL").as_deref() {
+        None | Some("false") => false,
+        Some("true") => true,
+        Some(_) => return Err(error("SALDO_OIDC_TRUST_EMAIL", "must be true or false")),
+    };
     Ok(Some(OidcConfig {
         issuer,
         client_id,
         client_secret,
         name: get("SALDO_OIDC_NAME").unwrap_or_else(|| DEFAULT_NAME.to_string()),
+        trust_email,
     }))
 }
 

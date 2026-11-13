@@ -60,9 +60,19 @@ async fn provider() -> (MockServer, String) {
 }
 
 fn id_token(issuer: &str, subject: &str, email: &str, nonce: &str) -> String {
+    id_token_verified(issuer, subject, email, nonce, true)
+}
+
+fn id_token_verified(
+    issuer: &str,
+    subject: &str,
+    email: &str,
+    nonce: &str,
+    verified: bool,
+) -> String {
     let standard = StandardClaims::new(SubjectIdentifier::new(subject.into()))
         .set_email(Some(EndUserEmail::new(email.into())))
-        .set_email_verified(Some(true));
+        .set_email_verified(Some(verified));
     let claims = CoreIdTokenClaims::new(
         IssuerUrl::new(issuer.into()).unwrap(),
         vec![Audience::new(CLIENT_ID.into())],
@@ -260,6 +270,36 @@ async fn people_who_are_not_members_are_refused() {
 async fn an_id_token_for_another_login_is_refused() {
     let location = login_with("ak-1", "owner@example.com", |_| "wrong-nonce".to_string()).await;
     assert_eq!(location, "/login?error=oidc_invalid");
+}
+
+/// Logs in with an unverified email; returns where the browser lands.
+async fn login_unverified(extra: &[(&'static str, &'static str)]) -> String {
+    let (mock, issuer) = provider().await;
+    let server = saldo_with(&issuer, extra).await;
+    let (url, cookie) = start_login(&server).await;
+    let nonce = query_param(&url, "nonce");
+    answer_tokens(
+        &mock,
+        id_token_verified(&issuer, "ak-1", "owner@example.com", &nonce, false),
+    )
+    .await;
+    let state = query_param(&url, "state");
+    get_raw(
+        &server,
+        &format!("/api/v1/auth/oidc/callback?code=the-code&state={state}"),
+        Some(&cookie),
+    )
+    .await
+    .location
+}
+
+#[tokio::test]
+async fn unverified_emails_link_only_when_the_provider_is_trusted() {
+    assert_eq!(login_unverified(&[]).await, "/login?error=oidc_no_account");
+    assert_eq!(
+        login_unverified(&[("SALDO_OIDC_TRUST_EMAIL", "true")]).await,
+        "/budgets"
+    );
 }
 
 #[tokio::test]

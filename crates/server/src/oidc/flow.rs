@@ -112,6 +112,6 @@ pub async fn finish(
         issuer: claims.issuer().to_string(),
         subject: claims.subject().to_string(),
         email: claims.email().map(|e| e.to_string()),
-        email_verified: claims.email_verified().unwrap_or(false),
+        email_verified: config.trust_email || claims.email_verified().unwrap_or(false),
     })
 }
