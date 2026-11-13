@@ -1,0 +1,12 @@
+# Keep the build context small and free of local data and secrets.
+target/
+.git/
+web/node_modules/
+web/dist/
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+# The image's own Rust version is used; the toolchain file would download another.
+rust-toolchain.toml
