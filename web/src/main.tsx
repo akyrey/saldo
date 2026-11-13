@@ -12,7 +12,9 @@ const router = createAppRouter(queryClient);
 
 // A 401 anywhere (session expired, logged out in another tab) sends the
 // person to the login page, then back to where they were.
+// Without a known session the route guard handles it (setup or login).
 setUnauthorizedListener(() => {
+  if (queryClient.getQueryData(["me"]) === undefined) return;
   queryClient.removeQueries({ queryKey: ["me"] });
   const path = router.state.location.pathname;
   if (path === "/login" || path === "/setup") return;
