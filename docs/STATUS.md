@@ -14,7 +14,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 5 Planning features | done | main / 356a8f3 (last track merge), integration up to 05d1d71 | Four tracks: bills (449e839), rules (f336043), budgets + reports (9690610), piggy banks + recurrences (356a8f3); export of the new tables (9666dc5, b6b8ec4). 469 Rust tests, 147 Vitest, 12 Playwright flows |
 | 6 Events | done | main / ee236b3 (part B), b1f1ca0 (part A) | Webhooks, SSE live updates, bill reminders, ntfy/Gotify/email/Web Push. Verified for real: signed webhook delivery and retry (local catcher, Go example), reminders to a local ntfy stand-in. Not verified: real ntfy, Gotify, SMTP, browser push |
 | 7 Clients | done (manual device checks open) | main / a2a45d0 | Tauri 2 desktop app (Saldo.app 11 MB, built on macOS; the .dmg step needs a GUI session or CI), PWA install banner and app badge, desktop bearer login + CORS, backup script. 477 Rust + 2 desktop tests, 177 Vitest, 12 Playwright flows. Not yet run by hand: the desktop app against a server, phone installs and push |
-| 8 Templates | done | main (merge of phase-8-templates) | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
+| 8 Templates | done | main / 28865c2 | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
 
 States: not started, in progress, blocked (say on what), done.
 
