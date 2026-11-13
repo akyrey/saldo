@@ -1,0 +1,222 @@
+{
+ "data": [
+  {
+   "type": "recurrences",
+   "id": "1",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "type": "withdrawal",
+    "title": "Monthly rent",
+    "description": "Landlord",
+    "first_date": "2026-01-02",
+    "latest_date": null,
+    "repeat_until": null,
+    "nr_of_repetitions": null,
+    "apply_rules": true,
+    "active": true,
+    "notes": null,
+    "repetitions": [
+     {
+      "id": "21",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "monthly",
+      "moment": "2",
+      "skip": 0,
+      "weekend": 1,
+      "description": "x",
+      "occurrences": []
+     }
+    ],
+    "transactions": [
+     {
+      "currency_id": "1",
+      "currency_code": "EUR",
+      "currency_symbol": "\u20ac",
+      "currency_decimal_places": 2,
+      "currency_name": "Euro",
+      "id": "31",
+      "description": "Rent",
+      "amount": "800.000000000000",
+      "foreign_amount": null,
+      "foreign_currency_id": null,
+      "foreign_currency_code": null,
+      "foreign_currency_symbol": null,
+      "foreign_currency_decimal_places": null,
+      "source_id": "1",
+      "source_name": "x",
+      "source_iban": null,
+      "source_type": "Asset account",
+      "destination_id": "6",
+      "destination_name": "x",
+      "destination_iban": null,
+      "destination_type": "Expense account",
+      "budget_id": null,
+      "budget_name": null,
+      "category_id": "3",
+      "category_name": null,
+      "piggy_bank_id": null,
+      "piggy_bank_name": null,
+      "subscription_id": "1",
+      "subscription_name": null,
+      "tags": []
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "recurrences",
+   "id": "2",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "type": "withdrawal",
+    "title": "Insurance",
+    "description": null,
+    "first_date": "2026-03-15",
+    "latest_date": null,
+    "repeat_until": "2030-12-31",
+    "nr_of_repetitions": 4,
+    "apply_rules": false,
+    "active": true,
+    "notes": "yearly",
+    "repetitions": [
+     {
+      "id": "22",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "yearly",
+      "moment": "2026-03-15",
+      "skip": 0,
+      "weekend": 4,
+      "description": "x",
+      "occurrences": []
+     }
+    ],
+    "transactions": [
+     {
+      "currency_id": "1",
+      "currency_code": "EUR",
+      "currency_symbol": "\u20ac",
+      "currency_decimal_places": 2,
+      "currency_name": "Euro",
+      "id": "32",
+      "description": "Insurance premium",
+      "amount": "120.500000000000",
+      "foreign_amount": null,
+      "foreign_currency_id": null,
+      "foreign_currency_code": null,
+      "foreign_currency_symbol": null,
+      "foreign_currency_decimal_places": null,
+      "source_id": "1",
+      "source_name": "x",
+      "source_iban": null,
+      "source_type": "Asset account",
+      "destination_id": "5",
+      "destination_name": "x",
+      "destination_iban": null,
+      "destination_type": "Expense account",
+      "budget_id": null,
+      "budget_name": null,
+      "category_id": null,
+      "category_name": null,
+      "piggy_bank_id": null,
+      "piggy_bank_name": null,
+      "subscription_id": null,
+      "subscription_name": null,
+      "tags": [
+       "weekly"
+      ]
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "recurrences",
+   "id": "3",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "type": "withdrawal",
+    "title": "Club dues",
+    "description": null,
+    "first_date": "2026-01-01",
+    "latest_date": null,
+    "repeat_until": null,
+    "nr_of_repetitions": null,
+    "apply_rules": true,
+    "active": false,
+    "notes": null,
+    "repetitions": [
+     {
+      "id": "23",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "ndom",
+      "moment": "2,3",
+      "skip": 1,
+      "weekend": 3,
+      "description": "x",
+      "occurrences": []
+     }
+    ],
+    "transactions": [
+     {
+      "currency_id": "1",
+      "currency_code": "EUR",
+      "currency_symbol": "\u20ac",
+      "currency_decimal_places": 2,
+      "currency_name": "Euro",
+      "id": "33",
+      "description": "Club",
+      "amount": "15.000000000000",
+      "foreign_amount": null,
+      "foreign_currency_id": null,
+      "foreign_currency_code": null,
+      "foreign_currency_symbol": null,
+      "foreign_currency_decimal_places": null,
+      "source_id": "1",
+      "source_name": "x",
+      "source_iban": null,
+      "source_type": "Asset account",
+      "destination_id": "5",
+      "destination_name": "x",
+      "destination_iban": null,
+      "destination_type": "Expense account",
+      "budget_id": null,
+      "budget_name": null,
+      "category_id": null,
+      "category_name": null,
+      "piggy_bank_id": null,
+      "piggy_bank_name": null,
+      "subscription_id": null,
+      "subscription_name": null,
+      "tags": []
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 3,
+   "count": 3,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "x"
+ }
+}

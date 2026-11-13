@@ -1,0 +1,96 @@
+{
+ "data": [
+  {
+   "type": "subscriptions",
+   "id": "1",
+   "attributes": {
+    "currency_id": "1",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "currency_name": "Euro",
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "name": "Rent",
+    "amount_min": "800.000000000000",
+    "amount_max": "800.000000000000",
+    "amount_avg": "800.000000000000",
+    "date": "2026-01-02T00:00:00+01:00",
+    "end_date": null,
+    "extension_date": null,
+    "repeat_freq": "monthly",
+    "skip": 0,
+    "active": true,
+    "order": 1,
+    "notes": null,
+    "next_expected_match": "2026-12-02T00:00:00+01:00",
+    "next_expected_match_diff": "19 days",
+    "paid_dates": [
+     {
+      "transaction_group_id": "4",
+      "transaction_journal_id": "105",
+      "date": "2026-11-02T18:30:00+01:00",
+      "subscription_id": "1",
+      "amount": "800.000000000000",
+      "foreign_amount": null,
+      "currency_id": "1",
+      "currency_code": "EUR",
+      "currency_symbol": "\u20ac",
+      "currency_decimal_places": 2,
+      "currency_name": "Euro"
+     }
+    ],
+    "pay_dates": [
+     "2026-12-02T00:00:00+01:00"
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "subscriptions",
+   "id": "2",
+   "attributes": {
+    "currency_id": "1",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "currency_name": "Euro",
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "name": "Streaming",
+    "amount_min": "9.990000000000",
+    "amount_max": "12.990000000000",
+    "amount_avg": "11.490000000000",
+    "date": "2026-03-15T00:00:00+01:00",
+    "end_date": "2028-03-15T00:00:00+01:00",
+    "extension_date": null,
+    "repeat_freq": "yearly",
+    "skip": 0,
+    "active": true,
+    "order": 2,
+    "notes": "family plan",
+    "next_expected_match": "2027-03-15T00:00:00+01:00",
+    "next_expected_match_diff": "4 months",
+    "paid_dates": [],
+    "pay_dates": []
+   },
+   "links": {
+    "self": "x"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 2,
+   "count": 2,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "x"
+ }
+}

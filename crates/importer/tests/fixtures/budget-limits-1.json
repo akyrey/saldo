@@ -1,0 +1,62 @@
+{
+ "data": [
+  {
+   "type": "budget_limits",
+   "id": "11",
+   "attributes": {
+    "currency_id": "1",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "currency_name": "Euro",
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "start": "2026-11-01T00:00:00+01:00",
+    "end": "2026-11-30T23:59:59+01:00",
+    "amount": "300.000000000000",
+    "budget_id": "1",
+    "period": "monthly",
+    "notes": null,
+    "spent": []
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "budget_limits",
+   "id": "12",
+   "attributes": {
+    "currency_id": "1",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "currency_name": "Euro",
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "start": "2026-10-01T00:00:00+02:00",
+    "end": "2026-10-31T23:59:59+01:00",
+    "amount": "250.000000000000",
+    "budget_id": "1",
+    "period": "monthly",
+    "notes": "October",
+    "spent": []
+   },
+   "links": {
+    "self": "x"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 2,
+   "count": 2,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "x"
+ }
+}

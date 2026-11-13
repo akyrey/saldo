@@ -1,0 +1,216 @@
+{
+ "data": [
+  {
+   "type": "rules",
+   "id": "1",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "rule_group_id": "1",
+    "rule_group_title": "Default rules",
+    "title": "Rent",
+    "description": null,
+    "order": 1,
+    "active": true,
+    "strict": true,
+    "stop_processing": false,
+    "trigger": "store-journal",
+    "triggers": [
+     {
+      "id": "101",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "description_contains",
+      "value": "rent",
+      "order": 1,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     },
+     {
+      "id": "102",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "amount_more",
+      "value": "700",
+      "order": 2,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     },
+     {
+      "id": "103",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "currency_is",
+      "value": "Euro (EUR)",
+      "order": 3,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     }
+    ],
+    "actions": [
+     {
+      "id": "201",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "link_to_bill",
+      "value": "Rent",
+      "order": 1,
+      "active": true,
+      "stop_processing": false
+     },
+     {
+      "id": "202",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "set_category",
+      "value": "Housing",
+      "order": 2,
+      "active": true,
+      "stop_processing": false
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "rules",
+   "id": "2",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "rule_group_id": "1",
+    "rule_group_title": "Default rules",
+    "title": "Lunch",
+    "description": null,
+    "order": 2,
+    "active": true,
+    "strict": true,
+    "stop_processing": true,
+    "trigger": "store-journal",
+    "triggers": [
+     {
+      "id": "104",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "description_starts",
+      "value": "Lunch",
+      "order": 1,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     },
+     {
+      "id": "105",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "has_no_tag",
+      "value": "",
+      "order": 2,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     },
+     {
+      "id": "106",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "source_account_is",
+      "value": "Meal tickets",
+      "order": 3,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     }
+    ],
+    "actions": [
+     {
+      "id": "203",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "add_tag",
+      "value": "food",
+      "order": 1,
+      "active": true,
+      "stop_processing": false
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "rules",
+   "id": "3",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "rule_group_id": "1",
+    "rule_group_title": "Default rules",
+    "title": "Exotic",
+    "description": null,
+    "order": 3,
+    "active": true,
+    "strict": true,
+    "stop_processing": false,
+    "trigger": "store-journal",
+    "triggers": [
+     {
+      "id": "107",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "journal_id",
+      "value": "12",
+      "order": 1,
+      "active": true,
+      "prohibited": false,
+      "stop_processing": false
+     },
+     {
+      "id": "108",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "description_is",
+      "value": "Coffee",
+      "order": 2,
+      "active": true,
+      "prohibited": true,
+      "stop_processing": false
+     }
+    ],
+    "actions": [
+     {
+      "id": "204",
+      "created_at": "2026-11-01T10:00:00+01:00",
+      "updated_at": "2026-11-01T10:00:00+01:00",
+      "type": "set_category",
+      "value": "Food",
+      "order": 1,
+      "active": true,
+      "stop_processing": false
+     }
+    ]
+   },
+   "links": {
+    "self": "x"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 3,
+   "count": 3,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "x"
+ }
+}
