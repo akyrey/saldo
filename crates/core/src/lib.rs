@@ -79,6 +79,7 @@ pub mod ids;
 pub mod kind;
 pub mod lookup;
 pub mod money;
+pub mod rules;
 pub mod transaction;
 pub mod validation;
 
@@ -104,6 +105,9 @@ pub use ids::{
 pub use kind::SplitKind;
 pub use lookup::AccountLookup;
 pub use money::Money;
+pub use rules::{
+    Action, Rule, RuleAction, RuleAmount, RuleError, RuleTrigger, SplitView as RuleSplit, Trigger,
+};
 pub use transaction::{NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup, ValidatedSplit};
 pub use validation::validate_group;
 

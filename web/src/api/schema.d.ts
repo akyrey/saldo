@@ -469,6 +469,107 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/rule-groups": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Rule groups in evaluation order. */
+    get: operations["list_groups"];
+    put?: never;
+    post: operations["create_group"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/rule-groups/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_group"];
+    put?: never;
+    post?: never;
+    /** Deletes a group with all its rules. */
+    delete: operations["delete_group"];
+    options?: never;
+    head?: never;
+    patch: operations["update_group"];
+    trace?: never;
+  };
+  "/api/v1/rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Rules in evaluation order (group order, then rule order). */
+    get: operations["list_rules"];
+    put?: never;
+    post: operations["create_rule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/rules/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_rule"];
+    put: operations["replace_rule"];
+    post?: never;
+    delete: operations["delete_rule"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/rules/{id}/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Runs the rule over every existing transaction and saves the changes. */
+    post: operations["apply_rule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/rules/{id}/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Dry run: the splits the rule would change (first 100), nothing is saved. */
+    post: operations["test_rule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/setup": {
     parameters: {
       query?: never;
@@ -632,6 +733,14 @@ export interface components {
       updated_at: string;
       virtual_balance: string;
     };
+    /** @description An action as stored and as the API shows it. */
+    ActionView: {
+      active?: boolean;
+      /** @description Firefly's keyword, for example `set_category`. */
+      kind: string;
+      stop_processing?: boolean;
+      value?: string | null;
+    };
     AttachmentView: {
       attachable_id: string;
       /** @description `split`, `account`, `tag` or `bill`. */
@@ -790,6 +899,13 @@ export interface components {
     CreateCategoryRequest: {
       name: string;
       notes?: string | null;
+    };
+    CreateRuleGroupRequest: {
+      active?: boolean;
+      description?: string | null;
+      /** Format: int64 */
+      sort_order?: number;
+      title: string;
     };
     CreateTagRequest: {
       description?: string | null;
@@ -974,6 +1090,59 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_RuleApplyResult: {
+      data: {
+        /** @description Groups that the rule actually changed. */
+        changed: number;
+        /** @description Transaction groups with a matching split. */
+        matched: number;
+      };
+    };
+    /** @description A single result. */
+    Data_RuleGroupView: {
+      data: {
+        active: boolean;
+        created_at: string;
+        description?: string | null;
+        id: string;
+        /** Format: int64 */
+        sort_order: number;
+        title: string;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_RuleTestResult: {
+      data: {
+        /** @description The first matches (at most 100), newest first. */
+        matches: components["schemas"]["RuleMatch"][];
+        /** @description Every matching split. */
+        total: number;
+      };
+    };
+    /** @description A single result. */
+    Data_RuleView: {
+      data: {
+        actions: components["schemas"]["ActionView"][];
+        active: boolean;
+        created_at: string;
+        description?: string | null;
+        id: string;
+        rule_group_id: string;
+        /** Format: int64 */
+        sort_order: number;
+        /** @description Skip the group's later rules after this one matched. */
+        stop_processing: boolean;
+        /** @description All triggers must match (`true`) or any one. */
+        strict: boolean;
+        title: string;
+        /** @description `create`, `update` or `manual`. */
+        trigger_on: string;
+        triggers: components["schemas"]["TriggerView"][];
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
     Data_SetupResponse: {
       data: {
         household: components["schemas"]["HouseholdView"];
@@ -1044,6 +1213,41 @@ export interface components {
         joined_at: string;
         role: components["schemas"]["Role"];
         user_id: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_RuleGroupView: {
+      data: {
+        active: boolean;
+        created_at: string;
+        description?: string | null;
+        id: string;
+        /** Format: int64 */
+        sort_order: number;
+        title: string;
+        updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_RuleView: {
+      data: {
+        actions: components["schemas"]["ActionView"][];
+        active: boolean;
+        created_at: string;
+        description?: string | null;
+        id: string;
+        rule_group_id: string;
+        /** Format: int64 */
+        sort_order: number;
+        /** @description Skip the group's later rules after this one matched. */
+        stop_processing: boolean;
+        /** @description All triggers must match (`true`) or any one. */
+        strict: boolean;
+        title: string;
+        /** @description `create`, `update` or `manual`. */
+        trigger_on: string;
+        triggers: components["schemas"]["TriggerView"][];
+        updated_at: string;
       }[];
     };
     /** @description A single result. */
@@ -1301,6 +1505,80 @@ export interface components {
      * @enum {string}
      */
     Role: "owner" | "member";
+    RuleApplyResult: {
+      /** @description Groups that the rule actually changed. */
+      changed: number;
+      /** @description Transaction groups with a matching split. */
+      matched: number;
+    };
+    RuleGroupPatch: {
+      active?: boolean | null;
+      description?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+      title?: string | null;
+    };
+    RuleGroupView: {
+      active: boolean;
+      created_at: string;
+      description?: string | null;
+      id: string;
+      /** Format: int64 */
+      sort_order: number;
+      title: string;
+      updated_at: string;
+    };
+    /** @description One split a rule would change. */
+    RuleMatch: {
+      amount: string;
+      currency: string;
+      date: string;
+      description: string;
+      group_id: string;
+      split_id: string;
+    };
+    /** @description A whole rule (POST creates, PUT replaces). */
+    RuleRequest: {
+      actions: components["schemas"]["ActionView"][];
+      active?: boolean;
+      description?: string | null;
+      /** Format: uuid */
+      rule_group_id: string;
+      /** Format: int64 */
+      sort_order?: number;
+      stop_processing?: boolean;
+      /** @description All triggers must match (`true`) or any one. */
+      strict?: boolean;
+      title: string;
+      /** @description `create`, `update` or `manual`. */
+      trigger_on: string;
+      triggers: components["schemas"]["TriggerView"][];
+    };
+    RuleTestResult: {
+      /** @description The first matches (at most 100), newest first. */
+      matches: components["schemas"]["RuleMatch"][];
+      /** @description Every matching split. */
+      total: number;
+    };
+    RuleView: {
+      actions: components["schemas"]["ActionView"][];
+      active: boolean;
+      created_at: string;
+      description?: string | null;
+      id: string;
+      rule_group_id: string;
+      /** Format: int64 */
+      sort_order: number;
+      /** @description Skip the group's later rules after this one matched. */
+      stop_processing: boolean;
+      /** @description All triggers must match (`true`) or any one. */
+      strict: boolean;
+      title: string;
+      /** @description `create`, `update` or `manual`. */
+      trigger_on: string;
+      triggers: components["schemas"]["TriggerView"][];
+      updated_at: string;
+    };
     SetupRequest: {
       display_name: string;
       email: string;
@@ -1404,6 +1682,13 @@ export interface components {
     TransactionRequest: {
       splits: components["schemas"]["SplitRequest"][];
       title?: string | null;
+    };
+    /** @description A trigger as stored and as the API shows it. */
+    TriggerView: {
+      /** @description Firefly's keyword, for example `description_contains`. */
+      kind: string;
+      negate?: boolean;
+      value?: string | null;
     };
     /** @description The multipart form (documentation only; the handler reads the parts). */
     UploadForm: {
@@ -2755,6 +3040,385 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_groups: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_RuleGroupView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_group: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRuleGroupRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleGroupView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_group: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleGroupView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_group: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_group: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RuleGroupPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleGroupView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_rules: {
+    parameters: {
+      query?: {
+        /** @description Only the rules of this group. */
+        rule_group_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_RuleView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RuleRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  replace_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RuleRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  apply_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleApplyResult"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  test_rule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RuleTestResult"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };

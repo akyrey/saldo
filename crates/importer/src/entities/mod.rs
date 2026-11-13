@@ -6,6 +6,7 @@ pub mod attachments;
 pub mod bills;
 pub mod categories;
 pub mod currencies;
+pub mod rules;
 pub mod tags;
 pub mod transactions;
 

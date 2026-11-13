@@ -155,3 +155,47 @@ pub struct Subscription {
     pub order: Option<i64>,
     pub notes: Option<String>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RuleGroup {
+    pub title: String,
+    pub description: Option<String>,
+    pub order: Option<i64>,
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Rule {
+    pub rule_group_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    /// `store-journal` (on create), `update-journal`, or manual.
+    pub trigger: String,
+    pub active: bool,
+    pub strict: bool,
+    pub stop_processing: bool,
+    pub order: Option<i64>,
+    #[serde(default)]
+    pub triggers: Vec<RulePart>,
+    #[serde(default)]
+    pub actions: Vec<RulePart>,
+}
+
+/// A trigger (`prohibited` = negated) or an action of a rule.
+#[derive(Debug, Clone, Deserialize)]
+pub struct RulePart {
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub value: Option<String>,
+    #[serde(default)]
+    pub prohibited: bool,
+    #[serde(default)]
+    pub stop_processing: bool,
+    #[serde(default = "yes")]
+    pub active: bool,
+    pub order: Option<i64>,
+}
+
+fn yes() -> bool {
+    true
+}

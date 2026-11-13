@@ -222,3 +222,46 @@ test("a bill is created and a period is marked paid with a transaction", async (
   await page.goto("/bills");
   await expect(page.getByRole("link", { name: "Flat rent" })).toBeVisible();
 });
+
+test("a rule built in the editor categorises a new transaction", async ({ page }) => {
+  await login(page);
+  const checking = await createAccount(page, "Rules checking", "asset");
+  const shop = await createAccount(page, "Rules bakery", "expense");
+  const origin = new URL(page.url()).origin;
+  const headers = { "X-Saldo-Csrf": "1", Origin: origin };
+  const category = await page.request.post("/api/v1/categories", {
+    headers,
+    data: { name: "Bread" },
+  });
+  expect(category.status()).toBe(201);
+
+  await page.goto("/rules");
+  await page.getByLabel("New group title").fill("Everyday");
+  await page.getByRole("button", { name: "Add group" }).click();
+  const group = page.getByRole("region", { name: "Everyday" });
+  await group.getByRole("link", { name: "New rule" }).click();
+  await page.getByLabel("Title", { exact: true }).fill("Bakery to bread");
+  await page.getByLabel("Trigger 1 value").fill("bakery");
+  await page.getByLabel("Action 1 value").selectOption({ label: "Bread" });
+  await page.getByRole("button", { name: "Create rule" }).click();
+  await expect(page.getByRole("button", { name: "Test rule" })).toBeVisible();
+
+  const created = await page.request.post("/api/v1/transactions", {
+    headers,
+    data: {
+      splits: [
+        {
+          date: new Date().toISOString().slice(0, 10),
+          description: "Morning bakery",
+          source_id: checking,
+          destination_id: shop,
+          amount: "3.20",
+        },
+      ],
+    },
+  });
+  expect(created.status(), await created.text()).toBe(201);
+  const body = (await created.json()) as { data: { splits: { category_id: string | null }[] } };
+  const bread = ((await category.json()) as { data: { id: string } }).data.id;
+  expect(body.data.splits[0]?.category_id).toBe(bread);
+});

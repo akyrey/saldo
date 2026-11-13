@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE rules SET rule_group_id = ?, title = ?, description = ?, trigger_on = ?, strict = ?,\n                    stop_processing = ?, active = ?, sort_order = ?, updated_at = ?\n                 WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "adf8d8250dcae5ffd7fc67d88e3a249358465213d4fc9815215b4e220b3be8f1"
+}

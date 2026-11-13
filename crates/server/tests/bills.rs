@@ -146,3 +146,128 @@ async fn bills_and_periods_over_http() {
         StatusCode::NOT_FOUND
     );
 }
+
+#[tokio::test]
+async fn rules_over_http_link_payments_to_bills() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let checking = created(
+        &server,
+        &owner,
+        "/api/v1/accounts",
+        json!({ "name": "Checking", "type": "asset" }),
+    )
+    .await;
+    let landlord = created(
+        &server,
+        &owner,
+        "/api/v1/accounts",
+        json!({ "name": "Landlord", "type": "expense" }),
+    )
+    .await;
+    let bill = created(&server, &owner, "/api/v1/bills", json!({
+        "name": "Rent", "amount_min": "800", "amount_max": "800", "first_due_date": "2026-10-02", "repeat_freq": "monthly"
+    })).await;
+    let group = created(
+        &server,
+        &owner,
+        "/api/v1/rule-groups",
+        json!({ "title": "Default" }),
+    )
+    .await;
+    let rule = created(
+        &server,
+        &owner,
+        "/api/v1/rules",
+        json!({
+            "rule_group_id": group["id"], "title": "Rent", "trigger_on": "create",
+            "triggers": [{ "kind": "description_contains", "value": "rent" }],
+            "actions": [{ "kind": "link_to_bill", "value": bill["id"] }]
+        }),
+    )
+    .await;
+    let rule_id = rule["id"].as_str().unwrap();
+
+    let payment = created(&server, &owner, "/api/v1/transactions", json!({ "splits": [{
+        "date": "2026-11-03", "description": "Rent November", "source_id": checking["id"], "destination_id": landlord["id"], "amount": "800"
+    }]})).await;
+    assert_eq!(payment["splits"][0]["bill_id"], bill["id"]);
+    let periods = server
+        .get(
+            &format!("/api/v1/bills/{}/periods", bill["id"].as_str().unwrap()),
+            &owner,
+        )
+        .await;
+    assert!(
+        periods.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["due_date"] == "2026-11-02" && p["status"] == "paid")
+    );
+
+    let preview = server
+        .send(
+            Method::POST,
+            &format!("/api/v1/rules/{rule_id}/test"),
+            None,
+            &owner,
+        )
+        .await;
+    assert_eq!(preview.body["data"]["total"], 1);
+    let apply = server
+        .send(
+            Method::POST,
+            &format!("/api/v1/rules/{rule_id}/apply"),
+            None,
+            &owner,
+        )
+        .await;
+    assert_eq!(
+        (
+            apply.body["data"]["matched"].as_i64(),
+            apply.body["data"]["changed"].as_i64()
+        ),
+        (Some(1), Some(0))
+    );
+    let listed = server.get("/api/v1/rules", &owner).await;
+    assert_eq!(
+        listed.body["data"][0]["triggers"][0]["kind"],
+        "description_contains"
+    );
+    let bad = server.post("/api/v1/rules", json!({
+        "rule_group_id": group["id"], "title": "Bad", "trigger_on": "create",
+        "triggers": [{ "kind": "journal_id", "value": "1" }], "actions": [{ "kind": "clear_category" }]
+    }), &owner).await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let replaced = server.send(Method::PUT, &format!("/api/v1/rules/{rule_id}"), Some(json!({
+        "rule_group_id": group["id"], "title": "Rent v2", "trigger_on": "update", "active": false,
+        "triggers": [{ "kind": "description_contains", "value": "rent" }], "actions": [{ "kind": "link_to_bill", "value": bill["id"] }]
+    })), &owner).await;
+    assert_eq!(
+        (
+            replaced.body["data"]["title"].as_str(),
+            replaced.body["data"]["active"].as_bool()
+        ),
+        (Some("Rent v2"), Some(false))
+    );
+    assert_eq!(
+        server
+            .send(
+                Method::DELETE,
+                &format!("/api/v1/rule-groups/{}", group["id"].as_str().unwrap()),
+                None,
+                &owner
+            )
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        server
+            .get(&format!("/api/v1/rules/{rule_id}"), &owner)
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+}

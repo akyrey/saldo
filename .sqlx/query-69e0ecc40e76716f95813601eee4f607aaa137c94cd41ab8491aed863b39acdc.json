@@ -1,0 +1,146 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, rule_group_id, title, description, trigger_on, strict AS \"strict: bool\",\n                  stop_processing AS \"stop_processing: bool\", active AS \"active: bool\", sort_order, created_at, updated_at\n           FROM rules WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "rule_group_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "rule_group_id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "trigger_on",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "trigger_on"
+          }
+        }
+      },
+      {
+        "name": "strict: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "strict"
+          }
+        }
+      },
+      {
+        "name": "stop_processing: bool",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "stop_processing"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "sort_order",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "sort_order"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "69e0ecc40e76716f95813601eee4f607aaa137c94cd41ab8491aed863b39acdc"
+}

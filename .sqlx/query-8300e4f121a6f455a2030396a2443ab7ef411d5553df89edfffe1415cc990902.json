@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO rules (id, household_id, rule_group_id, title, description, trigger_on, strict,\n                    stop_processing, active, sort_order, created_at, updated_at)\n                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "8300e4f121a6f455a2030396a2443ab7ef411d5553df89edfffe1415cc990902"
+}

@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT kind, value, negate AS \"negate: bool\" FROM rule_triggers WHERE rule_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rule_triggers",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "value",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rule_triggers",
+            "name": "value"
+          }
+        }
+      },
+      {
+        "name": "negate: bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rule_triggers",
+            "name": "negate"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "5684b0284347ad1ebd9b4202ac22e7571c507f744ba66f80c2ea7f15a37aaf65"
+}

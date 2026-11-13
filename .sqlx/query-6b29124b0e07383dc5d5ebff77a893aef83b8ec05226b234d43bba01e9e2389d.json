@@ -1,0 +1,146 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT r.id, r.rule_group_id, r.title, r.description, r.trigger_on, r.strict AS \"strict: bool\",\n                  r.stop_processing AS \"stop_processing: bool\", r.active AS \"active: bool\", r.sort_order,\n                  r.created_at, r.updated_at\n           FROM rules r JOIN rule_groups g ON g.id = r.rule_group_id\n           WHERE r.household_id = ?1 AND (?2 IS NULL OR r.rule_group_id = ?2)\n           ORDER BY g.sort_order, g.title, r.sort_order, r.title",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "rule_group_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "rule_group_id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "trigger_on",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "trigger_on"
+          }
+        }
+      },
+      {
+        "name": "strict: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "strict"
+          }
+        }
+      },
+      {
+        "name": "stop_processing: bool",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "stop_processing"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "sort_order",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "sort_order"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rules",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6b29124b0e07383dc5d5ebff77a893aef83b8ec05226b234d43bba01e9e2389d"
+}

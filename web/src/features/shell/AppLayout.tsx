@@ -1,6 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, Download, FolderTree, LogOut, Receipt, Tags, Wallet } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Download,
+  FolderTree,
+  LogOut,
+  Receipt,
+  Tags,
+  Wallet,
+  Wand2,
+} from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -11,6 +20,7 @@ const NAV = [
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/bills", label: "Bills", icon: Receipt },
+  { to: "/rules", label: "Rules", icon: Wand2 },
 ] as const;
 
 /** Tailwind needs whole class names in the source, so no `grid-cols-${n}`. */

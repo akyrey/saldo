@@ -63,6 +63,12 @@ impl ImportReport {
         self.messages.push(format!("{entity}: {why}"));
     }
 
+    /// A message about an item that was still imported (for example, a rule
+    /// imported inactive).
+    pub fn message(&mut self, entity: &str, what: String) {
+        self.messages.push(format!("{entity}: {what}"));
+    }
+
     pub fn note(&mut self, what: &str) {
         *self.notes.entry(what.to_string()).or_default() += 1;
     }
@@ -106,7 +112,7 @@ impl ImportReport {
             }
         }
         if !self.messages.is_empty() {
-            let _ = writeln!(out, "\nSkipped");
+            let _ = writeln!(out, "\nSkipped or changed");
             for message in &self.messages {
                 let _ = writeln!(out, "  {message}");
             }
