@@ -78,6 +78,7 @@ pub mod ids;
 pub mod kind;
 pub mod lookup;
 pub mod money;
+pub mod piggy_bank;
 pub mod recurrence;
 pub mod transaction;
 pub mod validation;
@@ -104,6 +105,10 @@ pub use money::Money;
 pub use transaction::{NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup, ValidatedSplit};
 pub use validation::validate_group;
 
+pub use piggy_bank::{
+    EventOutcome, PiggyBankId, PiggyBankState, PiggyEventError, check_event, check_imported_event,
+    room_to_add,
+};
 pub use recurrence::{
     Pattern, RecurrenceId, RecurrenceSchedule, Repetition, ScheduleError, WeekendPolicy,
 };
