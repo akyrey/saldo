@@ -22,8 +22,8 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
-- 2026-11-13 Phase 8: a template's amounts must be positive, two given accounts must form the template's kind, and budgets are allowed on withdrawal templates only (the ledger rules applied to what the template contains). Not yet approved by the owner.
-- 2026-11-13 Phase 8: a template may have no splits; `PATCH` also changes `kind`, `title` and `splits`; the new-transaction editor has "Save as template" for a partly filled form (the only way to create a template with empty parts); a template's kind narrows the editor's account pickers. Not yet approved by the owner.
+- 2026-11-13 Phase 8: a template's amounts must be positive, two given accounts must form the template's kind, and budgets are allowed on withdrawal templates only (the ledger rules applied to what the template contains). Approved by the owner on 2026-11-13.
+- 2026-11-13 Phase 8: a template may have no splits; `PATCH` also changes `kind`, `title` and `splits`; the new-transaction editor has "Save as template" for a partly filled form (the only way to create a template with empty parts); a template's kind narrows the editor's account pickers. Approved by the owner on 2026-11-13.
 - 2026-11-13 Phase 8: `TemplateId` lives in `saldo-app`; the schemas are named `TransactionTemplate…` because `TemplateSplitView` was already the recurrence schema (utoipa kept only one). The editor does not show a template's currency; the server uses the account's on save, foreign amounts carry over.
 
 - 2026-11-13 Phase 5 (piggy banks + recurrences): migration `20261113300000_recurrence_fired_through.sql` adds `recurrences.fired_through`, the runner's progress, so imported history, deleted fired groups and dates missed while inactive are never recreated. Approved by the owner on 2026-11-13. ARCHITECTURE.md 5.4 updated.
@@ -180,9 +180,7 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 
 ## Open questions for the owner
 
-- Approve or reject the two Phase 8 deviations marked "not yet approved" (stricter template checks; empty templates, a fuller `PATCH`, Save as template from the editor, kind-filtered account pickers).
-
-All deviations up to Phase 7 were approved by the owner on 2026-11-13.
+None. All deviations up to Phase 8 were approved by the owner on 2026-11-13.
 
 ## Findings about Firefly III
 
