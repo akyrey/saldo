@@ -907,7 +907,9 @@ export interface components {
        * @description Fields to change; others (such as a token you never see) are kept,
        *     and `null` removes an optional one.
        */
-      config?: Record<string, never> | null;
+      config?: {
+        [key: string]: unknown;
+      } | null;
       name?: string | null;
     };
     /** @description A channel's settings without secrets, as the API returns them. */
@@ -1005,7 +1007,9 @@ export interface components {
        * @description ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;
        *     email: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`.
        */
-      config: Record<string, never>;
+      config: {
+        [key: string]: unknown;
+      };
       /** @description `ntfy`, `gotify`, `email` or `webpush`. */
       kind: string;
       name: string;

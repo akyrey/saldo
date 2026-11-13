@@ -4251,7 +4251,11 @@
               "object",
               "null"
             ],
-            "description": "Fields to change; others (such as a token you never see) are kept,\nand `null` removes an optional one."
+            "description": "Fields to change; others (such as a token you never see) are kept,\nand `null` removes an optional one.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "name": {
             "type": [
@@ -4577,7 +4581,11 @@
           },
           "config": {
             "type": "object",
-            "description": "ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;\nemail: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`."
+            "description": "ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;\nemail: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "kind": {
             "type": "string",

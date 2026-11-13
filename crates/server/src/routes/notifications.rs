@@ -47,7 +47,7 @@ pub struct CreateChannelRequest {
     pub name: String,
     /// ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;
     /// email: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`.
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub config: Value,
     pub active: Option<bool>,
 }
@@ -92,7 +92,7 @@ pub struct ChannelPatch {
     pub name: Option<String>,
     /// Fields to change; others (such as a token you never see) are kept,
     /// and `null` removes an optional one.
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<std::collections::HashMap<String, serde_json::Value>>)]
     pub config: Option<Value>,
     pub active: Option<bool>,
 }

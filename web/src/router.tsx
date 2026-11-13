@@ -200,6 +200,15 @@ const exportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/export/ExportPage"), "ExportPage"),
 });
 
+const notificationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "settings/notifications",
+  component: lazyRouteComponent(
+    () => import("@/features/notifications/NotificationsPage"),
+    "NotificationsPage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -222,6 +231,7 @@ const routeTree = rootRoute.addChildren([
     rulesRoute,
     newRuleRoute,
     ruleRoute,
+    notificationsRoute,
   ]),
 ]);
 
