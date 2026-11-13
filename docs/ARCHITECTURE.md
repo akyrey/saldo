@@ -40,7 +40,7 @@ Contents: [1 Goals](#1-goals) · [2 Decisions](#2-decisions) · [3 Crates](#3-cr
 ```
 Cargo.toml                 workspace, shared dependency versions and lints
 crates/core/               saldo-core      pure domain: no I/O, no async, no SQL
-crates/app/                saldo-app       services (use cases), SQLx repositories, migrations/
+crates/app/                saldo-app       services (use cases), SQLx repositories, migrations/, response views
 crates/server/             saldo-server    binary `saldo`: Axum API, auth, OpenAPI, background workers, embedded SPA
 crates/importer/           saldo-importer  binary `saldo-import`: Firefly III API client and mapping
 web/                       React SPA (Phase 4), TS client generated from openapi.json
@@ -756,7 +756,7 @@ Health: `GET /healthz` (no auth, checks the database).
 ## 7. Auth and household
 
 - Passwords are hashed with Argon2id. Login is rate-limited per IP and per email.
-- A login creates a `sessions` row and returns a random 256-bit token. The web app receives it as a cookie `saldo_session` (HttpOnly, Secure, SameSite=Lax). Desktop, scripts and the importer send `Authorization: Bearer <token>`. Personal access tokens are rows of kind `token`, shown once at creation.
+- A login creates a `sessions` row and returns a random 256-bit token. The web app receives it as a cookie `saldo_session` (HttpOnly, SameSite=Lax, and Secure when `SALDO_PUBLIC_URL` is https). The token is never in the login response body. Desktop, scripts and the importer send `Authorization: Bearer <token>`. Personal access tokens are rows of kind `token`, shown once at creation.
 - CSRF: a request authenticated by cookie that is not GET/HEAD must carry the header `X-Saldo-Csrf: 1` and an `Origin` matching `SALDO_PUBLIC_URL`. Bearer requests are exempt.
 - First run: `POST /setup` creates the first user and the household, and only works while the `users` table is empty. The same is available as `saldo user create`.
 - An owner adds members with an initial password. v1 has no email invitations and no password-reset email.
@@ -771,7 +771,10 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `household_member.*`, `webhook.*`, each with `created`, `updated`, `deleted`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `household_member.*`, `webhook.*`, each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
+- Sessions and API tokens (login, logout, token create/revoke) are authentication state, not household data, and append no event.
+- The entity in `data` is the `saldo-app` view type (`AccountView`, `TransactionGroupView`, ...), which is also the API response, so the two cannot drift.
 - Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_reopened`, `recurrence.fired`, `piggy_bank.target_reached`, `import.completed`, `webhook.test`.
 
 Payload, also the webhook body:
