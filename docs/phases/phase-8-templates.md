@@ -1,6 +1,6 @@
 # Phase 8: transaction templates and duplicating transactions
 
-Requested by the owner on 2026-11-13. Before starting, confirm the design choices marked **(confirm)** with the owner, then add the table and endpoints below to `docs/ARCHITECTURE.md` (sections 5 and 6), since that file is the contract.
+Requested by the owner on 2026-11-13. Before starting, add the table and endpoints below to `docs/ARCHITECTURE.md` (sections 5 and 6), since that file is the contract.
 
 ## 1. Goal
 
@@ -23,9 +23,9 @@ Phases 4 and 5 are done (the editor, budgets and bills exist).
 
 - **Table** `transaction_templates`: `id`, `household_id`, `name` (unique per household), `kind` (`withdrawal`, `deposit`, `transfer`; tells the editor which accounts to offer when the template has none), `title`, `splits` (JSON array of partial splits: `description`, `source_id`, `destination_id`, `amount`, `currency`, `foreign_amount`, `foreign_currency`, `category_id`, `budget_id`, `bill_id`, `tag_ids`, `notes`; every field optional), `sort_order`, `created_at`, `updated_at`. No `date`: using a template defaults to today.
 - **Validation**: a template is checked only for what it contains: referenced accounts, categories, budgets, bills and tags must belong to the household, and amounts must parse in their currency. The full ledger rules run when the transaction is saved, as for any transaction.
-- **Deleted references**: a template whose account (or category, ...) is deleted keeps working; the missing field is dropped when it is loaded and the editor shows it empty. **(confirm)** The alternative is to block the delete.
+- **Deleted references**: a template whose account (or category, ...) is deleted keeps working; the missing field is dropped when it is loaded and the editor shows it empty (owner's choice, 2026-11-13; deletes are not blocked).
 - **Server API**: CRUD on `/transaction-templates`; `POST /transactions/{id}/template` (body: `name`) saves an existing group as a template, without its date and reconciled flag. There is no "instantiate" endpoint: the web editor fills itself from the template and posts a normal `POST /transactions` (`Origin::Api`, so rules run as usual).
-- **Duplicate** is web only: the editor loads the group and opens a new, unsaved copy with today's date and `reconciled` cleared. **(confirm)** Whether attachments should be copied (proposal: no).
+- **Duplicate** is web only: the editor loads the group and opens a new, unsaved copy with today's date and `reconciled` cleared. Attachments are not copied (owner's choice, 2026-11-13).
 - **Events**: `template.created`, `template.updated`, `template.deleted`; add `template` to the live-events keys in the web app.
 - **Export**: templates added to the JSON document and a `templates.csv`; format version stays 1.
 - **Importer**: Firefly III has no templates; nothing to import.
@@ -44,4 +44,4 @@ The standard checks from `CLAUDE.md` (Rust and web), coverage at least 80%, and 
 
 ## 7. Hand-off
 
-In `docs/STATUS.md`: Phase 8 done with commit hash and the answers to the **(confirm)** items.
+In `docs/STATUS.md`: Phase 8 done with commit hash.
