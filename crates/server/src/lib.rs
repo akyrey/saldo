@@ -12,3 +12,4 @@ pub mod routes;
 pub mod server;
 pub mod spa;
 pub mod state;
+pub mod workers;

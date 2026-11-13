@@ -5,7 +5,10 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::http::{HeaderName, Request};
+use axum::extract::{Request as AxumRequest, State};
+use axum::http::{HeaderName, Method, Request};
+use axum::middleware::{self, Next};
+use axum::response::Response;
 use axum::routing::get;
 use axum::{Json, Router};
 use saldo_app::clock::SystemClock;
@@ -45,7 +48,27 @@ pub fn build_router(state: AppState) -> Router {
                 .on_response(DefaultOnResponse::new().level(Level::INFO)),
         )
         .layer(SetRequestIdLayer::new(REQUEST_ID, MakeRequestUuid))
+        .layer(middleware::from_fn_with_state(state.clone(), wake_after_writes))
         .with_state(state)
+}
+
+/// After a successful request that may have changed data, wake the
+/// background tasks (webhook dispatcher, notifier, ...) instead of letting
+/// them wait for their next interval.
+async fn wake_after_writes(
+    State(state): State<AppState>,
+    request: AxumRequest,
+    next: Next,
+) -> Response {
+    let writes = !matches!(
+        *request.method(),
+        Method::GET | Method::HEAD | Method::OPTIONS
+    );
+    let response = next.run(request).await;
+    if writes && response.status().is_success() {
+        state.events.notify();
+    }
+    response
 }
 
 /// Opens the database (creating its folder if needed) and runs migrations.
@@ -78,7 +101,10 @@ fn database_path(url: &str) -> Option<&Path> {
 pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     let app = open_app(&config).await?;
     let pool = app.pool.clone();
-    let router = build_router(AppState::new(app, config.clone()));
+    let state = AppState::new(app, config.clone());
+    let cancel = tokio_util::sync::CancellationToken::new();
+    let workers = crate::workers::start(&state, cancel.clone());
+    let router = build_router(state);
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     info!(bind = %config.bind, public_url = %config.public_url, "saldo listening");
     axum::serve(
@@ -87,6 +113,8 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     )
     .with_graceful_shutdown(shutdown_signal())
     .await?;
+    // HTTP has drained; now stop the background tasks.
+    workers.shutdown().await;
     // Close the pool so SQLite checkpoints the WAL file.
     tokio::time::timeout(Duration::from_secs(5), pool.close())
         .await
