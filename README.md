@@ -59,6 +59,15 @@ To restore: stop the container, put the database copy in the volume as `saldo.db
 
 Saldo can log people in through Authentik (or any OpenID Connect provider). In Authentik create an OAuth2/OpenID provider (confidential client, any signing certificate: RSA, or Authentik's default ECDSA P-384 one, whose `ES256` label Saldo handles, redirect URI `<SALDO_PUBLIC_URL>/api/v1/auth/oidc/callback`) and an application for it, then set `SALDO_OIDC_ISSUER` (for example `https://sso.example.com/application/o/saldo/`), `SALDO_OIDC_CLIENT_ID`, `SALDO_OIDC_CLIENT_SECRET` and usually `SALDO_OIDC_TRUST_EMAIL=true`. People log in when their email at the provider is the email of a household member; the desktop app does the same through the system browser. `SALDO_PASSWORD_LOGIN=false` then turns password login off.
 
+## Releases
+
+Push a tag `vX.Y.Z` to release a version:
+
+- `.github/workflows/docker.yml` publishes the server image `X.Y.Z`, `X.Y` and `latest` to Docker Hub;
+- `.github/workflows/desktop-release.yml` builds the desktop app for macOS (Apple Silicon and Intel), Windows and Linux, with the version taken from the tag, and attaches the installers to a **draft** GitHub Release named `Saldo X.Y.Z`. Check it and press Publish.
+
+Running "Desktop release" by hand builds the same installers as workflow artifacts, without a release. The installers are unsigned.
+
 ## Images
 
 `.github/workflows/docker.yml` publishes the image to Docker Hub for amd64 and arm64 on every push to `main` (tags `main`, `sha-…`) and on `vX.Y.Z` tags (`X.Y.Z`, `X.Y`, `latest`). Set the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (and optionally the variable `DOCKERHUB_IMAGE`, default `<username>/saldo`).
@@ -73,7 +82,7 @@ Saldo can log people in through Authentik (or any OpenID Connect provider). In A
 SALDO_ALLOWED_ORIGINS=tauri://localhost,http://tauri.localhost
 ```
 
-Then build it (needs Rust, Node and the [Tauri prerequisites](https://tauri.app/start/prerequisites/)) or download the `saldo-desktop-macos` artifact from a CI run on `main`:
+Download it from the repository's **Releases** page (macOS for Apple Silicon and Intel, Windows, Linux), or build it yourself (needs Rust, Node and the [Tauri prerequisites](https://tauri.app/start/prerequisites/)):
 
 ```sh
 cd web && npm ci && cd ../desktop && npm ci && npm run tauri build

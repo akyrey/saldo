@@ -1,0 +1,121 @@
+# Builds the desktop app (Tauri) for macOS, Windows and Linux and attaches the
+# installers to a GitHub Release.
+#
+# - Push a `vX.Y.Z` tag: a draft release `Saldo X.Y.Z` is created once, every
+#   platform uploads into it, and you publish it after a look.
+# - Run it by hand (Actions > Desktop release > Run workflow): the same builds,
+#   kept as workflow artifacts, no release.
+#
+# The builds are not signed (no Apple or Windows certificate): macOS asks for
+# right-click > Open the first time, Windows SmartScreen for "Run anyway".
+name: Desktop release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # One draft for all platforms. Letting each build create it races, and
+  # GitHub cannot look a draft up by tag, so parallel jobs would make several.
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.release.outputs.result }}
+    steps:
+      - id: release
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const version = context.ref.replace("refs/tags/v", "");
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `Saldo ${version}`,
+              draft: true,
+              body: [
+                "Desktop app for Saldo. Download the file for your system:",
+                "",
+                "- **macOS**: `.dmg` (`aarch64` for Apple Silicon, `x64` for Intel). Unsigned: right-click the app, Open, the first time.",
+                "- **Windows**: `.msi` or `-setup.exe`. Unsigned: SmartScreen > More info > Run anyway.",
+                "- **Linux**: `.AppImage`, `.deb` or `.rpm`.",
+                "",
+                "The server needs `SALDO_ALLOWED_ORIGINS=tauri://localhost,http://tauri.localhost`.",
+                "The server image for this version is on Docker Hub with the same tag.",
+              ].join("\n"),
+            });
+            return data.id;
+
+  build:
+    needs: create-release
+    # Runs for tags (after the draft exists) and for manual runs (no release).
+    if: always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            args: --target aarch64-apple-darwin
+            name: macos-arm64
+          - runner: macos-latest
+            args: --target x86_64-apple-darwin
+            name: macos-x64
+          - runner: ubuntu-22.04
+            args: ""
+            name: linux-x64
+          - runner: windows-latest
+            args: ""
+            name: windows-x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.runner == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+          key: ${{ matrix.name }}
+      - name: Linux libraries (web view, tray, keychain over D-Bus)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config
+      - name: App version from the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          node -e '
+            const fs = require("fs");
+            const file = "desktop/src-tauri/tauri.conf.json";
+            const config = JSON.parse(fs.readFileSync(file, "utf8"));
+            config.version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+            fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
+            console.log("version", config.version);
+          '
+      - run: npm ci
+        working-directory: web
+      - run: npm ci
+        working-directory: desktop
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: desktop
+          args: ${{ matrix.args }}
+          releaseId: ${{ needs.create-release.outputs.id }}
+          # Manual runs: keep the installers as workflow artifacts instead.
+          uploadWorkflowArtifacts: ${{ needs.create-release.result == 'skipped' }}
+          workflowArtifactNamePattern: saldo-desktop-${{ matrix.name }}-[bundle]
