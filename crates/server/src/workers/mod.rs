@@ -191,6 +191,22 @@ mod tests {
         workers.shutdown().await;
     }
 
+    #[tokio::test]
+    async fn start_runs_the_bill_scheduler_and_the_notifier() {
+        let pool = saldo_app::db::connect_in_memory().await.unwrap();
+        saldo_app::db::migrate(&pool).await.unwrap();
+        let app = saldo_app::App::new(pool, Arc::new(saldo_app::clock::SystemClock));
+        let config = crate::config::Config::from_lookup(|_| None).unwrap();
+        let state = AppState::new(app, config);
+        let workers = start(&state, CancellationToken::new());
+        assert_eq!(workers.names(), ["bill_scheduler", "notifier"]);
+        // Both run once at start; a write signal wakes them again.
+        settle().await;
+        state.events.notify();
+        settle().await;
+        workers.shutdown().await;
+    }
+
     #[tokio::test(start_paused = true)]
     async fn shutdown_stops_every_task() {
         let cancel = CancellationToken::new();
