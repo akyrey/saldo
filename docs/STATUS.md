@@ -11,15 +11,26 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 2 Server | done | main / 4d431a6 | 186 tests workspace-wide, 96.83% line coverage; manual curl flow passed |
 | 3 Importer + export | done | main / 2f4c6ba | Live import of the owner's Firefly passed twice (second run: no changes); 26/26 balances match; Docker image builds and runs |
 | 4 Web | done | main / 4bd407b | React SPA embedded in the server; 69 Vitest + 6 Playwright flows pass; initial route 130 kB gzipped; PWA install on a phone not yet checked |
-| 5 Planning features | not started | | |
-| 6 Events | not started | | |
+| 5 Planning features | done | main / 356a8f3 (last track merge), integration up to 05d1d71 | Four tracks: bills (449e839), rules (f336043), budgets + reports (9690610), piggy banks + recurrences (356a8f3); export of the new tables (9666dc5, b6b8ec4). 469 Rust tests, 147 Vitest, 12 Playwright flows |
+| 6 Events | done | main / ee236b3 (part B), b1f1ca0 (part A) | Webhooks, SSE live updates, bill reminders, ntfy/Gotify/email/Web Push. Verified for real: signed webhook delivery and retry (local catcher, Go example), reminders to a local ntfy stand-in. Not verified: real ntfy, Gotify, SMTP, browser push |
 | 7 Clients | not started | | |
+| 8 Templates | not started | | Brief added 2026-11-13 at the owner's request (`docs/phases/phase-8-templates.md`) |
 
 States: not started, in progress, blocked (say on what), done.
 
 ## Deviations from ARCHITECTURE.md
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
+
+- 2026-11-13 Phase 5 (piggy banks + recurrences): migration `20261113300000_recurrence_fired_through.sql` adds `recurrences.fired_through`, the runner's progress, so imported history, deleted fired groups and dates missed while inactive are never recreated. Not yet approved by the owner. ARCHITECTURE.md 5.4 updated.
+- 2026-11-13 Phase 5: the importer reads piggy bank events after transactions (step 11), because an event's transfer journal can only be resolved once splits exist; piggy banks themselves stay at step 6. Not yet approved by the owner. ARCHITECTURE.md 9.1 updated.
+- 2026-11-13 Phase 5: bills and recurrences have separate schedule types (`BillSchedule`, `RecurrenceSchedule`) instead of one `Schedule`; built in parallel tracks. Not yet approved by the owner. ARCHITECTURE.md 4.3 updated.
+- 2026-11-13 Phase 5: new endpoint `POST /recurrences/preview`, so the editor shows upcoming dates of an unsaved schedule without copying the date logic into TypeScript. Not yet approved by the owner. ARCHITECTURE.md 6 updated.
+- 2026-11-13 Phase 5: piggy bank accounts must be asset accounts (Firefly offers only those too). Not yet approved by the owner.
+- 2026-11-13 Phase 5: new event type `bill.period_skipped`; creating bill periods ahead appends no event; `attachment` attachable types now include `bill`. ARCHITECTURE.md 8.1 and 8.3 updated.
+- 2026-11-13 Phase 5: rules do not run on imports (origin `import`) or on their own changes (origin `rule`); `stop_processing` stops the rest of its group only; imported rules with unsupported keywords or unknown names are kept inactive with their raw values. ARCHITECTURE.md 9.1 updated.
+- 2026-11-13 Phase 6: approved by the owner on 2026-11-13: the webhook dispatcher, delivery worker and notification outbox take no `HouseholdCtx` (one global cursor each); delivery attempts, redelivery and notification bookkeeping append no events; new events `notification_channel.*`; channels are private to their user; "retried three times" means four attempts. ARCHITECTURE.md 7, 8.1 and 8.4 updated.
+- 2026-11-13 Phase 6: additions within the documented design: endpoints only receive events newer than themselves; `webhook.test` reaches only its endpoint, whatever the filter; deliveries of inactive endpoints wait; jitter 0 to 10%; `GET /events/stream` also takes `?after_seq=`; config gained `SALDO_SMTP_TLS` and `SALDO_VAPID_SUBJECT`. ARCHITECTURE.md 6, 8.2 and 11 updated.
 
 - 2026-11-13 Phase 4: TypeScript 5.9 instead of the newest 7.0, because `openapi-typescript` and `typescript-eslint` do not support 7 yet. Not an ARCHITECTURE.md change (it names no version).
 - 2026-11-13 Phase 4: two API additions for the web app: `GET /setup` (public, `{ "needed": bool }`) and `GET /accounts/balances` (a page of balances with `GET /accounts`'s filters). ARCHITECTURE.md 6 updated.
@@ -39,6 +50,18 @@ Record every place where the code differs from the architecture document, why, a
 ## Decisions made during implementation
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
+
+- 2026-11-13 Phase 5/6: built as five worktree tracks (bills and rules by the lead; budgets + reports, piggy banks + recurrences, 6A and 6B by delegates). Each delegate's hand-off file was folded into this file and deleted. Shared files (App fields, route and worker registration, importer `ENTITIES`, router, nav) only ever got appended lines.
+- 2026-11-13 Phase 5: the transaction service runs rules after create and update (`create_in`, `replace_in`); `write_create_in` and `write_replace_in` skip them. A recurrence fires through `write_create_in` and runs the rules only when `apply_rules` is set (fixed in ab19b41; before, rules always ran). A rule's change that breaks a ledger rule is logged and dropped.
+- 2026-11-13 Phase 5: a split with `bill_id` pays the open period nearest its date; replacing or deleting the group reopens it. Periods are created 60 days ahead. Budgets are allowed on withdrawal splits only (422 on `splits[i].budget_id`); deleting a budget clears it from its splits.
+- 2026-11-13 Phase 5: budget limits of one budget and currency may not overlap (409); `rollover` carries the unspent amount, overspending is not deducted (Firefly's `adjusted` is not supported). Reports never convert currencies and allow at most 1000 intervals.
+- 2026-11-13 Phase 5: unsupported Firefly rule keywords: everything outside `saldo_core::rules::TRIGGER_KINDS` (18: description_contains/starts/ends/is, notes_contains, amount_less/more/exactly, currency_is, category_is, has_no/any_category, tag_is, has_no/any_tag, source/destination_account_is, transaction_type) and `ACTION_KINDS` (10: set/clear_category, set/clear_budget, add/remove_tag, remove_all_tags, set_description, set_notes, link_to_bill). Such rules import inactive.
+- 2026-11-13 Phase 5: piggy bank rules: zero amounts refused; an account's saved amount stays between zero and its balance; the total never passes the target; crossing it appends `piggy_bank.target_reached`. A recurrence split with a piggy bank adds what the rules allow, so a full piggy bank never blocks firing.
+- 2026-11-13 Phase 5: export gained bills, bill periods, rule groups, rules, budgets, limits, piggy banks and their events, recurrences (JSON and nine more CSV files); format version stays 1.
+- 2026-11-13 Phase 5/6 web: Recharts 3.10, loaded only by report pages. The nav shows Accounts, Transactions, Budgets, Reports; the rest is behind "More" (phone and desktop). Live updates map each entity type to the query keys it affects (`web/src/features/live/live-events.ts`); unknown types refresh everything. Playwright reuses one session per user (checked with `GET /auth/me`) because the suite would pass the login limit of 10 per 15 minutes.
+- 2026-11-13 Phase 6: crates: `hmac` 0.13, `lettre` 0.11 (rustls + aws-lc-rs), `web-push-native` 0.5 (chosen over `web-push`, which pulls in OpenSSL), `async-trait` for `Box<dyn Notifier>`. Webhook secret `whsec_` + 64 hex; a delivery's `last_error` never contains the URL. Background task names: `webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `recurrence-runner`.
+- 2026-11-13 Phase 6: SMTP and VAPID configuration (all in `.env.example`): `SALDO_SMTP_HOST` (turns email on), `SALDO_SMTP_PORT` (587 starttls, 465 tls, 25 none), `SALDO_SMTP_TLS` (`starttls`, `tls`, `none`), `SALDO_SMTP_USER` + `SALDO_SMTP_PASSWORD` (both or neither), `SALDO_SMTP_FROM` (required with a host), `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`; turns Web Push on), `SALDO_VAPID_SUBJECT` (`mailto:` or `https:`; defaults to an https `SALDO_PUBLIC_URL`). Invalid values stop startup naming the variable.
+- 2026-11-13 Phase 6, for Phase 7: Web Push needs https (or localhost) and, on iOS 16.4+, an installed PWA; the install prompt should lead to `/settings/notifications`. An expired subscription (404/410) currently fails four times instead of deactivating the channel. The SSE stream does not re-check the session, so a removed member keeps receiving event types and IDs until the connection drops.
 
 - 2026-11-13 Phase 4: built by a delegated agent in a git worktree (branch `phase-4-web`, merged in 749348d) while Phase 3 ran in the main checkout; the export page and the Docker web stage were added after the merge.
 - 2026-11-13 Phase 4: stack (owner-confirmed): React 19.3, TypeScript 5.9 (strict + `noUncheckedIndexedAccess`), Vite 8.3, TanStack Query 5.107 and Router 1.170 (code-based routes, every page lazy-loaded), shadcn/ui (new-york, files in `web/src/components/ui/`) on Tailwind 4.3, `lucide-react`, `openapi-typescript` 7.13 + `openapi-fetch` 0.17, `vite-plugin-pwa` 2.0 (Workbox `generateSW`), Vitest 5.1 (jsdom, Testing Library), Playwright 1.65, ESLint 10 + typescript-eslint 8, Prettier 3. Rust: `rust-embed` 8.14 behind the `embed-web` feature of `saldo-server`.
@@ -107,7 +130,20 @@ Known gaps: PWA installability was not checked on a real phone (needs a device a
 Native: `FIREFLY_TOKEN=... SALDO_DATABASE_URL=sqlite://$PWD/data/saldo.db SALDO_DATA_DIR=$PWD/data saldo-import firefly --url https://firefly.example.com --household Home [--dry-run]`.
 In the container (see README): `docker compose exec -T -e FIREFLY_TOKEN saldo saldo-import firefly --url ... --household Home`. The household must exist first (`saldo user create` or `POST /setup`).
 
-Live run on the owner's instance (2026-11-13, into a scratch database; counts only):
+Live run with the Phase 5 entities (2026-11-13, GET only, into a scratch database since deleted; counts only). Runs 1 and 2 used the merged code, runs 3 and 4 the importer fixes of b5b0a58 on the same database:
+
+| entity | run 1 | run 2 | run 3 | run 4 |
+|---|---|---|---|---|
+| budgets / limits | 6 / 54 created | unchanged | unchanged | unchanged |
+| bills | 27 created, 1 skipped | unchanged, 1 skipped | 1 created | 28 unchanged |
+| rule groups / rules | 5 / 29 created (1 inactive) | unchanged | 1 rule updated (now active) | unchanged |
+| recurrences | 20 created, 1 skipped | unchanged, 1 skipped | 1 created | 21 unchanged |
+| transactions | 12,366 created | unchanged | 5 updated (bill links) | unchanged |
+| attachments | 120 created, 10 skipped | unchanged | 1 created, 9 skipped | 121 unchanged, 9 skipped |
+
+Balance check: 26 accounts, 0 mismatches in every run. The export of the result held 12,366 groups, 12,554 splits (`transactions.csv` 12,554 rows), 28 bills, 301 bill periods, 29 rules, 6 budgets, 54 limits, 21 recurrences and no piggy banks (the owner has none). The token appeared nowhere in the database, the exports or the reports. The two skips of run 1 were fixed in b5b0a58: an inactive subscription whose end date lies before its first due date (the end date is now dropped with a note), and a recurrence whose amount is in USD on a EUR account with EUR as the foreign amount (the two are now swapped with a note). The 9 remaining skips are attachments Firefly answers HTTP 500 for.
+
+Earlier run, Phase 3 entities only (2026-11-13, into a scratch database; counts only):
 
 | entity | first run | second run |
 |---|---|---|
@@ -120,11 +156,12 @@ Live run on the owner's instance (2026-11-13, into a scratch database; counts on
 
 Balance check: 26 asset/liability accounts, 0 mismatches, both runs. `saldo export json` held 867 accounts, 12,362 groups and 12,550 splits (equal to the database), `transactions.csv` 12,550 rows. The token appeared nowhere in the database, the export, the reports or `import_runs.summary`. Notes: 41 liability payments are transfers in Saldo (withdrawals in Firefly); 1 same-currency foreign amount dropped; 1,986 budget and 449 subscription links and 7 bill attachments wait for Phase 5.
 
-Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 for their files (missing on the Firefly server). Groups deleted in Firefly after an import stay in Saldo (counted as a note). Budgets, subscriptions, piggy banks, rules, recurrences and transaction links are Phase 5.
+Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 for their files (missing on the Firefly server). Groups deleted in Firefly after an import stay in Saldo (counted as a note). Transaction links (`/v1/transaction-links`) are not imported. Piggy bank import is tested against the public spec only, since the owner has no piggy banks.
 
 ## Open questions for the owner
 
-- Approve or reject the two Phase 3 deviations marked "not yet approved" (imports may book on archived accounts; what the export leaves out).
+- Approve or reject the five Phase 5 deviations marked "not yet approved" (recurrence `fired_through` migration; piggy bank events imported after transactions; separate bill and recurrence schedule types; `POST /recurrences/preview`; piggy banks on asset accounts only).
+- Approve or reject the two Phase 3 deviations marked "not yet approved" (imports may book on archived accounts; what the export leaves out, which now also covers webhook endpoints, deliveries, notification channels and notifications).
 
 - Approve or reject the two Phase 2 deviations marked "not yet approved" (cookie `Secure` only on https; no events for sessions and tokens).
 

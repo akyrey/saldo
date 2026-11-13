@@ -176,7 +176,7 @@ Balance of an account = sum of amounts where it is the destination − sum where
 
 ### 4.3 Other domain logic in `core`
 
-- **Schedules**: `fn occurrences(schedule: &Schedule, from: NaiveDate, to: NaiveDate) -> Vec<NaiveDate>` for bills (weekly, monthly, quarterly, half-year, yearly, with `skip`) and recurrences (daily, weekly, monthly, nth weekday, yearly, with `skip` and a weekend policy). Month-end is clamped (31st → 30th/28th). Pure functions; today's date is a parameter.
+- **Schedules**: bills and recurrences each have their own schedule type (built in parallel in Phase 5): `bills::BillSchedule` (weekly, monthly, quarterly, half-year, yearly, with `skip`; `occurrences(from, to)`, `matching_due_date`) and `recurrence::RecurrenceSchedule` with `recurrence::occurrences(schedule, from, to) -> Vec<NaiveDate>` (daily, weekly, monthly, nth weekday, yearly, with `skip`, a weekend policy, `repeat_until` and `max_occurrences`). Month-end is clamped (31st → 30th/28th). Pure functions; today's date is a parameter.
 - **Rules**: `Trigger` and `Action` are enums whose variants carry data, for example `Trigger::DescriptionContains(String)`, `Trigger::AmountMoreThan(i64)`, `Action::SetCategory(CategoryId)`, `Action::LinkToBill(BillId)`. `fn evaluate(rule: &Rule, split: &SplitView) -> Vec<Action>` is pure; applying the actions is a service in `app`.
 - **Bill reminders**: `fn reminder_due(period: &BillPeriod, bill: &Bill, today: NaiveDate) -> Option<ReminderKind>` decides `DueSoon` / `Overdue` / nothing.
 - **Budget maths**: spent per budget limit, available amount, auto-budget rollover.
@@ -514,6 +514,11 @@ CREATE TABLE recurrences (
     updated_at       TEXT NOT NULL,
     UNIQUE (household_id, id)
 ) STRICT;
+-- Added in Phase 5 (migration 20261113300000): the runner's progress. Every
+-- date up to fired_through is handled (fired, or deliberately not fired while
+-- inactive or before an import), so deleted groups and imported history are
+-- never recreated. Bookkeeping: moving it appends no event.
+-- ALTER TABLE recurrences ADD COLUMN fired_through TEXT;
 
 -- moment: '' for daily; weekday 1-7 (Mon-Sun) for weekly; day 1-31 for monthly;
 -- 'week,weekday' (e.g. '2,3' = second Wednesday) for nth_weekday; 'MM-DD' for yearly.
@@ -739,17 +744,17 @@ Conventions:
 | Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
 | Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q` | 2 |
 | Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags` | 2 |
-| Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE) | 2 list, 6 stream |
+| Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE; resumes from `Last-Event-ID` or `?after_seq=`, otherwise starts at the newest event; keep-alive every 15 s) | 2 list, 6 stream |
 | Export | `GET /export/json`, `GET /export/csv` (zip) | 3 |
 | Attachments | `POST /attachments` (multipart), `GET /attachments/{id}`, `GET /attachments/{id}/download`, `DELETE /attachments/{id}` | 3 |
-| Budgets | `GET/POST /budgets`, `GET/PATCH/DELETE /budgets/{id}`, `GET/POST /budgets/{id}/limits`, `PATCH/DELETE /budget-limits/{id}` | 5 |
+| Budgets | `GET/POST /budgets` (`?active=`), `GET/PATCH/DELETE /budgets/{id}`, `GET/POST /budgets/{id}/limits` (`?from=&to=`, newest first), `PATCH/DELETE /budget-limits/{id}`. Limits of one budget in one currency may not overlap (409) | 5 |
 | Bills | `GET/POST /bills`, `GET/PATCH/DELETE /bills/{id}`, `GET /bills/{id}/periods`, `POST /bill-periods/{id}/pay` (link a split), `POST /bill-periods/{id}/skip`, `POST /bill-periods/{id}/reopen` | 5 |
 | Piggy banks | `GET/POST /piggy-banks`, `GET/PATCH/DELETE /piggy-banks/{id}`, `GET/POST /piggy-banks/{id}/events` | 5 |
-| Recurrences | `GET/POST /recurrences`, `GET/PUT/DELETE /recurrences/{id}`, `POST /recurrences/{id}/fire` | 5 |
+| Recurrences | `GET/POST /recurrences` (`?active=`), `GET/PUT/DELETE /recurrences/{id}`, `POST /recurrences/{id}/fire` (`{ date? }`, default today; 201 created, 200 with `created: false` if it already fired), `POST /recurrences/preview` (next dates of an unsaved schedule) | 5 |
 | Rules | `GET/POST /rule-groups`, `GET/PATCH/DELETE /rule-groups/{id}`, `GET/POST /rules`, `GET/PUT/DELETE /rules/{id}`, `POST /rules/{id}/test` (dry run), `POST /rules/{id}/apply` | 5 |
-| Reports | `GET /reports/net-worth`, `/reports/cash-flow`, `/reports/by-category`, `/reports/by-tag`, `/reports/budget-vs-actual`; all take `from`, `to`, `interval`, `scope` | 5 |
-| Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `POST /webhooks/{id}/test`, `POST /webhooks/{id}/rotate-secret`, `GET /webhooks/{id}/deliveries`, `POST /webhook-deliveries/{id}/redeliver` | 6 |
-| Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test`, `GET /push/vapid-key` | 6 |
+| Reports | `GET /reports/net-worth`, `/reports/cash-flow`, `/reports/by-category`, `/reports/by-tag`, `/reports/budget-vs-actual`; all take `from`, `to` (required), `interval` (default `month`, at most 1000 intervals), `scope`. Response `{ range, currencies: [...] }`, one entry per currency, primary first, no conversion. Income = deposits, expenses = withdrawals; transfers, opening balances and reconciliations count as neither. Budget vs actual counts a limit in the interval its start date falls in | 5 |
+| Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `POST /webhooks/{id}/test` (202 `{ event_id }`), `POST /webhooks/{id}/rotate-secret`, `GET /webhooks/{id}/deliveries`, `POST /webhook-deliveries/{id}/redeliver`. Owner only. The list is unpaginated; create and rotate answer `{ webhook, secret }`, the only place the secret appears | 6 |
+| Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields | 6 |
 
 Health: `GET /healthz` (no auth, checks the database).
 
@@ -761,7 +766,8 @@ Health: `GET /healthz` (no auth, checks the database).
 - First run: `POST /setup` creates the first user and the household, and only works while the `users` table is empty. The same is available as `saldo user create`.
 - An owner adds members with an initial password. v1 has no email invitations and no password-reset email.
 - Authorization in v1 is household membership: a member can read and write everything in the household. Owner-only: managing members, webhooks, export and household settings.
-- Every request resolves to a `HouseholdCtx { household_id, user_id, role }`. Every service and repository function takes it as its first parameter and puts `household_id` in every query. There is no way to call a repository without one. (Laravel analogy: a global scope that cannot be removed. Go analogy: a `context.Context` value that is a required typed argument instead of a hidden key.)
+- Notification channels are the one exception to "everything is visible to every member": each user sees and manages only their own (owner-approved, Phase 6).
+- Every request resolves to a `HouseholdCtx { household_id, user_id, role }`. Every service and repository function takes it as its first parameter and puts `household_id` in every query. Exception (owner-approved, Phase 6): the system tasks that follow one global cursor through the event log (webhook dispatch and delivery, the notification outbox) take no context; every row they write carries its event's household, and they only match endpoints and channels of that household. There is no way to call a repository without one. (Laravel analogy: a global scope that cannot be removed. Go analogy: a `context.Context` value that is a required typed argument instead of a hidden key.)
 
 ## 8. Events, webhooks, notifications
 
@@ -771,11 +777,12 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `household_member.*`, `webhook.*`, each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
 - Sessions and API tokens (login, logout, token create/revoke) are authentication state, not household data, and append no event.
 - The entity in `data` is the `saldo-app` view type (`AccountView`, `TransactionGroupView`, ...), which is also the API response, so the two cannot drift.
-- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_reopened`, `recurrence.fired`, `piggy_bank.target_reached`, `import.completed`, `webhook.test`.
+- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_skipped`, `bill.period_reopened`, `recurrence.fired` (`{ recurrence_id, date, created, group }`), `piggy_bank.target_reached`, `import.completed`, `webhook.test`. Adding or removing piggy bank money appends `piggy_bank.updated`. Changes made by rules append `transaction.updated` with origin `rule`.
 
 Payload, also the webhook body:
 
@@ -798,7 +805,8 @@ A `transaction.*` event carries the whole group with all its splits.
 - A dispatcher task reads events after the `webhooks` cursor, inserts a `webhook_deliveries` row for every active endpoint whose `event_types` match (events with origin `import` only if `include_import_events`), then advances the cursor, all in one transaction.
 - A delivery worker picks `pending` rows whose `next_attempt_at` has passed and POSTs the payload with a 10 second timeout and no redirects.
 - Headers: `Content-Type: application/json`, `User-Agent: Saldo-Webhook/<version>`, `X-Saldo-Event-Id`, `X-Saldo-Event-Type`, `X-Saldo-Delivery-Id`, `X-Saldo-Signature: t=<unix seconds>,v1=<hex>` where `v1 = HMAC-SHA256(secret, "<t>." + raw body)`. Receivers should reject timestamps older than 5 minutes and compare in constant time.
-- Any 2xx is success. Otherwise retry with exponential backoff and jitter: 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h; after 8 attempts the delivery is `dead`. An endpoint with 20 consecutive dead deliveries is deactivated with a `disabled_reason`.
+- Any 2xx is success. Otherwise retry with exponential backoff and 0 to 10% jitter: 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h; after 8 attempts the delivery is `dead`. An endpoint with 20 consecutive dead deliveries is deactivated with a `disabled_reason` (a `webhook.updated` event with origin `system`).
+- An endpoint only receives events that occurred after it was created. `webhook.test` goes only to the endpoint it names, whatever its filter. Pending deliveries of an inactive endpoint wait until it is active again.
 - Deliveries are at-least-once and may arrive out of order; receivers deduplicate on `X-Saldo-Event-Id`.
 - Private addresses are allowed as targets (Home Assistant, n8n on the LAN are the main use). Only owners manage endpoints; URLs must be `http` or `https`.
 
@@ -809,7 +817,7 @@ A scheduler task runs at startup and every 15 minutes. For every active bill, us
 1. Create missing `bill_periods` rows from `first_due_date` up to 60 days ahead.
 2. For each `open` period, call `core::reminder_due`. If today ≥ `due_date − remind_days_before` and no reminder was sent yet, emit `bill.due_soon`. If today > `due_date` and at least `remind_every_days` have passed since `last_reminded_on`, emit `bill.overdue`. Update `last_reminded_on` and `reminder_count` in the same transaction as the event.
 
-A period becomes `paid` when a split is linked to it: explicitly through `POST /bill-periods/{id}/pay`, or automatically when a split with `bill_id` set is saved with a date in the period's window (from the previous due date to the next). Rules can set `bill_id` with the `link_to_bill` action. Paying emits `bill.paid` and stops reminders.
+A period becomes `paid` when a split is linked to it: explicitly through `POST /bill-periods/{id}/pay`, or automatically when a split with `bill_id` set is saved: it pays the open period whose due date is nearest to the split's date (`BillSchedule::matching_due_date`). Replacing or deleting the paying group reopens the period. `POST /bill-periods/{id}/skip` and `/reopen` emit `bill.period_skipped` and `bill.period_reopened`. Rules can set `bill_id` with the `link_to_bill` action. Paying emits `bill.paid` and stops reminders.
 
 ### 8.4 Notifications
 
@@ -819,11 +827,11 @@ A notifier task reads events after the `notifications` cursor. For `bill.due_soo
 - `email`: SMTP, configured by `SALDO_SMTP_*`.
 - `webpush`: Web Push with VAPID keys; the channel `config` holds the browser's push subscription.
 
-Failed sends are retried three times, then marked `failed`.
+Failed sends are retried three times (four attempts in all), one attempt per notifier run (every 60 s and after writes), then marked `failed`. The dedupe key is `<type>:<period id>:<reminder day>`. Sending is at-least-once: a crash between a send and its bookkeeping sends that one notification again.
 
 ### 8.5 Background tasks
 
-All tasks (dispatcher, delivery worker, scheduler, notifier, recurrence runner) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database.
+All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `recurrence-runner`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database.
 
 ## 9. Importer and export
 
@@ -847,11 +855,14 @@ Import order and mapping:
 | 3 | `/v1/categories`, `/v1/tags` | `categories`, `tags` | |
 | 4 | `/v1/budgets`, `/v1/budgets/{id}/limits` | `budgets`, `budget_limits` | auto-budget fields map 1:1 (`none` → NULL) |
 | 5 | `/v1/subscriptions` | `bills`, `bill_periods` | `date` → `first_due_date`; `paid_dates[]` → paid periods linked to the imported split |
-| 6 | `/v1/piggy-banks`, `/v1/piggy-banks/{id}/events` | `piggy_banks`, `piggy_bank_accounts`, `piggy_bank_events` | |
-| 7 | `/v1/rule-groups`, `/v1/rules` | `rule_groups`, `rules`, triggers, actions | Unsupported keywords: the rule is imported inactive and listed in the report |
-| 8 | `/v1/recurrences` | `recurrences`, repetitions, splits | `ndom` → `nth_weekday`; weekend 1-4 → `keep/skip/previous_friday/next_monday` |
+| 6 | `/v1/piggy-banks` | `piggy_banks`, `piggy_bank_accounts` | Linked accounts must be asset accounts. The events come at step 11 |
+| 7 | `/v1/rule-groups`, `/v1/rules` | `rule_groups`, `rules`, triggers, actions | Names become IDs and currency labels become codes. Unsupported keywords or unknown names: the rule is imported inactive, keeping the raw values, and listed in the report. Supported triggers and actions are `TRIGGER_KINDS` and `ACTION_KINDS` in `saldo_core::rules` |
+| 8 | `/v1/recurrences` | `recurrences`, repetitions, splits | `ndom` → `nth_weekday`; weekend 1-4 → `keep/skip/previous_friday/next_monday`. A new recurrence is marked handled (`fired_through`) up to Firefly's `latest_date` or today, because Firefly already created those transactions |
 | 9 | `/v1/transactions` | `transaction_groups`, `splits`, `split_tags` | Paged by date range. Kind is derived by Saldo and compared with Firefly's `type`; a mismatch is reported. SEPA fields, the extra dates, `internal_reference`, `external_url`, `external_id`, `original_source`, `import_hash_v2` and the original date-time go into `meta.firefly` |
-| 10 | `/v1/attachments` + download | `attachments` + files | |
+| 10 | `/v1/attachments` + download | `attachments` + files | On splits and bills |
+| 11 | `/v1/piggy-banks/{id}/events` | `piggy_bank_events` | After transactions, so an event's `transaction_journal_id` resolves to its split |
+
+Rules do not run on imported transactions (origin `import`); a split's Firefly budget link is kept only when the split is a withdrawal in Saldo.
 
 Idempotency: for every object, look up `external_refs (household, 'firefly-iii', entity_type, firefly id)`. If found, update the local row; if not, create it and insert the ref, in one transaction. A split's external ID is its `transaction_journal_id`; a group's is the group ID. Splits that disappeared from a Firefly group are deleted locally on re-import.
 
@@ -862,7 +873,8 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, tags and decimal amounts, so it opens directly in a spreadsheet.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split. Rule triggers and actions read as `kind=value`.
+- Left out (awaiting the owner's approval, see `docs/STATUS.md`): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 
 ## 10. Frontend
@@ -887,7 +899,7 @@ Chosen: React + TypeScript + Vite, TanStack Query (server state) and TanStack Ro
 - One image built in stages: Node builds `web/`, Rust builds the two binaries (with `cargo-chef` for layer caching), the final stage is a slim Debian image running as a non-root user.
 - One volume `/data`: `saldo.db` (plus WAL files) and `attachments/`.
 - `docker-compose.yml` with the single service, the volume, a health check on `/healthz`, and an `.env.example`.
-- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY`, `SALDO_LOG` (level). The server refuses to start with invalid configuration and says which variable is wrong.
+- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/TLS/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`) and `SALDO_VAPID_SUBJECT`, `SALDO_LOG` (level). The server refuses to start with invalid configuration and says which variable is wrong.
 - Migrations run at startup. TLS is expected from a reverse proxy.
 - Logs are structured (`tracing`), one line per request with a request ID; secrets and tokens are never logged.
 
