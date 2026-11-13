@@ -136,3 +136,28 @@ pub struct Attachment {
     pub notes: Option<String>,
     pub mime: Option<String>,
 }
+
+/// `/v1/budgets`. The currency fields name the auto-budget's currency.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Budget {
+    pub name: String,
+    pub active: Option<bool>,
+    pub order: Option<i64>,
+    pub notes: Option<String>,
+    /// `reset`, `rollover`, `adjusted`, `none` or `null`.
+    pub auto_budget_type: Option<String>,
+    pub auto_budget_period: Option<String>,
+    pub auto_budget_amount: Option<String>,
+    pub currency_code: Option<String>,
+}
+
+/// `/v1/budgets/{id}/limits`. `start` and `end` are local date-times; the
+/// first 10 characters are the dates.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BudgetLimit {
+    pub start: String,
+    pub end: String,
+    pub amount: String,
+    pub currency_code: String,
+    pub notes: Option<String>,
+}

@@ -4,15 +4,18 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use chrono::NaiveDate;
+use saldo_app::accounts::AccountFilter;
 use saldo_app::ctx::Origin;
 use saldo_app::currencies;
 use saldo_app::external_refs::ExternalRefs;
+use saldo_app::page::{MAX_PER_PAGE, PageRequest};
 use saldo_app::tags;
 use saldo_app::transactions::{SplitInput, TransactionGroupView, TransactionInput};
-use saldo_core::GroupId;
+use saldo_core::{AccountId, BudgetId, GroupId};
 use serde_json::{Map, Value};
 
 use super::accounts::{CASH_EXPENSE, CASH_REVENUE, REF as ACCOUNT_REF};
+use super::budgets::REF as BUDGET_REF;
 use crate::amounts::normalize;
 use crate::engine::{ImportCx, ImportError, State};
 use crate::firefly::models::{Resource, Split, TransactionGroup};
@@ -51,6 +54,9 @@ const META_KEYS: [&str; 19] = [
 struct Lookups {
     places: HashMap<String, u8>,
     tags: HashMap<String, String>,
+    /// Local IDs of expense accounts: only a split paying one (a withdrawal
+    /// in Saldo) may carry a budget.
+    expense_accounts: HashSet<String>,
 }
 
 pub async fn import_transactions(
@@ -73,6 +79,7 @@ pub async fn import_transactions(
             .map(|c| (c.code, c.decimal_places))
             .collect(),
         tags: tags::ids_by_name(&mut state.tx, &cx.ctx).await?,
+        expense_accounts: expense_accounts(cx, state).await?,
     };
     for group in &groups {
         import_group(cx, state, report, &lookups, group).await?;
@@ -86,6 +93,32 @@ pub async fn import_transactions(
         }
     }
     Ok(())
+}
+
+/// The local IDs of every expense account of the household.
+async fn expense_accounts(
+    cx: &ImportCx,
+    state: &mut State,
+) -> Result<HashSet<String>, ImportError> {
+    let filter = AccountFilter {
+        account_type: Some("expense".to_string()),
+        ..AccountFilter::default()
+    };
+    let mut ids = HashSet::new();
+    for number in 1.. {
+        let page = PageRequest::new(Some(number), Some(MAX_PER_PAGE))?;
+        let found = cx
+            .app
+            .accounts
+            .list_in(&mut state.tx, &cx.ctx, &filter, page)
+            .await?;
+        let done = found.items.len() < MAX_PER_PAGE as usize;
+        ids.extend(found.items.into_iter().map(|a| a.id));
+        if done {
+            break;
+        }
+    }
+    Ok(ids)
 }
 
 /// All groups, complete. Firefly pages transactions by split, so a group
@@ -302,9 +335,8 @@ fn to_split(
         }
     }
     let linked = |key: &str| s.other.get(key).is_some_and(|v| !v.is_null());
-    if linked("budget_id") {
-        report.note("budget link not imported (Phase 5)");
-    }
+    let destination_id = account(CASH_EXPENSE, &s.destination_id)?;
+    let budget_id = budget(refs, lookups, s, destination_id, report);
     if linked("subscription_id") || linked("bill_id") {
         report.note("subscription link not imported (Phase 5)");
     }
@@ -313,13 +345,13 @@ fn to_split(
         description: s.description.trim().to_string(),
         // Cash is the expense side when money leaves, the revenue side when it arrives.
         source_id: account(CASH_REVENUE, &s.source_id)?,
-        destination_id: account(CASH_EXPENSE, &s.destination_id)?,
+        destination_id,
         amount,
         currency: Some(s.currency_code.clone()),
         foreign_amount,
         foreign_currency,
         category_id,
-        budget_id: None,
+        budget_id,
         bill_id: None,
         tag_ids,
         reconciled: s.reconciled,
@@ -331,6 +363,36 @@ fn to_split(
             .map(str::to_string),
         meta: meta(s),
     })
+}
+
+/// The split's budget, if Firefly links one that was imported and the split
+/// is a withdrawal in Saldo (it pays an expense account). Firefly calls a
+/// payment into a liability a withdrawal too; Saldo calls it a transfer,
+/// which takes no budget, so that link is dropped and reported.
+fn budget(
+    refs: &ExternalRefs,
+    lookups: &Lookups,
+    s: &Split,
+    destination: AccountId,
+    report: &mut ImportReport,
+) -> Option<BudgetId> {
+    let external = match s.other.get("budget_id") {
+        Some(Value::String(id)) => id.clone(),
+        Some(Value::Number(id)) => id.to_string(),
+        _ => return None,
+    };
+    let Some(local) = refs
+        .resolve(BUDGET_REF, &external)
+        .and_then(|id| id.parse().ok())
+    else {
+        report.note("budget not imported, split kept without it");
+        return None;
+    };
+    if !lookups.expense_accounts.contains(&destination.to_string()) {
+        report.note("budget on a split that is not a withdrawal in Saldo dropped");
+        return None;
+    }
+    Some(local)
 }
 
 /// The foreign amount, unless it is missing, zero, or in the split's own
@@ -393,7 +455,7 @@ fn same(input: &TransactionInput, view: &TransactionGroupView) -> bool {
                 && s.foreign_amount == v.foreign_amount
                 && s.foreign_currency == v.foreign_currency
                 && s.category_id.map(|c| c.to_string()) == v.category_id
-                && v.budget_id.is_none()
+                && s.budget_id.map(|b| b.to_string()) == v.budget_id
                 && v.bill_id.is_none()
                 && tags == stored
                 && s.reconciled == v.reconciled
