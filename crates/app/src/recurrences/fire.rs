@@ -17,6 +17,7 @@ use crate::error::{AppError, parse_stored};
 use crate::events::{NewEvent, append_event};
 use crate::identity::today_in;
 use crate::piggy_banks::add_for_split_in;
+use crate::transactions::recurring::Firing;
 use crate::transactions::{SplitInput, TransactionGroupView, TransactionInput};
 
 /// The result of firing, also the data of the `recurrence.fired` event.
@@ -81,7 +82,17 @@ impl RecurrenceService {
         let input = group_input(&mut *conn, &row, &templates, date).await?;
         let (group, created) = self
             .transactions
-            .create_for_recurrence_in(&mut *conn, ctx, origin, input, &row.id, date)
+            .create_for_recurrence_in(
+                &mut *conn,
+                ctx,
+                origin,
+                input,
+                Firing {
+                    recurrence_id: &row.id,
+                    date,
+                    apply_rules: row.apply_rules,
+                },
+            )
             .await?;
         let view = RecurrenceFiredView {
             recurrence_id: row.id.clone(),
@@ -98,9 +109,6 @@ impl RecurrenceService {
                 add_for_split_in(&mut *conn, &*self.clock, ctx, origin, piggy, split).await?;
             }
         }
-        // Rules hook: when the rule engine exists and `row.apply_rules` is
-        // set, run it on `view.group` here, in this transaction, with
-        // `Origin::Rule` (ARCHITECTURE.md 5.4, Phase 5 work package 6).
         let event = NewEvent::new(&*self.clock, ENTITY, "fired", row.id.clone(), &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
         Ok(view)

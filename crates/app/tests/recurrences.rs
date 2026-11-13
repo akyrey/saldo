@@ -550,3 +550,74 @@ async fn replace_delete_preview_and_isolation() {
         Err(AppError::NotFound)
     ));
 }
+
+/// A rule that writes a note on every new split described "Rent".
+async fn rent_note_rule(f: &Fixture) {
+    use saldo_app::rules::{ActionView, NewRuleGroup, RuleInput, TriggerView};
+    let rules = &f.test.app.rules;
+    let rule_group = rules
+        .create_group(
+            &f.ctx,
+            Origin::Api,
+            NewRuleGroup {
+                title: "Default".into(),
+                active: true,
+                ..NewRuleGroup::default()
+            },
+        )
+        .await
+        .unwrap();
+    let rule = RuleInput {
+        rule_group_id: rule_group.id,
+        title: "Note rent".into(),
+        description: None,
+        trigger_on: "create".into(),
+        strict: true,
+        stop_processing: false,
+        active: true,
+        sort_order: 0,
+        triggers: vec![TriggerView {
+            kind: "description_is".into(),
+            value: Some("Rent".into()),
+            negate: false,
+        }],
+        actions: vec![ActionView {
+            kind: "set_notes".into(),
+            value: Some("from a rule".into()),
+            stop_processing: false,
+            active: true,
+        }],
+    };
+    rules.create_rule(&f.ctx, Origin::Api, rule).await.unwrap();
+}
+
+#[tokio::test]
+async fn fired_groups_run_the_rules_only_when_the_recurrence_asks() {
+    let f = fixture().await;
+    rent_note_rule(&f).await;
+    let with_rules = create(&f, input(&f, date(1), vec![repetition("monthly", "1")])).await;
+    let mut quiet = input(&f, date(1), vec![repetition("monthly", "1")]);
+    quiet.title = "Quiet rent".into();
+    quiet.apply_rules = Some(false);
+    let without_rules = create(&f, quiet).await;
+    let service = &f.test.app.recurrences;
+
+    let ruled = service
+        .fire(&f.ctx, Origin::Scheduler, id(&with_rules), date(1))
+        .await
+        .unwrap();
+    let plain = service
+        .fire(&f.ctx, Origin::Scheduler, id(&without_rules), date(1))
+        .await
+        .unwrap();
+
+    assert_eq!(ruled.group.splits[0].notes.as_deref(), Some("from a rule"));
+    assert_eq!(plain.group.splits[0].notes, None);
+    // The rule's rewrite keeps the link to the recurrence.
+    let again = service
+        .fire(&f.ctx, Origin::Scheduler, id(&with_rules), date(1))
+        .await
+        .unwrap();
+    assert!(!again.created);
+    assert_eq!(again.group.id, ruled.group.id);
+}

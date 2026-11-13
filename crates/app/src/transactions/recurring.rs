@@ -10,24 +10,36 @@ use super::{TransactionGroupView, TransactionInput, TransactionService, prepare}
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
 
+/// Which recurrence fires, for which date, and whether its rules run.
+pub(crate) struct Firing<'a> {
+    pub recurrence_id: &'a str,
+    pub date: NaiveDate,
+    pub apply_rules: bool,
+}
+
 impl TransactionService {
     /// Creates the group that `recurrence_id` fires on `date`, unless one
-    /// exists already. Returns the group and whether it was created now.
+    /// exists already, running the rules only if `apply_rules`. Returns the
+    /// group and whether it was created now.
     pub(crate) async fn create_for_recurrence_in(
         &self,
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
         origin: Origin,
         input: TransactionInput,
-        recurrence_id: &str,
-        date: NaiveDate,
+        firing: Firing<'_>,
     ) -> Result<(TransactionGroupView, bool), AppError> {
+        let Firing {
+            recurrence_id,
+            date,
+            apply_rules,
+        } = firing;
         let household_id = ctx.household_id.to_string();
         if let Some(existing) = fired_group(&mut *conn, &household_id, recurrence_id, date).await? {
             let view = self.get_in(&mut *conn, ctx, existing).await?;
             return Ok((view, false));
         }
-        let view = self.create_in(&mut *conn, ctx, origin, input).await?;
+        let view = self.write_create_in(&mut *conn, ctx, origin, input).await?;
         let date = date.to_string();
         sqlx::query!(
             "UPDATE transaction_groups SET recurrence_id = ?, recurrence_date = ?
@@ -42,6 +54,10 @@ impl TransactionService {
         .map_err(|e| {
             AppError::conflict_on_unique(e, "the recurrence already fired on this date")
         })?;
+        if !apply_rules {
+            return Ok((view, true));
+        }
+        let view = self.run_rules(conn, ctx, origin, "create", view).await?;
         Ok((view, true))
     }
 }

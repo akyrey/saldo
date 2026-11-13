@@ -107,6 +107,19 @@ impl TransactionService {
         origin: Origin,
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
+        let view = self.write_create_in(&mut *conn, ctx, origin, input).await?;
+        self.run_rules(conn, ctx, origin, "create", view).await
+    }
+
+    /// Creates the group without running the rules (a recurrence decides
+    /// itself whether they run).
+    pub(crate) async fn write_create_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        input: TransactionInput,
+    ) -> Result<TransactionGroupView, AppError> {
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let household_id = ctx.household_id.to_string();
         let id = new_id(&*self.clock).to_string();
@@ -127,7 +140,7 @@ impl TransactionService {
         append_event(&mut *conn, ctx, origin, event).await?;
         // Splits with a bill pay that bill's matching period (`bill.paid`).
         bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
-        self.run_rules(conn, ctx, origin, "create", view).await
+        Ok(view)
     }
 
     /// Replaces the title and all splits of a group (the splits get new IDs).
