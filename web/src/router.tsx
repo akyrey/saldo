@@ -173,6 +173,27 @@ export const editBillRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/bills/BillFormPage"), "EditBillPage"),
 });
 
+const rulesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "rules",
+  component: lazyRouteComponent(() => import("@/features/rules/RulesPage"), "RulesPage"),
+});
+
+const newRuleRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "rules/new",
+  validateSearch: (search: Record<string, unknown>): { group?: string } => ({
+    group: typeof search.group === "string" ? search.group : undefined,
+  }),
+  component: lazyRouteComponent(() => import("@/features/rules/RuleEditorPage"), "NewRulePage"),
+});
+
+export const ruleRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "rules/$ruleId",
+  component: lazyRouteComponent(() => import("@/features/rules/RuleEditorPage"), "EditRulePage"),
+});
+
 const exportRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "export",
@@ -198,6 +219,9 @@ const routeTree = rootRoute.addChildren([
     newBillRoute,
     billRoute,
     editBillRoute,
+    rulesRoute,
+    newRuleRoute,
+    ruleRoute,
   ]),
 ]);
 
