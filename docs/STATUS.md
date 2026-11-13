@@ -22,11 +22,11 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
-- 2026-11-13 Phase 5 (piggy banks + recurrences): migration `20261113300000_recurrence_fired_through.sql` adds `recurrences.fired_through`, the runner's progress, so imported history, deleted fired groups and dates missed while inactive are never recreated. Not yet approved by the owner. ARCHITECTURE.md 5.4 updated.
-- 2026-11-13 Phase 5: the importer reads piggy bank events after transactions (step 11), because an event's transfer journal can only be resolved once splits exist; piggy banks themselves stay at step 6. Not yet approved by the owner. ARCHITECTURE.md 9.1 updated.
-- 2026-11-13 Phase 5: bills and recurrences have separate schedule types (`BillSchedule`, `RecurrenceSchedule`) instead of one `Schedule`; built in parallel tracks. Not yet approved by the owner. ARCHITECTURE.md 4.3 updated.
-- 2026-11-13 Phase 5: new endpoint `POST /recurrences/preview`, so the editor shows upcoming dates of an unsaved schedule without copying the date logic into TypeScript. Not yet approved by the owner. ARCHITECTURE.md 6 updated.
-- 2026-11-13 Phase 5: piggy bank accounts must be asset accounts (Firefly offers only those too). Not yet approved by the owner.
+- 2026-11-13 Phase 5 (piggy banks + recurrences): migration `20261113300000_recurrence_fired_through.sql` adds `recurrences.fired_through`, the runner's progress, so imported history, deleted fired groups and dates missed while inactive are never recreated. Approved by the owner on 2026-11-13. ARCHITECTURE.md 5.4 updated.
+- 2026-11-13 Phase 5: the importer reads piggy bank events after transactions (step 11), because an event's transfer journal can only be resolved once splits exist; piggy banks themselves stay at step 6. Approved by the owner on 2026-11-13. ARCHITECTURE.md 9.1 updated.
+- 2026-11-13 Phase 5: bills and recurrences have separate schedule types (`BillSchedule`, `RecurrenceSchedule`) instead of one `Schedule`; built in parallel tracks. Approved by the owner on 2026-11-13. ARCHITECTURE.md 4.3 updated.
+- 2026-11-13 Phase 5: new endpoint `POST /recurrences/preview`, so the editor shows upcoming dates of an unsaved schedule without copying the date logic into TypeScript. Approved by the owner on 2026-11-13. ARCHITECTURE.md 6 updated.
+- 2026-11-13 Phase 5: piggy bank accounts must be asset accounts (Firefly offers only those too). Approved by the owner on 2026-11-13.
 - 2026-11-13 Phase 5: new event type `bill.period_skipped`; creating bill periods ahead appends no event; `attachment` attachable types now include `bill`. ARCHITECTURE.md 8.1 and 8.3 updated.
 - 2026-11-13 Phase 5: rules do not run on imports (origin `import`) or on their own changes (origin `rule`); `stop_processing` stops the rest of its group only; imported rules with unsupported keywords or unknown names are kept inactive with their raw values. ARCHITECTURE.md 9.1 updated.
 - 2026-11-13 Phase 6: approved by the owner on 2026-11-13: the webhook dispatcher, delivery worker and notification outbox take no `HouseholdCtx` (one global cursor each); delivery attempts, redelivery and notification bookkeeping append no events; new events `notification_channel.*`; channels are private to their user; "retried three times" means four attempts. ARCHITECTURE.md 7, 8.1 and 8.4 updated.
@@ -35,12 +35,12 @@ Record every place where the code differs from the architecture document, why, a
 - 2026-11-13 Phase 4: TypeScript 5.9 instead of the newest 7.0, because `openapi-typescript` and `typescript-eslint` do not support 7 yet. Not an ARCHITECTURE.md change (it names no version).
 - 2026-11-13 Phase 4: two API additions for the web app: `GET /setup` (public, `{ "needed": bool }`) and `GET /accounts/balances` (a page of balances with `GET /accounts`'s filters). ARCHITECTURE.md 6 updated.
 - 2026-11-13 Phase 3: `append_event` takes `&mut SqliteConnection` instead of `&mut Transaction<'_, Sqlite>`, so the `<method>_in` service variants can share the importer's transaction. Callers still pass `&mut tx` (a transaction dereferences to its connection). ARCHITECTURE.md unchanged (it did not spell the signature out).
-- 2026-11-13 Phase 3: imports (`Origin::Import`) may book splits on inactive accounts (rule 8 protects new entries; history may sit on accounts archived since). Not yet approved by the owner.
-- 2026-11-13 Phase 3: the export leaves out the event log, sessions/tokens and `import_runs` (audit trail, secrets, bookkeeping; not needed to rebuild the household); attachment files are referenced by SHA-256, not embedded. Not yet approved by the owner.
+- 2026-11-13 Phase 3: imports (`Origin::Import`) may book splits on inactive accounts (rule 8 protects new entries; history may sit on accounts archived since). Approved by the owner on 2026-11-13.
+- 2026-11-13 Phase 3: the export leaves out the event log, sessions/tokens and `import_runs` (audit trail, secrets, bookkeeping; not needed to rebuild the household); attachment files are referenced by SHA-256, not embedded. Approved by the owner on 2026-11-13.
 - 2026-11-13 Phase 3: `saldo-import` takes `--token-env <VAR>` (the brief's contract) instead of ARCHITECTURE.md's `--token`, so the token never appears in shell history or `ps`. ARCHITECTURE.md 9.1 updated.
 - 2026-11-13 Phase 2: response types are `saldo-app` views deriving `utoipa::ToSchema` (not server DTOs), because events must carry "the entity as the API returns it" and are written in `saldo-app`. Request DTOs stay in the server. Owner approved. ARCHITECTURE.md 3 and 8.1 updated.
-- 2026-11-13 Phase 2: the session cookie is `Secure` only when `SALDO_PUBLIC_URL` is https, so a plain-http LAN or localhost setup can still log in from a browser. Not yet approved by the owner. ARCHITECTURE.md 7 updated.
-- 2026-11-13 Phase 2: login, logout and token create/revoke append no event (auth state, not household data; keeps session activity out of webhook payloads). Not yet approved by the owner. ARCHITECTURE.md 8.1 updated.
+- 2026-11-13 Phase 2: the session cookie is `Secure` only when `SALDO_PUBLIC_URL` is https, so a plain-http LAN or localhost setup can still log in from a browser. Approved by the owner on 2026-11-13. ARCHITECTURE.md 7 updated.
+- 2026-11-13 Phase 2: login, logout and token create/revoke append no event (auth state, not household data; keeps session activity out of webhook payloads). Approved by the owner on 2026-11-13. ARCHITECTURE.md 8.1 updated.
 - 2026-11-13 Phase 2: new event types `household.created` and `household.updated`; setup appends four events in one transaction. ARCHITECTURE.md 8.1 updated.
 
 - 2026-11-13 Phase 1: `SplitKind::derive` returns `Result<SplitKind, InvalidAccountPair>` instead of `Result<_, ValidationError>`, because `derive` has no split index to put in a `ValidationError`. Owner approved. ARCHITECTURE.md 4.1 updated.
@@ -160,11 +160,7 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 
 ## Open questions for the owner
 
-- Approve or reject the five Phase 5 deviations marked "not yet approved" (recurrence `fired_through` migration; piggy bank events imported after transactions; separate bill and recurrence schedule types; `POST /recurrences/preview`; piggy banks on asset accounts only).
-- Approve or reject the two Phase 3 deviations marked "not yet approved" (imports may book on archived accounts; what the export leaves out, which now also covers webhook endpoints, deliveries, notification channels and notifications).
-
-- Approve or reject the two Phase 2 deviations marked "not yet approved" (cookie `Secure` only on https; no events for sessions and tokens).
-
+None. All deviations up to Phase 6 were approved by the owner on 2026-11-13.
 
 ## Findings about Firefly III
 
