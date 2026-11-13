@@ -1,0 +1,160 @@
+{
+ "data": [
+  {
+   "type": "piggy_banks",
+   "id": "1",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "name": "Holiday",
+    "percentage": null,
+    "start_date": "2026-10-01T00:00:00+02:00",
+    "target_date": "2027-06-30T00:00:00+02:00",
+    "order": 1,
+    "active": true,
+    "notes": "Summer trip",
+    "object_group_id": null,
+    "object_group_order": null,
+    "object_group_title": null,
+    "accounts": [
+     {
+      "account_id": "2",
+      "name": "x",
+      "current_amount": "0.000000000000",
+      "pc_current_amount": null
+     }
+    ],
+    "object_has_currency_setting": true,
+    "currency_id": "1",
+    "currency_name": "Euro",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "primary_currency_id": "1",
+    "primary_currency_name": "Euro",
+    "primary_currency_code": "EUR",
+    "primary_currency_symbol": "\u20ac",
+    "primary_currency_decimal_places": 2,
+    "target_amount": "300.000000000000",
+    "pc_target_amount": null,
+    "current_amount": "0.000000000000",
+    "pc_current_amount": null,
+    "left_to_save": null,
+    "pc_left_to_save": null,
+    "save_per_month": null,
+    "pc_save_per_month": null
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "piggy_banks",
+   "id": "2",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "name": "Rainy day",
+    "percentage": null,
+    "start_date": null,
+    "target_date": null,
+    "order": 2,
+    "active": true,
+    "notes": null,
+    "object_group_id": null,
+    "object_group_order": null,
+    "object_group_title": null,
+    "accounts": [
+     {
+      "account_id": "2",
+      "name": "x",
+      "current_amount": "0.000000000000",
+      "pc_current_amount": null
+     }
+    ],
+    "object_has_currency_setting": true,
+    "currency_id": "1",
+    "currency_name": "Euro",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "primary_currency_id": "1",
+    "primary_currency_name": "Euro",
+    "primary_currency_code": "EUR",
+    "primary_currency_symbol": "\u20ac",
+    "primary_currency_decimal_places": 2,
+    "target_amount": "0",
+    "pc_target_amount": null,
+    "current_amount": "0.000000000000",
+    "pc_current_amount": null,
+    "left_to_save": null,
+    "pc_left_to_save": null,
+    "save_per_month": null,
+    "pc_save_per_month": null
+   },
+   "links": {
+    "self": "x"
+   }
+  },
+  {
+   "type": "piggy_banks",
+   "id": "3",
+   "attributes": {
+    "created_at": "2026-11-01T10:00:00+01:00",
+    "updated_at": "2026-11-01T10:00:00+01:00",
+    "name": "Lost account",
+    "percentage": null,
+    "start_date": null,
+    "target_date": null,
+    "order": 3,
+    "active": true,
+    "notes": null,
+    "object_group_id": null,
+    "object_group_order": null,
+    "object_group_title": null,
+    "accounts": [
+     {
+      "account_id": "99",
+      "name": "x",
+      "current_amount": "0.000000000000",
+      "pc_current_amount": null
+     }
+    ],
+    "object_has_currency_setting": true,
+    "currency_id": "1",
+    "currency_name": "Euro",
+    "currency_code": "EUR",
+    "currency_symbol": "\u20ac",
+    "currency_decimal_places": 2,
+    "primary_currency_id": "1",
+    "primary_currency_name": "Euro",
+    "primary_currency_code": "EUR",
+    "primary_currency_symbol": "\u20ac",
+    "primary_currency_decimal_places": 2,
+    "target_amount": null,
+    "pc_target_amount": null,
+    "current_amount": "0.000000000000",
+    "pc_current_amount": null,
+    "left_to_save": null,
+    "pc_left_to_save": null,
+    "save_per_month": null,
+    "pc_save_per_month": null
+   },
+   "links": {
+    "self": "x"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 3,
+   "count": 3,
+   "per_page": 500,
+   "current_page": 1,
+   "total_pages": 1
+  }
+ },
+ "links": {
+  "self": "x"
+ }
+}

@@ -33,6 +33,8 @@ async fn firefly(page_one: Option<Value>, page_two: Option<Value>) -> MockServer
         ("categories", "categories.json"),
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
+        ("piggy-banks", "piggy-banks.json"),
+        ("recurrences", "recurrences.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))
@@ -337,6 +339,8 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
         ("categories", "categories.json"),
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
+        ("piggy-banks", "piggy-banks.json"),
+        ("recurrences", "recurrences.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{}", request.0)))
@@ -384,6 +388,8 @@ async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockSe
         ("tags", tags),
         ("currencies", fixture("currencies.json")),
         ("attachments", fixture("attachments.json")),
+        ("piggy-banks", fixture("piggy-banks.json")),
+        ("recurrences", fixture("recurrences.json")),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))

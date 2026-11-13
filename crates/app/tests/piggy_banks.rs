@@ -467,3 +467,56 @@ async fn delete_removes_events_and_lists_are_per_household() {
         AppError::NotFound
     ));
 }
+
+#[tokio::test]
+async fn the_linked_side_of_a_split_is_found() {
+    let f = fixture().await;
+    let view = create(&f, piggy("Trip", None, &[&f.savings])).await;
+    let transfer = f
+        .test
+        .app
+        .transactions
+        .create(
+            &f.ctx,
+            Origin::Api,
+            group(vec![split(2, &f.checking, &f.savings, "4.00")]),
+        )
+        .await
+        .unwrap();
+    let deposit = f
+        .test
+        .app
+        .transactions
+        .create(
+            &f.ctx,
+            Origin::Api,
+            group(vec![split(2, &f.salary, &f.checking, "4.00")]),
+        )
+        .await
+        .unwrap();
+    let service = &f.test.app.piggy_banks;
+    let mut conn = f.test.app.pool.acquire().await.unwrap();
+    let side = |g: &saldo_app::transactions::TransactionGroupView| -> SplitId {
+        g.splits[0].id.parse().unwrap()
+    };
+    let found = service
+        .linked_side_of_split_in(&mut conn, &f.ctx, id(&view), side(&transfer))
+        .await
+        .unwrap();
+    assert_eq!(found, Some(account_id(&f.savings)));
+    let none = service
+        .linked_side_of_split_in(&mut conn, &f.ctx, id(&view), side(&deposit))
+        .await
+        .unwrap();
+    assert_eq!(none, None);
+    let unknown = service
+        .linked_side_of_split_in(
+            &mut conn,
+            &f.ctx,
+            id(&view),
+            SplitId(uuid::Uuid::from_u128(1)),
+        )
+        .await
+        .unwrap();
+    assert_eq!(unknown, None);
+}

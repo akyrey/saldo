@@ -5,6 +5,8 @@ pub mod accounts;
 pub mod attachments;
 pub mod categories;
 pub mod currencies;
+pub mod piggy_banks;
+pub mod recurrences;
 pub mod tags;
 pub mod transactions;
 

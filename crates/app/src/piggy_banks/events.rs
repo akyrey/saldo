@@ -87,6 +87,28 @@ impl PiggyBankService {
         record(&mut *conn, &*self.clock, ctx, origin, row, &currency, entry).await
     }
 
+    /// The linked account a split moves money into or out of (the
+    /// destination first), if any: which account an imported event belongs to.
+    pub async fn linked_side_of_split_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        id: PiggyBankId,
+        split_id: SplitId,
+    ) -> Result<Option<AccountId>, AppError> {
+        let row = find(&mut *conn, ctx, id).await?;
+        let Some((_, source, destination)) =
+            repo::split_sides(&mut *conn, &row.household_id, &split_id.to_string()).await?
+        else {
+            return Ok(None);
+        };
+        let linked = repo::accounts(&mut *conn, &row.household_id, &row.id).await?;
+        let side = [destination, source]
+            .into_iter()
+            .find(|side| linked.iter().any(|(id, _)| id == side));
+        side.map(|id| crate::error::parse_stored(&id)).transpose()
+    }
+
     /// A piggy bank's events, newest first.
     pub async fn list_events(
         &self,
