@@ -91,7 +91,8 @@ describe("TransactionEditor", () => {
     await user.click(screen.getByRole("button", { name: "Add split" }));
     await fill(2, "salary", "card", "0,20");
     expect(within(row(2)).getByText("Deposit")).toBeInTheDocument();
-    await user.click(within(row(2)).getByRole("button", { name: "weekend" }));
+    await user.type(within(row(2)).getByRole("combobox", { name: "Add tag" }), "week");
+    await user.click(within(row(2)).getByRole("option", { name: "weekend" }));
     expect(screen.getByTestId("editor-total")).toHaveTextContent("Total: 0.30 EUR");
 
     await user.click(screen.getByRole("button", { name: "Create transaction" }));
