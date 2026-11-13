@@ -469,6 +469,71 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/notification-channels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["list_channels"];
+    put?: never;
+    post: operations["create_channel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notification-channels/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["delete_channel"];
+    options?: never;
+    head?: never;
+    patch: operations["update_channel"];
+    trace?: never;
+  };
+  "/api/v1/notification-channels/{id}/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Sends a test message now, also to a paused channel. */
+    post: operations["test_channel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/push/vapid-key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["vapid_key"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/rule-groups": {
     parameters: {
       query?: never;
@@ -836,6 +901,40 @@ export interface components {
       notes?: string | null;
       updated_at: string;
     };
+    ChannelPatch: {
+      active?: boolean | null;
+      /**
+       * @description Fields to change; others (such as a token you never see) are kept,
+       *     and `null` removes an optional one.
+       */
+      config?: Record<string, never> | null;
+      name?: string | null;
+    };
+    /** @description A channel's settings without secrets, as the API returns them. */
+    ChannelSettings: {
+      /** @description Whether an access token is stored (never shown). */
+      has_token: boolean;
+      /** @description webpush: the browser vendor's push service (scheme and host only). */
+      push_service?: string | null;
+      /** @description ntfy and Gotify: the server. */
+      server_url?: string | null;
+      /** @description email: the recipient. */
+      to?: string | null;
+      /** @description ntfy: the topic. */
+      topic?: string | null;
+    };
+    /** @description A channel as the API returns it: no tokens or push keys. */
+    ChannelView: {
+      active: boolean;
+      created_at: string;
+      id: string;
+      /** @description `ntfy`, `gotify`, `email` or `webpush`. */
+      kind: string;
+      name: string;
+      settings: components["schemas"]["ChannelSettings"];
+      updated_at: string;
+      user_id: string;
+    };
     CreateAccountRequest: {
       account_number?: string | null;
       active?: boolean | null;
@@ -899,6 +998,17 @@ export interface components {
     CreateCategoryRequest: {
       name: string;
       notes?: string | null;
+    };
+    CreateChannelRequest: {
+      active?: boolean | null;
+      /**
+       * @description ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;
+       *     email: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`.
+       */
+      config: Record<string, never>;
+      /** @description `ntfy`, `gotify`, `email` or `webpush`. */
+      kind: string;
+      name: string;
     };
     CreateRuleGroupRequest: {
       active?: boolean;
@@ -1043,6 +1153,21 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_ChannelView: {
+      /** @description A channel as the API returns it: no tokens or push keys. */
+      data: {
+        active: boolean;
+        created_at: string;
+        id: string;
+        /** @description `ntfy`, `gotify`, `email` or `webpush`. */
+        kind: string;
+        name: string;
+        settings: components["schemas"]["ChannelSettings"];
+        updated_at: string;
+        user_id: string;
+      };
+    };
+    /** @description A single result. */
     Data_CreatedTokenResponse: {
       data: {
         info: components["schemas"]["TokenView"];
@@ -1168,6 +1293,14 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_TestResult: {
+      data: {
+        /** @description Why the send failed (never contains secrets). */
+        error?: string | null;
+        sent: boolean;
+      };
+    };
+    /** @description A single result. */
     Data_TransactionGroupView: {
       data: {
         created_at: string;
@@ -1176,6 +1309,16 @@ export interface components {
         splits: components["schemas"]["SplitView"][];
         title?: string | null;
         updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_VapidKey: {
+      data: {
+        /**
+         * @description The base64url key for `pushManager.subscribe`; `null` when the server
+         *     has no `SALDO_VAPID_PRIVATE_KEY` (Web Push is off).
+         */
+        public_key?: string | null;
       };
     };
     /** @description A single result. */
@@ -1193,6 +1336,20 @@ export interface components {
         /** @description `open`, `paid` or `skipped`. */
         status: string;
         updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_ChannelView: {
+      data: {
+        active: boolean;
+        created_at: string;
+        id: string;
+        /** @description `ntfy`, `gotify`, `email` or `webpush`. */
+        kind: string;
+        name: string;
+        settings: components["schemas"]["ChannelSettings"];
+        updated_at: string;
+        user_id: string;
       }[];
     };
     /** @description A single result. */
@@ -1663,6 +1820,11 @@ export interface components {
       name: string;
       updated_at: string;
     };
+    TestResult: {
+      /** @description Why the send failed (never contains secrets). */
+      error?: string | null;
+      sent: boolean;
+    };
     /** @description A personal access token without its secret. */
     TokenView: {
       created_at: string;
@@ -1709,6 +1871,13 @@ export interface components {
       display_name: string;
       email: string;
       id: string;
+    };
+    VapidKey: {
+      /**
+       * @description The base64url key for `pushManager.subscribe`; `null` when the server
+       *     has no `SALDO_VAPID_PRIVATE_KEY` (Web Push is off).
+       */
+      public_key?: string | null;
     };
   };
   responses: never;
@@ -3040,6 +3209,196 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_channels: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_ChannelView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_channel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateChannelRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ChannelView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_channel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_channel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChannelPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ChannelView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  test_channel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TestResult"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  vapid_key: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_VapidKey"];
+        };
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };

@@ -12,6 +12,7 @@ pub mod events;
 pub mod export;
 pub mod health;
 pub mod household;
+pub mod notifications;
 pub mod rules;
 pub mod setup;
 pub mod tags;
@@ -41,6 +42,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(export::router())
         .merge(bills::router())
         .merge(rules::router())
+        .merge(notifications::router())
 }
 
 /// Checks `page` and `per_page` from a query string.
