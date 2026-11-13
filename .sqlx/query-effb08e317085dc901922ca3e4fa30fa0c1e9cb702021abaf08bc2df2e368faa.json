@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO budget_limits (id, household_id, budget_id, start_date, end_date, amount_minor,\n                                    currency_code, notes, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "effb08e317085dc901922ca3e4fa30fa0c1e9cb702021abaf08bc2df2e368faa"
+}

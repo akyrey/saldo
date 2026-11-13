@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT date, amount_minor, currency_code, foreign_amount_minor, foreign_currency_code\n         FROM splits\n         WHERE household_id = ? AND budget_id = ? AND kind = 'withdrawal' AND date >= ? AND date <= ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "foreign_amount_minor",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "foreign_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "foreign_currency_code",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "foreign_currency_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "889dc68ff940642018037677ab44f49438fdb65efeb0129422732b66dfc60688"
+}

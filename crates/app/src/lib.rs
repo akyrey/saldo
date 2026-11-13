@@ -6,6 +6,7 @@
 
 pub mod accounts;
 pub mod attachments;
+pub mod budgets;
 pub mod categories;
 pub mod clock;
 pub mod ctx;
@@ -28,6 +29,7 @@ use sqlx::SqlitePool;
 
 use crate::accounts::AccountService;
 use crate::attachments::AttachmentService;
+use crate::budgets::BudgetService;
 use crate::categories::CategoryService;
 use crate::clock::SharedClock;
 use crate::currencies::CurrencyService;
@@ -53,6 +55,7 @@ pub struct App {
     pub identity: IdentityService,
     pub tags: TagService,
     pub transactions: TransactionService,
+    pub budgets: BudgetService,
 }
 
 impl App {
@@ -75,6 +78,7 @@ impl App {
             identity: IdentityService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             transactions: TransactionService::new(pool.clone(), clock.clone()),
+            budgets: BudgetService::new(pool.clone(), clock.clone()),
             pool,
             clock,
         }

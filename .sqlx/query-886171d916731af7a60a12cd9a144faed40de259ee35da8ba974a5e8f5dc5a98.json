@@ -1,0 +1,146 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, active AS \"active: bool\", sort_order, notes, auto_type, auto_period,\n                  auto_amount_minor, auto_currency_code, created_at, updated_at\n           FROM budgets WHERE household_id = ?1 AND (?2 IS NULL OR active = ?2)\n           ORDER BY sort_order, name LIMIT ?3 OFFSET ?4",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "sort_order",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "sort_order"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "auto_type",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "auto_type"
+          }
+        }
+      },
+      {
+        "name": "auto_period",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "auto_period"
+          }
+        }
+      },
+      {
+        "name": "auto_amount_minor",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "auto_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "auto_currency_code",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "auto_currency_code"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "886171d916731af7a60a12cd9a144faed40de259ee35da8ba974a5e8f5dc5a98"
+}

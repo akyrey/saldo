@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE splits SET budget_id = NULL WHERE household_id = ? AND budget_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b2d552b7f43af6b5a891f25d5f0a29ccbbf13e1d8e8496d5e265b6a072a8557e"
+}
