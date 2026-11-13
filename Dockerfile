@@ -1,6 +1,14 @@
 # syntax=docker/dockerfile:1
-# Saldo: one image with the server (`saldo`) and the importer (`saldo-import`).
-# Phase 4 adds a Node stage that builds web/ into the server.
+# Saldo: one image with the server (`saldo`, web app built in) and the
+# importer (`saldo-import`).
+
+# --- web: build the single-page app (web/dist) ---
+FROM node:24-slim AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
 
 # --- chef: cargo-chef caches dependency builds between source changes ---
 FROM rust:1.100-slim-trixie AS chef
@@ -15,9 +23,11 @@ FROM chef AS builder
 # SQL is checked against the committed .sqlx/ data; no database at build time.
 ENV SQLX_OFFLINE=true
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --features saldo-server/embed-web --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked --bin saldo --bin saldo-import
+# The server embeds web/dist at compile time (cargo feature `embed-web`).
+COPY --from=web /web/dist web/dist
+RUN cargo build --release --locked --features saldo-server/embed-web --bin saldo --bin saldo-import
 
 # --- runtime: slim Debian, non-root, data in /data ---
 FROM debian:trixie-slim AS runtime
