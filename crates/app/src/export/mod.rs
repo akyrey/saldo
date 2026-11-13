@@ -5,6 +5,7 @@ mod csv;
 mod planning_csv;
 mod recurrence_csv;
 mod savings_csv;
+mod templates_csv;
 
 use serde::Serialize;
 use sqlx::{SqliteConnection, SqlitePool};
@@ -24,6 +25,7 @@ use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
 use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
 use crate::tags::{self, TagView};
+use crate::templates::{self, TransactionTemplateView};
 use crate::transactions::{self, TransactionGroupView};
 
 pub const FORMAT: &str = "saldo-export";
@@ -65,6 +67,8 @@ pub struct ExportDocument {
     pub piggy_banks: Vec<PiggyBankView>,
     pub piggy_bank_events: Vec<PiggyBankEventView>,
     pub recurrences: Vec<RecurrenceView>,
+    /// Transaction templates (Phase 8).
+    pub templates: Vec<TransactionTemplateView>,
 }
 
 #[derive(Clone)]
@@ -119,6 +123,7 @@ impl ExportService {
             piggy_banks,
             piggy_bank_events,
             recurrences: recurrences::all_in(&mut tx, ctx).await?,
+            templates: templates::all_in(&mut tx, ctx).await?,
         };
         tx.rollback().await?;
         Ok(document)

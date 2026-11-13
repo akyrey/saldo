@@ -22,7 +22,7 @@ use crate::page::{Page, PageRequest};
 use crate::transactions::TransactionService;
 
 pub use input::{NewTemplate, TEMPLATE_KINDS, TemplateSplitInput, TemplateUpdate};
-pub use view::{TemplateSplitView, TemplateView};
+pub use view::{TransactionTemplateSplitView, TransactionTemplateView};
 
 /// Identifies a template. Lives here, not in `saldo-core`, because the
 /// domain logic never sees templates.
@@ -66,7 +66,7 @@ impl TemplateService {
         ctx: &HouseholdCtx,
         origin: Origin,
         input: NewTemplate,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let mut tx = self.pool.begin().await?;
         let view = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
@@ -80,7 +80,7 @@ impl TemplateService {
         ctx: &HouseholdCtx,
         origin: Origin,
         input: NewTemplate,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let (name, kind) = input::name_and_kind(&input.name, &input.kind)?;
         let splits = input::check_splits(conn, ctx, kind, input.splits).await?;
         let household_id = ctx.household_id.to_string();
@@ -108,7 +108,7 @@ impl TemplateService {
         origin: Origin,
         id: TemplateId,
         update: TemplateUpdate,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let mut tx = self.pool.begin().await?;
         let view = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
@@ -124,7 +124,7 @@ impl TemplateService {
         origin: Origin,
         id: TemplateId,
         update: TemplateUpdate,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let id = id.to_string();
         let current = self.find(conn, ctx, &id).await?;
         let name = update.name.unwrap_or(current.name);
@@ -181,7 +181,11 @@ impl TemplateService {
         Ok(())
     }
 
-    pub async fn get(&self, ctx: &HouseholdCtx, id: TemplateId) -> Result<TemplateView, AppError> {
+    pub async fn get(
+        &self,
+        ctx: &HouseholdCtx,
+        id: TemplateId,
+    ) -> Result<TransactionTemplateView, AppError> {
         let mut conn = self.pool.acquire().await?;
         self.find(&mut conn, ctx, &id.to_string()).await
     }
@@ -191,7 +195,7 @@ impl TemplateService {
         &self,
         ctx: &HouseholdCtx,
         page: PageRequest,
-    ) -> Result<Page<TemplateView>, AppError> {
+    ) -> Result<Page<TransactionTemplateView>, AppError> {
         let mut conn = self.pool.acquire().await?;
         let household_id = ctx.household_id.to_string();
         let rows = repo::list(&mut conn, &household_id, page.limit(), page.offset()).await?;
@@ -205,7 +209,7 @@ impl TemplateService {
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
         id: &str,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let row = repo::find(conn, &ctx.household_id.to_string(), id).await?;
         let mut views = view::views_of(conn, ctx, vec![row]).await?;
         views.pop().ok_or(AppError::NotFound)
@@ -219,7 +223,7 @@ impl TemplateService {
         origin: Origin,
         verb: &str,
         id: &str,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let view = self.find(conn, ctx, id).await?;
         let event = NewEvent::new(&*self.clock, "template", verb, id.to_string(), &view)?;
         append_event(conn, ctx, origin, event).await?;
@@ -231,7 +235,7 @@ impl TemplateService {
 pub async fn all_in(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
-) -> Result<Vec<TemplateView>, AppError> {
+) -> Result<Vec<TransactionTemplateView>, AppError> {
     let rows = repo::list(conn, &ctx.household_id.to_string(), -1, 0).await?;
     view::views_of(conn, ctx, rows).await
 }

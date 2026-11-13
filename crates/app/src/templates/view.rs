@@ -15,14 +15,14 @@ use crate::{bills, budgets, categories, tags};
 /// A saved, partial transaction. The editor fills itself from it; using it
 /// defaults the date to today.
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
-pub struct TemplateView {
+pub struct TransactionTemplateView {
     pub id: String,
     pub name: String,
     /// `withdrawal`, `deposit` or `transfer`: which accounts the editor
     /// offers when the template has none.
     pub kind: String,
     pub title: Option<String>,
-    pub splits: Vec<TemplateSplitView>,
+    pub splits: Vec<TransactionTemplateSplitView>,
     pub sort_order: i64,
     pub created_at: String,
     pub updated_at: String,
@@ -31,7 +31,7 @@ pub struct TemplateView {
 /// One partial split; every field may be missing. Amounts are decimal
 /// strings. This is also the JSON stored in `transaction_templates.splits`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct TemplateSplitView {
+pub struct TransactionTemplateSplitView {
     pub description: Option<String>,
     pub source_id: Option<String>,
     pub destination_id: Option<String>,
@@ -63,14 +63,15 @@ impl Known {
     pub async fn load<'a>(
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
-        splits: impl Iterator<Item = &'a TemplateSplitView> + Clone,
+        splits: impl Iterator<Item = &'a TransactionTemplateSplitView> + Clone,
     ) -> Result<Self, AppError> {
         // `'a` says the splits are borrowed from the caller for as long as
         // the iterator lives (like a Go slice pointing into the caller's array).
-        let ids = |pick: fn(&TemplateSplitView) -> Vec<&String>| -> Result<String, AppError> {
-            let list: Vec<String> = splits.clone().flat_map(pick).cloned().collect();
-            json_list(&list)
-        };
+        let ids =
+            |pick: fn(&TransactionTemplateSplitView) -> Vec<&String>| -> Result<String, AppError> {
+                let list: Vec<String> = splits.clone().flat_map(pick).cloned().collect();
+                json_list(&list)
+            };
         let household_id = ctx.household_id.to_string();
         let account_ids = ids(|s| s.source_id.iter().chain(&s.destination_id).collect())?;
         let mut accounts = HashMap::new();
@@ -95,10 +96,10 @@ impl Known {
     }
 
     /// The split without references to things that no longer exist.
-    pub fn prune(&self, split: TemplateSplitView) -> TemplateSplitView {
+    pub fn prune(&self, split: TransactionTemplateSplitView) -> TransactionTemplateSplitView {
         let keep = |id: Option<String>, set: &HashSet<String>| id.filter(|i| set.contains(i));
         let account = |id: Option<String>| id.filter(|i| self.accounts.contains_key(i));
-        TemplateSplitView {
+        TransactionTemplateSplitView {
             source_id: account(split.source_id),
             destination_id: account(split.destination_id),
             category_id: keep(split.category_id, &self.categories),
@@ -114,7 +115,10 @@ impl Known {
     }
 
     /// The first reference of `split` that is unknown, as `(field, message)`.
-    pub fn first_unknown(&self, split: &TemplateSplitView) -> Option<(&'static str, &'static str)> {
+    pub fn first_unknown(
+        &self,
+        split: &TransactionTemplateSplitView,
+    ) -> Option<(&'static str, &'static str)> {
         let missing = |id: &Option<String>, set: &HashSet<String>| {
             id.as_ref().is_some_and(|i| !set.contains(i))
         };
@@ -159,11 +163,11 @@ pub(super) async fn views_of(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     rows: Vec<TemplateRow>,
-) -> Result<Vec<TemplateView>, AppError> {
+) -> Result<Vec<TransactionTemplateView>, AppError> {
     let parsed = rows
         .into_iter()
         .map(|row| {
-            let splits: Vec<TemplateSplitView> = serde_json::from_str(&row.splits)
+            let splits: Vec<TransactionTemplateSplitView> = serde_json::from_str(&row.splits)
                 .map_err(|e| AppError::Internal(format!("corrupt template {}: {e}", row.id)))?;
             Ok((row, splits))
         })
@@ -171,7 +175,7 @@ pub(super) async fn views_of(
     let known = Known::load(conn, ctx, parsed.iter().flat_map(|(_, s)| s)).await?;
     Ok(parsed
         .into_iter()
-        .map(|(row, splits)| TemplateView {
+        .map(|(row, splits)| TransactionTemplateView {
             id: row.id,
             name: row.name,
             kind: row.kind,

@@ -8,7 +8,7 @@ use std::str::FromStr;
 use saldo_core::{AccountId, BillId, BudgetId, CategoryId, Money, SplitKind, TagId};
 use sqlx::SqliteConnection;
 
-use super::view::{Known, TemplateSplitView};
+use super::view::{Known, TransactionTemplateSplitView};
 use crate::ctx::HouseholdCtx;
 use crate::error::{AppError, parse_stored};
 use crate::{currencies, identity};
@@ -63,9 +63,9 @@ pub(super) fn text(value: Option<String>) -> Option<String> {
 
 impl TemplateSplitInput {
     /// The stored form, before checks. A set drops duplicate tags.
-    fn into_view(self) -> TemplateSplitView {
+    fn into_view(self) -> TransactionTemplateSplitView {
         let tags: BTreeSet<String> = self.tag_ids.iter().map(ToString::to_string).collect();
-        TemplateSplitView {
+        TransactionTemplateSplitView {
             description: text(self.description),
             source_id: self.source_id.map(|id| id.to_string()),
             destination_id: self.destination_id.map(|id| id.to_string()),
@@ -118,7 +118,8 @@ pub(super) async fn check_splits(
     kind: SplitKind,
     splits: Vec<TemplateSplitInput>,
 ) -> Result<String, AppError> {
-    let splits: Vec<TemplateSplitView> = splits.into_iter().map(|s| s.into_view()).collect();
+    let splits: Vec<TransactionTemplateSplitView> =
+        splits.into_iter().map(|s| s.into_view()).collect();
     let known = Known::load(conn, ctx, splits.iter()).await?;
     let primary = identity::primary_currency(conn, ctx).await?;
     let mut checked = Vec::with_capacity(splits.len());
@@ -129,7 +130,7 @@ pub(super) async fn check_splits(
         }
         check_kind(&known, &split, kind)
             .map_err(|(name, message)| AppError::invalid(field(name), message))?;
-        checked.push(check_amounts(conn, &field, &known, &primary, split).await?);
+        checked.push(check_amounts(conn, index, &known, &primary, split).await?);
     }
     serde_json::to_string(&checked)
         .map_err(|e| AppError::Internal(format!("cannot encode template splits: {e}")))
@@ -139,7 +140,7 @@ pub(super) async fn check_splits(
 /// a budget.
 fn check_kind(
     known: &Known,
-    split: &TemplateSplitView,
+    split: &TransactionTemplateSplitView,
     kind: SplitKind,
 ) -> Result<(), (&'static str, String)> {
     if split.budget_id.is_some() && kind != SplitKind::Withdrawal {
@@ -164,11 +165,12 @@ fn check_kind(
 /// (`"12.5"` becomes `"12.50"` in EUR).
 async fn check_amounts(
     conn: &mut SqliteConnection,
-    field: &dyn Fn(&str) -> String,
+    index: usize,
     known: &Known,
     primary: &str,
-    split: TemplateSplitView,
-) -> Result<TemplateSplitView, AppError> {
+    split: TransactionTemplateSplitView,
+) -> Result<TransactionTemplateSplitView, AppError> {
+    let field = |name: &str| format!("splits[{index}].{name}");
     let code = split
         .currency
         .clone()
@@ -196,7 +198,7 @@ async fn check_amounts(
         }
         (None, None) => None,
     };
-    Ok(TemplateSplitView {
+    Ok(TransactionTemplateSplitView {
         amount,
         foreign_amount,
         ..split
@@ -214,7 +216,7 @@ fn positive(text: &str, currency: &saldo_core::Currency, field: &str) -> Result<
 
 /// The currency of the asset or liability side, as for a transaction
 /// (ARCHITECTURE.md 4.2, rule 6).
-fn home_currency(known: &Known, split: &TemplateSplitView) -> Option<String> {
+fn home_currency(known: &Known, split: &TransactionTemplateSplitView) -> Option<String> {
     let find = |id: &Option<String>| id.as_ref().and_then(|i| known.accounts.get(i));
     let home = match find(&split.source_id) {
         Some(source) if source.account_type.is_asset_or_liability() => Some(source),
@@ -225,7 +227,9 @@ fn home_currency(known: &Known, split: &TemplateSplitView) -> Option<String> {
 
 /// The input that would store `split` again (for an update that keeps the
 /// splits but changes the kind).
-pub(super) fn input_of(split: &TemplateSplitView) -> Result<TemplateSplitInput, AppError> {
+pub(super) fn input_of(
+    split: &TransactionTemplateSplitView,
+) -> Result<TemplateSplitInput, AppError> {
     Ok(TemplateSplitInput {
         description: split.description.clone(),
         source_id: stored_id(&split.source_id)?,

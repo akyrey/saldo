@@ -999,6 +999,40 @@ export interface paths {
     patch: operations["update_tag"];
     trace?: never;
   };
+  "/api/v1/transaction-templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Templates by `sort_order`, then name. */
+    get: operations["list_templates"];
+    put?: never;
+    post: operations["create_template"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/transaction-templates/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A template; references deleted since it was saved are left out. */
+    get: operations["get_template"];
+    put?: never;
+    post?: never;
+    delete: operations["delete_template"];
+    options?: never;
+    head?: never;
+    patch: operations["update_template"];
+    trace?: never;
+  };
   "/api/v1/transactions": {
     parameters: {
       query?: never;
@@ -1032,6 +1066,26 @@ export interface paths {
     put: operations["replace_transaction"];
     post?: never;
     delete: operations["delete_transaction"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/transactions/{id}/template": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Saves the group as a template, without its dates and reconciled flags.
+     *     Opening balances and reconciliations cannot be templates (422).
+     */
+    post: operations["template_from_transaction"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1616,6 +1670,19 @@ export interface components {
     CreateTokenRequest: {
       name: string;
     };
+    CreateTransactionTemplateRequest: {
+      /** @description `withdrawal`, `deposit` or `transfer`. */
+      kind: string;
+      /** @description Unique in the household. */
+      name: string;
+      /**
+       * Format: int64
+       * @description Defaults to after the last template.
+       */
+      sort_order?: number | null;
+      splits?: components["schemas"]["TransactionTemplateSplitRequest"][];
+      title?: string | null;
+    };
     CreateWebhookRequest: {
       /** @description Exact types, `<entity>.*` prefixes or `*`. Default `["*"]`. */
       event_types?: string[] | null;
@@ -2096,6 +2163,28 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_TransactionTemplateView: {
+      /**
+       * @description A saved, partial transaction. The editor fills itself from it; using it
+       *     defaults the date to today.
+       */
+      data: {
+        created_at: string;
+        id: string;
+        /**
+         * @description `withdrawal`, `deposit` or `transfer`: which accounts the editor
+         *     offers when the template has none.
+         */
+        kind: string;
+        name: string;
+        /** Format: int64 */
+        sort_order: number;
+        splits: components["schemas"]["TransactionTemplateSplitView"][];
+        title?: string | null;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
     Data_VapidKey: {
       data: {
         /**
@@ -2348,6 +2437,8 @@ export interface components {
       rule_groups: components["schemas"]["RuleGroupView"][];
       rules: components["schemas"]["RuleView"][];
       tags: components["schemas"]["TagView"][];
+      /** @description Transaction templates (Phase 8). */
+      templates: components["schemas"]["TransactionTemplateView"][];
       transactions: components["schemas"]["TransactionGroupView"][];
       /** Format: int32 */
       version: number;
@@ -2636,6 +2727,25 @@ export interface components {
         created_by_user_id?: string | null;
         id: string;
         splits: components["schemas"]["SplitView"][];
+        title?: string | null;
+        updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_TransactionTemplateView: {
+      data: {
+        created_at: string;
+        id: string;
+        /**
+         * @description `withdrawal`, `deposit` or `transfer`: which accounts the editor
+         *     offers when the template has none.
+         */
+        kind: string;
+        name: string;
+        /** Format: int64 */
+        sort_order: number;
+        splits: components["schemas"]["TransactionTemplateSplitView"][];
         title?: string | null;
         updated_at: string;
       }[];
@@ -2939,6 +3049,10 @@ export interface components {
       triggers: components["schemas"]["TriggerView"][];
       updated_at: string;
     };
+    SaveAsTemplateRequest: {
+      /** @description Unique in the household. */
+      name: string;
+    };
     SetupRequest: {
       display_name: string;
       email: string;
@@ -3093,6 +3207,81 @@ export interface components {
     TransactionRequest: {
       splits: components["schemas"]["SplitRequest"][];
       title?: string | null;
+    };
+    /** @description Fields left out keep their value; `splits` replaces all splits. */
+    TransactionTemplatePatch: {
+      kind?: string | null;
+      name?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+      splits?: components["schemas"]["TransactionTemplateSplitRequest"][] | null;
+      /** @description `null` clears the title. */
+      title?: string | null;
+    };
+    /** @description One partial split; every field is optional. */
+    TransactionTemplateSplitRequest: {
+      /** @description Positive decimal string, for example `"12.50"`. */
+      amount?: string | null;
+      /** Format: uuid */
+      bill_id?: string | null;
+      /**
+       * Format: uuid
+       * @description Withdrawals only.
+       */
+      budget_id?: string | null;
+      /** Format: uuid */
+      category_id?: string | null;
+      /**
+       * @description Defaults to the currency of the asset or liability side, else the
+       *     household's primary currency.
+       */
+      currency?: string | null;
+      description?: string | null;
+      /** Format: uuid */
+      destination_id?: string | null;
+      foreign_amount?: string | null;
+      foreign_currency?: string | null;
+      notes?: string | null;
+      /** Format: uuid */
+      source_id?: string | null;
+      tag_ids?: string[];
+    };
+    /**
+     * @description One partial split; every field may be missing. Amounts are decimal
+     *     strings. This is also the JSON stored in `transaction_templates.splits`.
+     */
+    TransactionTemplateSplitView: {
+      amount?: string | null;
+      bill_id?: string | null;
+      budget_id?: string | null;
+      category_id?: string | null;
+      currency?: string | null;
+      description?: string | null;
+      destination_id?: string | null;
+      foreign_amount?: string | null;
+      foreign_currency?: string | null;
+      notes?: string | null;
+      source_id?: string | null;
+      tag_ids?: string[];
+    };
+    /**
+     * @description A saved, partial transaction. The editor fills itself from it; using it
+     *     defaults the date to today.
+     */
+    TransactionTemplateView: {
+      created_at: string;
+      id: string;
+      /**
+       * @description `withdrawal`, `deposit` or `transfer`: which accounts the editor
+       *     offers when the template has none.
+       */
+      kind: string;
+      name: string;
+      /** Format: int64 */
+      sort_order: number;
+      splits: components["schemas"]["TransactionTemplateSplitView"][];
+      title?: string | null;
+      updated_at: string;
     };
     /** @description A trigger as stored and as the API shows it. */
     TriggerView: {
@@ -6342,6 +6531,181 @@ export interface operations {
       };
     };
   };
+  list_templates: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_TransactionTemplateView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_template: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateTransactionTemplateRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TransactionTemplateView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_template: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TransactionTemplateView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_template: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_template: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TransactionTemplatePatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TransactionTemplateView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   list_transactions: {
     parameters: {
       query?: {
@@ -6507,6 +6871,55 @@ export interface operations {
         content?: never;
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  template_from_transaction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveAsTemplateRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_TransactionTemplateView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };

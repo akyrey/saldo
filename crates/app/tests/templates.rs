@@ -11,7 +11,7 @@ use saldo_app::error::AppError;
 use saldo_app::page::PageRequest;
 use saldo_app::tags::NewTag;
 use saldo_app::templates::{
-    NewTemplate, TemplateId, TemplateSplitInput, TemplateUpdate, TemplateView,
+    NewTemplate, TemplateId, TemplateSplitInput, TemplateUpdate, TransactionTemplateView,
 };
 use saldo_core::{BudgetId, CategoryId, GroupId, TagId};
 
@@ -58,7 +58,7 @@ fn groceries(f: &Fixture, amount: Option<&str>) -> TemplateSplitInput {
     }
 }
 
-async fn create(f: &Fixture, input: NewTemplate) -> Result<TemplateView, AppError> {
+async fn create(f: &Fixture, input: NewTemplate) -> Result<TransactionTemplateView, AppError> {
     f.test
         .app
         .templates
@@ -66,14 +66,14 @@ async fn create(f: &Fixture, input: NewTemplate) -> Result<TemplateView, AppErro
         .await
 }
 
-fn invalid_field(result: Result<TemplateView, AppError>) -> String {
+fn invalid_field(result: Result<TransactionTemplateView, AppError>) -> String {
     match result {
         Err(AppError::Invalid { field, .. }) => field,
         other => panic!("expected a field error, got {other:?}"),
     }
 }
 
-fn id_of(view: &TemplateView) -> TemplateId {
+fn id_of(view: &TransactionTemplateView) -> TemplateId {
     view.id.parse().unwrap()
 }
 

@@ -3,7 +3,9 @@
 use saldo_core::GroupId;
 use sqlx::SqliteConnection;
 
-use super::{NewTemplate, TEMPLATE_KINDS, TemplateService, TemplateSplitInput, TemplateView};
+use super::{
+    NewTemplate, TEMPLATE_KINDS, TemplateService, TemplateSplitInput, TransactionTemplateView,
+};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::{AppError, parse_stored};
 use crate::transactions::{SplitView, TransactionGroupView};
@@ -18,7 +20,7 @@ impl TemplateService {
         origin: Origin,
         group_id: GroupId,
         name: String,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let mut tx = self.pool.begin().await?;
         let view = self
             .from_transaction_in(&mut tx, ctx, origin, group_id, name)
@@ -35,7 +37,7 @@ impl TemplateService {
         origin: Origin,
         group_id: GroupId,
         name: String,
-    ) -> Result<TemplateView, AppError> {
+    ) -> Result<TransactionTemplateView, AppError> {
         let group = self.transactions.get_in(conn, ctx, group_id).await?;
         let input = template_of(group, name)?;
         self.create_in(conn, ctx, origin, input).await
