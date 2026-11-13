@@ -14,6 +14,7 @@ pub mod household;
 pub mod setup;
 pub mod tags;
 pub mod transactions;
+pub mod webhooks;
 
 use saldo_app::error::AppError;
 use saldo_app::page::PageRequest;
@@ -37,6 +38,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(events::router())
         .merge(attachments::router())
         .merge(export::router())
+        .merge(webhooks::router())
 }
 
 /// Checks `page` and `per_page` from a query string.
