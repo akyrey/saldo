@@ -3,6 +3,7 @@
 import {
   ArrowLeftRight,
   ChartColumn,
+  ClipboardCopy,
   Download,
   FolderTree,
   type LucideIcon,
@@ -38,6 +39,7 @@ export const MORE_NAV: readonly NavItem[] = [
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/rules", label: "Rules", icon: Wand2 },
+  { to: "/templates", label: "Templates", icon: ClipboardCopy },
 ];
 
 /** Behind "More", for the owner only (export and webhooks are owner-only). */

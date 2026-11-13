@@ -78,6 +78,16 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
         .await
         .unwrap();
     test.app
+        .templates
+        .from_transaction(
+            &setup.ctx,
+            Origin::Api,
+            view.id.parse().unwrap(),
+            "Weekly shop".into(),
+        )
+        .await
+        .unwrap();
+    test.app
         .transactions
         .create(
             &setup.ctx,
@@ -325,6 +335,8 @@ async fn json_export_contains_every_row_of_the_household() {
     assert_eq!(doc.piggy_banks[0].saved_amount, "25.00");
     assert_eq!(doc.recurrences.len(), rows("recurrences").await);
     assert_eq!(doc.recurrences[0].splits.len(), 1);
+    assert_eq!(doc.templates.len(), rows("transaction_templates").await);
+    assert_eq!(doc.templates[0].splits.len(), 2);
     assert_eq!(
         doc.currencies.len(),
         count(&test, "currencies").await as usize
@@ -362,6 +374,7 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
             "rule_groups.csv",
             "rules.csv",
             "tags.csv",
+            "templates.csv",
             "transactions.csv"
         ]
     );
@@ -415,6 +428,18 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
     assert!(
         recurrences.contains("Rent,2026-11-01,,,monthly 1,false,true,Monthly rent,\"Checking, main\",Rent,800.00,EUR,,Groceries,,,"),
         "one row per template split, with names: {recurrences}"
+    );
+    let mut templates = String::new();
+    archive
+        .by_name("templates.csv")
+        .unwrap()
+        .read_to_string(&mut templates)
+        .unwrap();
+    assert!(
+        templates.contains(
+            ",Weekly shop,withdrawal,Test,0,\"Checking, main to Rent\",\"Checking, main\",Rent,800.00,EUR,,,Home,,Rent,,"
+        ),
+        "one row per template split, with names: {templates}"
     );
     let mut piggy = String::new();
     archive

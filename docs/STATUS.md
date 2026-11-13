@@ -14,13 +14,17 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 5 Planning features | done | main / 356a8f3 (last track merge), integration up to 05d1d71 | Four tracks: bills (449e839), rules (f336043), budgets + reports (9690610), piggy banks + recurrences (356a8f3); export of the new tables (9666dc5, b6b8ec4). 469 Rust tests, 147 Vitest, 12 Playwright flows |
 | 6 Events | done | main / ee236b3 (part B), b1f1ca0 (part A) | Webhooks, SSE live updates, bill reminders, ntfy/Gotify/email/Web Push. Verified for real: signed webhook delivery and retry (local catcher, Go example), reminders to a local ntfy stand-in. Not verified: real ntfy, Gotify, SMTP, browser push |
 | 7 Clients | done (manual device checks open) | main / a2a45d0 | Tauri 2 desktop app (Saldo.app 11 MB, built on macOS; the .dmg step needs a GUI session or CI), PWA install banner and app badge, desktop bearer login + CORS, backup script. 477 Rust + 2 desktop tests, 177 Vitest, 12 Playwright flows. Not yet run by hand: the desktop app against a server, phone installs and push |
-| 8 Templates | not started | | Brief added 2026-11-13 at the owner's request (`docs/phases/phase-8-templates.md`) |
+| 8 Templates | done | main (merge of phase-8-templates) | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
 
 States: not started, in progress, blocked (say on what), done.
 
 ## Deviations from ARCHITECTURE.md
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
+
+- 2026-11-13 Phase 8: a template's amounts must be positive, two given accounts must form the template's kind, and budgets are allowed on withdrawal templates only (the ledger rules applied to what the template contains). Not yet approved by the owner.
+- 2026-11-13 Phase 8: a template may have no splits; `PATCH` also changes `kind`, `title` and `splits`; the new-transaction editor has "Save as template" for a partly filled form (the only way to create a template with empty parts); a template's kind narrows the editor's account pickers. Not yet approved by the owner.
+- 2026-11-13 Phase 8: `TemplateId` lives in `saldo-app`; the schemas are named `TransactionTemplate…` because `TemplateSplitView` was already the recurrence schema (utoipa kept only one). The editor does not show a template's currency; the server uses the account's on save, foreign amounts carry over.
 
 - 2026-11-13 Phase 5 (piggy banks + recurrences): migration `20261113300000_recurrence_fired_through.sql` adds `recurrences.fired_through`, the runner's progress, so imported history, deleted fired groups and dates missed while inactive are never recreated. Approved by the owner on 2026-11-13. ARCHITECTURE.md 5.4 updated.
 - 2026-11-13 Phase 5: the importer reads piggy bank events after transactions (step 11), because an event's transfer journal can only be resolved once splits exist; piggy banks themselves stay at step 6. Approved by the owner on 2026-11-13. ARCHITECTURE.md 9.1 updated.
@@ -50,6 +54,8 @@ Record every place where the code differs from the architecture document, why, a
 ## Decisions made during implementation
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
+
+- 2026-11-13 Phase 8: built by a delegate in a worktree, merged after Phase 7 (one conflict: the editor's sticky save bar now also holds "Save as template"). Bug fixed on the way: the web editor dropped a split's bill link when saving an edited transaction; `SplitRow` now keeps `bill_id` (there is still no bill picker).
 
 - 2026-11-13 Phase 7: `web/src/platform/` is the one place that knows where the app runs: `Platform` (serverUrl, token, saveToken/clearToken, notify, openExternal) with a browser and a Tauri implementation; `initPlatform()` runs before the first render and loads the Tauri code only inside Tauri (a separate 1.4 kB chunk). The API client sends every request through `sendRequest`, which, on desktop, rewrites it to the chosen server, adds `Authorization: Bearer`, drops the CSRF header and omits cookies.
 - 2026-11-13 Phase 7: the desktop token is the normal 30-day session (`POST /auth/login` with `client: "desktop"` returns it in the body, no cookie); after it expires the app shows the login again. Logout revokes it on the server and deletes it from the keychain. Choosing another server forgets the token.
@@ -174,7 +180,9 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 
 ## Open questions for the owner
 
-None. All deviations up to Phase 6 were approved by the owner on 2026-11-13.
+- Approve or reject the two Phase 8 deviations marked "not yet approved" (stricter template checks; empty templates, a fuller `PATCH`, Save as template from the editor, kind-filtered account pickers).
+
+All deviations up to Phase 7 were approved by the owner on 2026-11-13.
 
 ## Findings about Firefly III
 

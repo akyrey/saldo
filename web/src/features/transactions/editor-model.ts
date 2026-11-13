@@ -19,13 +19,20 @@ export interface SplitRow {
   category_id: string;
   /** Only withdrawals may have a budget. */
   budget_id: string;
+  /** Kept as loaded (no picker yet), so saving does not unlink a bill. */
+  bill_id: string;
   tag_ids: string[];
   notes: string;
 }
 
+/** The kinds a transaction template can have. */
+export type TemplateKind = "withdrawal" | "deposit" | "transfer";
+
 export interface EditorState {
   title: string;
   splits: SplitRow[];
+  /** From a template: limits the account pickers to this kind's accounts. */
+  kind?: TemplateKind;
 }
 
 /** What kind derivation needs to know about an account. */
@@ -35,7 +42,7 @@ export interface AccountKindInfo {
 }
 
 let nextKey = 0;
-function newKey(): string {
+export function newKey(): string {
   nextKey += 1;
   return `split-${nextKey}`;
 }
@@ -52,6 +59,7 @@ export function emptySplit(date: string): SplitRow {
     foreign_currency: "",
     category_id: "",
     budget_id: "",
+    bill_id: "",
     tag_ids: [],
     notes: "",
   };
@@ -94,6 +102,7 @@ export function fromGroup(group: TransactionGroup): EditorState {
       foreign_currency: split.foreign_currency ?? "",
       category_id: split.category_id ?? "",
       budget_id: split.budget_id ?? "",
+      bill_id: split.bill_id ?? "",
       tag_ids: [...split.tag_ids],
       notes: split.notes ?? "",
     })),
@@ -121,6 +130,7 @@ export function toRequest(state: EditorState): TransactionRequest {
         foreign_currency: orNull(row.foreign_currency),
         category_id: orNull(row.category_id),
         budget_id: orNull(row.budget_id),
+        bill_id: orNull(row.bill_id),
         tag_ids: row.tag_ids,
         notes: orNull(row.notes),
       };

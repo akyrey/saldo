@@ -17,7 +17,7 @@ import { RootLayout } from "@/features/shell/RootLayout";
 import { parseMonth } from "@/features/budgets/budget-model";
 import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
-import { parseTransactionSearch } from "@/features/transactions/search";
+import { parseNewTransactionSearch, parseTransactionSearch } from "@/features/transactions/search";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { platform } from "@/platform";
 
@@ -138,6 +138,7 @@ export const transactionsRoute = createRoute({
 const newTransactionRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "transactions/new",
+  validateSearch: parseNewTransactionSearch,
   component: lazyRouteComponent(
     () => import("@/features/transactions/TransactionEditorPage"),
     "NewTransactionPage",
@@ -301,6 +302,15 @@ export const editRecurrenceRoute = createRoute({
   ),
 });
 
+const templatesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "templates",
+  component: lazyRouteComponent(
+    () => import("@/features/templates/TemplatesPage"),
+    "TemplatesPage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   connectRoute,
   setupRoute,
@@ -334,6 +344,7 @@ const routeTree = rootRoute.addChildren([
     recurrencesRoute,
     newRecurrenceRoute,
     editRecurrenceRoute,
+    templatesRoute,
   ]),
 ]);
 

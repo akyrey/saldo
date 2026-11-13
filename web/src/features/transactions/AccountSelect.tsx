@@ -7,6 +7,8 @@ type AccountSelectProps = Omit<React.ComponentProps<typeof NativeSelect>, "child
   accounts: readonly Account[];
   value: string;
   emptyLabel?: string;
+  /** Offer only these account types (the chosen account always shows). */
+  types?: readonly string[];
 };
 
 /**
@@ -17,13 +19,15 @@ export function AccountSelect({
   accounts,
   value,
   emptyLabel = "Choose…",
+  types = ACCOUNT_TYPES,
   ...props
 }: AccountSelectProps) {
   return (
     <NativeSelect value={value} {...props}>
       <option value="">{emptyLabel}</option>
       {ACCOUNT_TYPES.map((type) => {
-        const options = accounts.filter((a) => a.type === type && (a.active || a.id === value));
+        const offered = (a: Account) => a.active && types.includes(type);
+        const options = accounts.filter((a) => a.type === type && (offered(a) || a.id === value));
         if (options.length === 0) return null;
         return (
           <optgroup key={type} label={TYPE_LABELS[type]}>

@@ -7,6 +7,7 @@ describe("keysFor", () => {
     expect(keysFor("account")).toEqual([["accounts"], ["balances"], ["reports"]]);
     expect(keysFor("tag")).toEqual([["tags"], ["transactions"], ["reports"]]);
     expect(keysFor("household_member")).toEqual([["members"]]);
+    expect(keysFor("template")).toEqual([["templates"]]);
     expect(keysFor("household")).toEqual([["me"]]);
     expect(keysFor("webhook")).toEqual([["webhooks"]]);
     expect(keysFor("budget_limit")).toEqual([["budgets"], ["reports"]]);

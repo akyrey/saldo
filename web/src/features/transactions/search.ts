@@ -46,3 +46,13 @@ export function parseTransactionSearch(raw: Record<string, unknown>): Transactio
     page: Number.isInteger(page) && page > 1 ? page : undefined,
   };
 }
+
+/** What a new transaction starts from: a template or a group to duplicate. */
+export interface NewTransactionSearch {
+  template?: string;
+  duplicate?: string;
+}
+
+export function parseNewTransactionSearch(search: Record<string, unknown>): NewTransactionSearch {
+  return { template: pick(search.template, UUID), duplicate: pick(search.duplicate, UUID) };
+}

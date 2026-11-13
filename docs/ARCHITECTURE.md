@@ -606,6 +606,26 @@ CREATE TABLE rule_actions (
     active           INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
     UNIQUE (rule_id, position)
 ) STRICT;
+
+-- Added in Phase 8: a saved, partial transaction the editor fills itself from.
+-- splits is a JSON array of partial splits, every field optional:
+-- { description, source_id, destination_id, amount, currency, foreign_amount,
+--   foreign_currency, category_id, budget_id, bill_id, tag_ids, notes }
+-- (amounts as decimal strings, like the API). No date: using a template
+-- defaults to today. References are checked when written; one deleted later is
+-- dropped when the template is read, so deletes are never blocked.
+CREATE TABLE transaction_templates (
+    id            TEXT PRIMARY KEY,
+    household_id  TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    kind          TEXT NOT NULL CHECK (kind IN ('withdrawal', 'deposit', 'transfer')),
+    title         TEXT,
+    splits        TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(splits)),
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (household_id, name)
+) STRICT;
 ```
 
 ### 5.5 Events, webhooks, notifications
@@ -755,6 +775,7 @@ Conventions:
 | Reports | `GET /reports/net-worth`, `/reports/cash-flow`, `/reports/by-category`, `/reports/by-tag`, `/reports/budget-vs-actual`; all take `from`, `to` (required), `interval` (default `month`, at most 1000 intervals), `scope`. Response `{ range, currencies: [...] }`, one entry per currency, primary first, no conversion. Income = deposits, expenses = withdrawals; transfers, opening balances and reconciliations count as neither. Budget vs actual counts a limit in the interval its start date falls in | 5 |
 | Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `POST /webhooks/{id}/test` (202 `{ event_id }`), `POST /webhooks/{id}/rotate-secret`, `GET /webhooks/{id}/deliveries`, `POST /webhook-deliveries/{id}/redeliver`. Owner only. The list is unpaginated; create and rotate answer `{ webhook, secret }`, the only place the secret appears | 6 |
 | Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields | 6 |
+| Templates | `GET/POST /transaction-templates` (ordered by `sort_order`, then name), `GET/PATCH/DELETE /transaction-templates/{id}` (`PATCH` merges `name`, `kind`, `title`, `sort_order`; `splits` replaces them all), `POST /transactions/{id}/template` (`{ name }`; saves the group without its dates and reconciled flags; 422 for opening balances and reconciliations). Names are unique per household (409). A template is checked only for what it contains: its accounts, categories, budgets (withdrawals only), bills and tags belong to the household, amounts parse in their currency and are positive, and two given accounts form the template's kind. There is no instantiate endpoint: the web editor fills itself from the template and posts `POST /transactions` | 8 |
 
 Health: `GET /healthz` (no auth, checks the database): `{ status, app: "saldo", api: "v1", version }`, which the desktop app checks before connecting.
 
@@ -779,7 +800,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
 - Sessions and API tokens (login, logout, token create/revoke) are authentication state, not household data, and append no event.
@@ -875,7 +896,7 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split. Rule triggers and actions read as `kind=value`.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names. Rule triggers and actions read as `kind=value`.
 - Left out (owner-approved): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 

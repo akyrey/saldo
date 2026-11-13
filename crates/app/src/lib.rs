@@ -27,6 +27,7 @@ pub mod reports;
 pub mod rules;
 pub mod scope;
 pub mod tags;
+pub mod templates;
 pub mod transactions;
 pub mod webhooks;
 
@@ -50,6 +51,7 @@ use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
 use crate::tags::TagService;
+use crate::templates::TemplateService;
 use crate::transactions::TransactionService;
 use crate::webhooks::WebhookService;
 
@@ -77,6 +79,7 @@ pub struct App {
     pub reports: ReportService,
     pub piggy_banks: PiggyBankService,
     pub recurrences: RecurrenceService,
+    pub templates: TemplateService,
 }
 
 impl App {
@@ -107,6 +110,7 @@ impl App {
             reports: ReportService::new(pool.clone()),
             piggy_banks: PiggyBankService::new(pool.clone(), clock.clone()),
             recurrences: RecurrenceService::new(pool.clone(), clock.clone(), transactions.clone()),
+            templates: TemplateService::new(pool.clone(), clock.clone(), transactions.clone()),
             transactions,
             pool,
             clock,
