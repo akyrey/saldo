@@ -233,3 +233,18 @@ pub(crate) async fn find(
         .await?
         .ok_or(AppError::NotFound)
 }
+
+/// Every recurrence of the household, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<RecurrenceView>, AppError> {
+    let household_id = ctx.household_id.to_string();
+    // SQLite reads `LIMIT -1` as "no limit".
+    let (rows, _) = repo::list(&mut *conn, &household_id, None, -1, 0).await?;
+    let mut views = Vec::with_capacity(rows.len());
+    for row in rows {
+        views.push(view_of(&mut *conn, row).await?);
+    }
+    Ok(views)
+}

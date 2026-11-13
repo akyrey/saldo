@@ -168,11 +168,13 @@ fn keyword(kind: &str, value: &Option<String>) -> String {
     }
 }
 
-fn names<'a>(pairs: impl Iterator<Item = (&'a str, &'a str)>) -> HashMap<&'a str, &'a str> {
+pub(super) fn names<'a>(
+    pairs: impl Iterator<Item = (&'a str, &'a str)>,
+) -> HashMap<&'a str, &'a str> {
     pairs.collect()
 }
 
-fn lookup(map: &HashMap<&str, &str>, id: &str) -> String {
+pub(super) fn lookup(map: &HashMap<&str, &str>, id: &str) -> String {
     map.get(id).copied().unwrap_or_default().to_string()
 }
 

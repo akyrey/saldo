@@ -50,6 +50,11 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         .iter()
         .map(|c| (c.id.as_str(), c.name.as_str()))
         .collect();
+    let budget_names: HashMap<&str, &str> = doc
+        .budgets
+        .iter()
+        .map(|b| (b.id.as_str(), b.name.as_str()))
+        .collect();
     let bill_names: HashMap<&str, &str> = doc
         .bills
         .iter()
@@ -111,6 +116,7 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
             "foreign_amount",
             "foreign_currency",
             "category",
+            "budget",
             "bill",
             "tags",
             "reconciled",
@@ -137,6 +143,10 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
                     s.category_id
                         .as_deref()
                         .map(|c| name(&category_names, c))
+                        .unwrap_or_default(),
+                    s.budget_id
+                        .as_deref()
+                        .map(|b| name(&budget_names, b))
                         .unwrap_or_default(),
                     s.bill_id
                         .as_deref()
@@ -228,6 +238,8 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         ("currencies.csv", currencies),
     ];
     files.extend(super::planning_csv::files(doc));
+    files.extend(super::savings_csv::files(doc));
+    files.extend(super::recurrence_csv::files(doc));
     files
 }
 

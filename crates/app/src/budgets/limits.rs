@@ -263,7 +263,7 @@ impl BudgetService {
         let offset = usize::try_from(page.offset()).unwrap_or(usize::MAX);
         let limit = usize::try_from(page.limit()).unwrap_or(usize::MAX);
         let rows: Vec<LimitRow> = rows.into_iter().skip(offset).take(limit).collect();
-        let items = self.limit_views(conn, ctx, &budget.id, rows).await?;
+        let items = limit_views(conn, ctx, &budget.id, rows).await?;
         Ok(Page::new(items, page, total))
     }
 
@@ -274,31 +274,30 @@ impl BudgetService {
         row: LimitRow,
     ) -> Result<BudgetLimitView, AppError> {
         let budget_id = row.budget_id.clone();
-        let mut views = self.limit_views(conn, ctx, &budget_id, vec![row]).await?;
+        let mut views = limit_views(conn, ctx, &budget_id, vec![row]).await?;
         views.pop().ok_or(AppError::NotFound)
     }
+}
 
-    /// Views of several limits of one budget, loading the spends once.
-    pub(crate) async fn limit_views(
-        &self,
-        conn: &mut SqliteConnection,
-        ctx: &HouseholdCtx,
-        budget_id: &str,
-        rows: Vec<LimitRow>,
-    ) -> Result<Vec<BudgetLimitView>, AppError> {
-        let (Some(from), Some(to)) = (
-            rows.iter().map(|r| r.start_date.clone()).min(),
-            rows.iter().map(|r| r.end_date.clone()).max(),
-        ) else {
-            return Ok(Vec::new());
-        };
-        let household_id = ctx.household_id.to_string();
-        let spends = repo::spends(conn, &household_id, budget_id, &from, &to).await?;
-        let spends = view::core_spends(&spends)?;
-        let mut views = Vec::with_capacity(rows.len());
-        for row in rows {
-            views.push(view::limit_view(conn, row, &spends).await?);
-        }
-        Ok(views)
+/// Views of several limits of one budget, loading the spends once.
+pub(crate) async fn limit_views(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    budget_id: &str,
+    rows: Vec<LimitRow>,
+) -> Result<Vec<BudgetLimitView>, AppError> {
+    let (Some(from), Some(to)) = (
+        rows.iter().map(|r| r.start_date.clone()).min(),
+        rows.iter().map(|r| r.end_date.clone()).max(),
+    ) else {
+        return Ok(Vec::new());
+    };
+    let household_id = ctx.household_id.to_string();
+    let spends = repo::spends(conn, &household_id, budget_id, &from, &to).await?;
+    let spends = view::core_spends(&spends)?;
+    let mut views = Vec::with_capacity(rows.len());
+    for row in rows {
+        views.push(view::limit_view(conn, row, &spends).await?);
     }
+    Ok(views)
 }

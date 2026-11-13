@@ -10,7 +10,7 @@ use sqlx::SqliteConnection;
 
 use super::repo::{self, EventRow, PiggyBankRow};
 use super::view::{decimal, view_of};
-use super::{ENTITY, PiggyBankService, find};
+use super::{ENTITY, PiggyBankService, PiggyBankView, find};
 use crate::accounts::repo as account_repo;
 use crate::clock::{Clock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
@@ -345,4 +345,23 @@ fn event_view(row: EventRow, currency: &Currency) -> PiggyBankEventView {
         date: row.date,
         created_at: row.created_at,
     }
+}
+
+/// Every piggy bank of the household and all their events, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<(Vec<PiggyBankView>, Vec<PiggyBankEventView>), AppError> {
+    let household_id = ctx.household_id.to_string();
+    // SQLite reads `LIMIT -1` as "no limit".
+    let (rows, _) = repo::list(&mut *conn, &household_id, None, -1, 0).await?;
+    let mut banks = Vec::with_capacity(rows.len());
+    let mut events = Vec::new();
+    for row in rows {
+        let currency = currencies::find(&mut *conn, &row.currency_code, "currency").await?;
+        let (event_rows, _) = repo::list_events(&mut *conn, &household_id, &row.id, -1, 0).await?;
+        events.extend(event_rows.into_iter().map(|e| event_view(e, &currency)));
+        banks.push(view_of(&mut *conn, row).await?);
+    }
+    Ok((banks, events))
 }

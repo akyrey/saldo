@@ -3,6 +3,8 @@
 
 mod csv;
 mod planning_csv;
+mod recurrence_csv;
+mod savings_csv;
 
 use serde::Serialize;
 use sqlx::{SqliteConnection, SqlitePool};
@@ -10,6 +12,7 @@ use sqlx::{SqliteConnection, SqlitePool};
 use crate::accounts::{AccountFilter, AccountService, AccountView};
 use crate::attachments::{AttachmentService, AttachmentView};
 use crate::bills::{self, BillPeriodView, BillView};
+use crate::budgets::{self, BudgetLimitView, BudgetView};
 use crate::categories::{self, CategoryView};
 use crate::clock::{SharedClock, format_timestamp};
 use crate::ctx::HouseholdCtx;
@@ -17,6 +20,8 @@ use crate::currencies::{self, CurrencyView};
 use crate::error::AppError;
 use crate::identity::{HouseholdView, MemberView, household_view, members_in};
 use crate::page::{MAX_PER_PAGE, PageRequest};
+use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
+use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
 use crate::tags::{self, TagView};
 use crate::transactions::{self, TransactionGroupView};
@@ -55,6 +60,11 @@ pub struct ExportDocument {
     pub bill_periods: Vec<BillPeriodView>,
     pub rule_groups: Vec<RuleGroupView>,
     pub rules: Vec<RuleView>,
+    pub budgets: Vec<BudgetView>,
+    pub budget_limits: Vec<BudgetLimitView>,
+    pub piggy_banks: Vec<PiggyBankView>,
+    pub piggy_bank_events: Vec<PiggyBankEventView>,
+    pub recurrences: Vec<RecurrenceView>,
 }
 
 #[derive(Clone)]
@@ -85,6 +95,8 @@ impl ExportService {
         ctx.require_owner()?;
         let mut tx = self.pool.begin().await?;
         let (rule_groups, rules) = rules::all_in(&mut tx, ctx).await?;
+        let (budgets, budget_limits) = budgets::all_in(&mut tx, ctx).await?;
+        let (piggy_banks, piggy_bank_events) = piggy_banks::all_in(&mut tx, ctx).await?;
         let document = ExportDocument {
             format: FORMAT.to_string(),
             version: VERSION,
@@ -102,6 +114,11 @@ impl ExportService {
             bill_periods: bills::all_periods_in(&mut tx, ctx).await?,
             rule_groups,
             rules,
+            budgets,
+            budget_limits,
+            piggy_banks,
+            piggy_bank_events,
+            recurrences: recurrences::all_in(&mut tx, ctx).await?,
         };
         tx.rollback().await?;
         Ok(document)

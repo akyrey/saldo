@@ -19,8 +19,8 @@ use crate::events::{NewEvent, append_event};
 use crate::page::{Page, PageRequest};
 use crate::{currencies, identity};
 
-pub(crate) use events::add_for_split_in;
 pub use events::{NewPiggyBankEvent, PiggyBankEventView};
+pub(crate) use events::{add_for_split_in, all_in};
 use repo::PiggyBankRow;
 use view::view_of;
 pub use view::{PiggyBankAccountView, PiggyBankView};

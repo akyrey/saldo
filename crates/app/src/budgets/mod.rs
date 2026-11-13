@@ -18,6 +18,7 @@ use crate::identity::{self, required};
 use crate::page::{Page, PageRequest};
 use repo::BudgetRow;
 
+use limits::limit_views;
 pub use limits::{BudgetLimitUpdate, NewBudgetLimit};
 pub use view::{AutoBudgetView, BudgetLimitView, BudgetView};
 
@@ -340,4 +341,21 @@ pub(crate) async fn existing(
     ids_json: &str,
 ) -> Result<Vec<String>, AppError> {
     repo::existing(conn, &ctx.household_id.to_string(), ids_json).await
+}
+
+/// Every budget of the household and all their limits, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<(Vec<BudgetView>, Vec<BudgetLimitView>), AppError> {
+    let household_id = ctx.household_id.to_string();
+    let rows = repo::all(&mut *conn, &household_id).await?;
+    let mut budgets = Vec::with_capacity(rows.len());
+    let mut limits = Vec::new();
+    for row in rows {
+        let limit_rows = repo::limits(&mut *conn, &household_id, &row.id, None, None).await?;
+        limits.extend(limit_views(&mut *conn, ctx, &row.id, limit_rows).await?);
+        budgets.push(view::budget_view(&mut *conn, row).await?);
+    }
+    Ok((budgets, limits))
 }

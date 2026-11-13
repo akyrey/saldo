@@ -7,10 +7,13 @@ use std::io::Read;
 use common::*;
 use saldo_app::attachments::NewAttachment;
 use saldo_app::bills::NewBill;
+use saldo_app::budgets::{NewBudget, NewBudgetLimit};
 use saldo_app::categories::NewCategory;
 use saldo_app::ctx::Origin;
 use saldo_app::error::AppError;
 use saldo_app::external_refs::{ExternalRefs, FIREFLY};
+use saldo_app::piggy_banks::{NewPiggyBank, NewPiggyBankEvent};
+use saldo_app::recurrences::{RecurrenceInput, RepetitionInput, TemplateSplitInput};
 use saldo_app::rules::{ActionView, NewRuleGroup, RuleInput, TriggerView};
 use saldo_app::tags::NewTag;
 
@@ -50,7 +53,19 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
         .await
         .unwrap();
     let bill = seed_bill_and_rule(&test, &setup.ctx).await;
+    let salary = account(&test, &setup.ctx, "Salary", "revenue", None).await;
+    test.app
+        .transactions
+        .create(
+            &setup.ctx,
+            Origin::Api,
+            group(vec![split(1, &salary, &checking, "2000")]),
+        )
+        .await
+        .unwrap();
+    let budget = seed_savings_and_recurrence(&test, &setup.ctx, &checking, &rent).await;
     let mut first = split(1, &checking, &food, "42.50");
+    first.budget_id = Some(budget.parse().unwrap());
     first.description = "Shop \"weekly\"".into();
     first.tag_ids = vec![tag.id.parse().unwrap()];
     let mut second = split(1, &checking, &rent, "800");
@@ -94,6 +109,106 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
         .unwrap();
     drop(conn);
     (test, setup)
+}
+
+/// A budget with a limit, a piggy bank with money in it, and a monthly
+/// recurrence; returns the budget's ID.
+async fn seed_savings_and_recurrence(
+    test: &TestApp,
+    ctx: &saldo_app::ctx::HouseholdCtx,
+    checking: &saldo_app::accounts::AccountView,
+    rent: &saldo_app::accounts::AccountView,
+) -> String {
+    let app = &test.app;
+    let budget = app
+        .budgets
+        .create(
+            ctx,
+            Origin::Api,
+            NewBudget {
+                name: "Groceries".into(),
+                ..NewBudget::default()
+            },
+        )
+        .await
+        .unwrap();
+    let limit = NewBudgetLimit {
+        start_date: date(1),
+        end_date: date(30),
+        amount: "300".into(),
+        currency: None,
+        notes: None,
+    };
+    let budget_id = budget.id.parse().unwrap();
+    app.budgets
+        .create_limit(ctx, Origin::Api, budget_id, limit)
+        .await
+        .unwrap();
+    let piggy = app
+        .piggy_banks
+        .create(
+            ctx,
+            Origin::Api,
+            NewPiggyBank {
+                name: "Holiday".into(),
+                currency: None,
+                target_amount: Some("1000".into()),
+                start_date: None,
+                target_date: None,
+                active: None,
+                sort_order: None,
+                notes: None,
+                account_ids: vec![account_id(checking)],
+            },
+        )
+        .await
+        .unwrap();
+    let money = NewPiggyBankEvent {
+        account_id: None,
+        amount: "25".into(),
+        date: date(2),
+        split_id: None,
+    };
+    app.piggy_banks
+        .add_event(ctx, Origin::Api, piggy.id.parse().unwrap(), money)
+        .await
+        .unwrap();
+    let template = TemplateSplitInput {
+        description: "Monthly rent".into(),
+        source_id: account_id(checking),
+        destination_id: account_id(rent),
+        amount: "800".into(),
+        currency: None,
+        foreign_amount: None,
+        foreign_currency: None,
+        category_id: None,
+        budget_id: Some(budget_id),
+        bill_id: None,
+        piggy_bank_id: None,
+        tag_ids: Vec::new(),
+    };
+    let recurrence = RecurrenceInput {
+        title: "Rent".into(),
+        description: None,
+        first_date: date(1),
+        repeat_until: None,
+        max_occurrences: None,
+        apply_rules: None,
+        active: Some(false),
+        notes: None,
+        repetitions: vec![RepetitionInput {
+            kind: "monthly".into(),
+            moment: "1".into(),
+            skip: 0,
+            weekend_policy: None,
+        }],
+        splits: vec![template],
+    };
+    app.recurrences
+        .create(ctx, Origin::Api, recurrence)
+        .await
+        .unwrap();
+    budget.id
 }
 
 /// A monthly rent bill and one rule; returns the bill's ID.
@@ -202,6 +317,14 @@ async fn json_export_contains_every_row_of_the_household() {
     assert_eq!(doc.rule_groups.len(), rows("rule_groups").await);
     assert_eq!(doc.rules.len(), rows("rules").await);
     assert_eq!(doc.rules[0].triggers.len(), 1);
+    assert_eq!(doc.budgets.len(), rows("budgets").await);
+    assert_eq!(doc.budget_limits.len(), rows("budget_limits").await);
+    assert_eq!(doc.budget_limits[0].spent, "42.50");
+    assert_eq!(doc.piggy_banks.len(), rows("piggy_banks").await);
+    assert_eq!(doc.piggy_bank_events.len(), rows("piggy_bank_events").await);
+    assert_eq!(doc.piggy_banks[0].saved_amount, "25.00");
+    assert_eq!(doc.recurrences.len(), rows("recurrences").await);
+    assert_eq!(doc.recurrences[0].splits.len(), 1);
     assert_eq!(
         doc.currencies.len(),
         count(&test, "currencies").await as usize
@@ -228,9 +351,14 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
             "attachments.csv",
             "bill_periods.csv",
             "bills.csv",
+            "budget_limits.csv",
+            "budgets.csv",
             "categories.csv",
             "currencies.csv",
             "members.csv",
+            "piggy_bank_events.csv",
+            "piggy_banks.csv",
+            "recurrences.csv",
             "rule_groups.csv",
             "rules.csv",
             "tags.csv",
@@ -245,7 +373,7 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
         .read_to_string(&mut transactions)
         .unwrap();
     let lines: Vec<&str> = transactions.lines().collect();
-    assert_eq!(lines.len(), 1 + 3, "header plus one row per split");
+    assert_eq!(lines.len(), 1 + 4, "header plus one row per split");
     assert!(lines[0].starts_with("group_id,group_title,split_id,date,kind"));
     let shop = lines.iter().find(|l| l.contains("Shop")).unwrap();
     assert!(
@@ -256,11 +384,14 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
         shop.contains("\"Checking, main\",Food,42.50,EUR"),
         "names and decimal amounts: {shop}"
     );
-    assert!(shop.contains(",monthly,"), "tag names: {shop}");
+    assert!(
+        shop.contains(",Groceries,,monthly,"),
+        "budget and tag names: {shop}"
+    );
     assert!(
         lines
             .iter()
-            .any(|l| l.contains(",Rent,800.00,EUR,,,Home,Rent,")),
+            .any(|l| l.contains(",Rent,800.00,EUR,,,Home,,Rent,")),
         "category and bill names"
     );
 
@@ -273,6 +404,27 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
     assert!(
         rules.contains("Default,\"Shop, weekly\",create,true,false,true,0,description_contains=Shop,set_notes=weekly shop"),
         "rules with readable triggers and actions: {rules}"
+    );
+
+    let mut recurrences = String::new();
+    archive
+        .by_name("recurrences.csv")
+        .unwrap()
+        .read_to_string(&mut recurrences)
+        .unwrap();
+    assert!(
+        recurrences.contains("Rent,2026-11-01,,,monthly 1,false,true,Monthly rent,\"Checking, main\",Rent,800.00,EUR,,Groceries,,,"),
+        "one row per template split, with names: {recurrences}"
+    );
+    let mut piggy = String::new();
+    archive
+        .by_name("piggy_bank_events.csv")
+        .unwrap()
+        .read_to_string(&mut piggy)
+        .unwrap();
+    assert!(
+        piggy.contains("Holiday,\"Checking, main\",25.00,EUR,2026-11-02,"),
+        "piggy bank events with names: {piggy}"
     );
 }
 

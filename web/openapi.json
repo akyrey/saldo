@@ -10024,7 +10024,12 @@
           "bills",
           "bill_periods",
           "rule_groups",
-          "rules"
+          "rules",
+          "budgets",
+          "budget_limits",
+          "piggy_banks",
+          "piggy_bank_events",
+          "recurrences"
         ],
         "properties": {
           "accounts": {
@@ -10049,6 +10054,18 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BillView"
+            }
+          },
+          "budget_limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetLimitView"
+            }
+          },
+          "budgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetView"
             }
           },
           "categories": {
@@ -10083,6 +10100,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MemberView"
+            }
+          },
+          "piggy_bank_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PiggyBankEventView"
+            }
+          },
+          "piggy_banks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PiggyBankView"
+            }
+          },
+          "recurrences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecurrenceView"
             }
           },
           "rule_groups": {
