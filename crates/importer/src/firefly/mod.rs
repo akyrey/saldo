@@ -89,22 +89,28 @@ impl FireflyClient {
         Ok(self.get_json::<AboutResponse>("/v1/about", &[]).await?.data)
     }
 
-    /// Every item of a list endpoint, following `meta.pagination` page by page.
+    /// Every item of a list endpoint, following `meta.pagination` page by
+    /// page, without duplicates.
     ///
     /// `T: DeserializeOwned` is a *trait bound*: `list` works for any item
     /// type that serde can build from JSON, like a Go generic function with a
-    /// constraint. Firefly's paging is not stable (an item can appear on two
-    /// pages), so duplicates are dropped by ID and the count is checked.
+    /// constraint.
     pub async fn list<T: DeserializeOwned>(
         &self,
         path: &str,
         query: &[(&str, &str)],
     ) -> Result<Vec<Resource<T>>, FireflyError> {
-        Ok(self.list_with_total(path, query).await?.0)
+        let (items, _) = self.list_with_total(path, query).await?;
+        let mut seen = std::collections::HashSet::new();
+        Ok(items
+            .into_iter()
+            .filter(|item| seen.insert(item.id.clone()))
+            .collect())
     }
 
-    /// Like [`Self::list`], plus the `meta.pagination.total` Firefly announced
-    /// (for transactions: the number of splits, not groups).
+    /// Every item of every page as received (an object may appear twice),
+    /// plus the `meta.pagination.total` Firefly announced. Transactions are
+    /// paged by split, so a group can arrive in two parts on two pages.
     pub async fn list_with_total<T: DeserializeOwned>(
         &self,
         path: &str,
@@ -112,18 +118,13 @@ impl FireflyClient {
     ) -> Result<(Vec<Resource<T>>, u64), FireflyError> {
         let page_size = PAGE_SIZE.to_string();
         let mut items: Vec<Resource<T>> = Vec::new();
-        let mut seen = std::collections::HashSet::new();
         let mut page = 1u32;
         loop {
             let page_text = page.to_string();
             let mut params = vec![("limit", page_size.as_str()), ("page", page_text.as_str())];
             params.extend_from_slice(query);
             let response: Page<T> = self.get_json(path, &params).await?;
-            for item in response.data {
-                if seen.insert(item.id.clone()) {
-                    items.push(item);
-                }
-            }
+            items.extend(response.data);
             if page >= response.meta.pagination.total_pages {
                 return Ok((items, response.meta.pagination.total));
             }
@@ -201,6 +202,9 @@ fn request_error(path: &str, error: reqwest::Error) -> FireflyError {
         message: error.without_url().to_string(),
     }
 }
+
+/// Passes over a list before giving up on an incomplete result.
+pub const MAX_PASSES: u32 = 3;
 
 /// Checks that a list returned as many distinct items as Firefly announced.
 pub fn check_complete(path: &str, expected: u64, received: usize) -> Result<(), FireflyError> {

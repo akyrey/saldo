@@ -277,15 +277,19 @@ async fn changed_groups_are_replaced_and_removed_splits_forgotten() {
     import(&app, ctx, &firefly(None, None).await, false).await;
 
     // In Firefly: the rent split of group 4 is deleted and the coffee costs more.
+    // Both live on page 2 (group 4 straddles the pages: rent is its second part).
     let mut page_one = fixture("transactions-1.json");
-    let group_four = &mut page_one["data"][3]["attributes"]["transactions"];
-    let rent_journal = group_four[1]["transaction_journal_id"]
+    let mut page_two = fixture("transactions-2.json");
+    let groups = page_two["data"].as_array_mut().unwrap();
+    let rent = groups.remove(0);
+    assert_eq!(rent["id"], "4");
+    let rent_journal = rent["attributes"]["transactions"][0]["transaction_journal_id"]
         .as_str()
         .unwrap()
         .to_string();
-    group_four.as_array_mut().unwrap().pop();
-    page_one["data"][5]["attributes"]["transactions"][0]["amount"] = "5.500000000000".into();
-    let mut page_two = fixture("transactions-2.json");
+    let coffee = groups.iter_mut().find(|g| g["id"] == "6").unwrap();
+    coffee["attributes"]["transactions"][0]["amount"] = "5.500000000000".into();
+    page_one["meta"]["pagination"]["total"] = 12.into();
     page_two["meta"]["pagination"]["total"] = 12.into();
     let server = firefly(Some(page_one), Some(page_two)).await;
 

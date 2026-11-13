@@ -15,8 +15,8 @@ use serde_json::{Map, Value};
 use super::accounts::{CASH_EXPENSE, CASH_REVENUE, REF as ACCOUNT_REF};
 use crate::amounts::normalize;
 use crate::engine::{ImportCx, ImportError, State};
-use crate::firefly::check_complete;
 use crate::firefly::models::{Resource, Split, TransactionGroup};
+use crate::firefly::{MAX_PASSES, check_complete};
 use crate::report::ImportReport;
 
 const ENTITY: &str = "transactions";
@@ -62,12 +62,7 @@ pub async fn import_transactions(
     if let Some(since) = &since {
         query.push(("start", since.as_str()));
     }
-    let (groups, total) = cx
-        .firefly
-        .list_with_total::<TransactionGroup>("/v1/transactions", &query)
-        .await?;
-    let splits: usize = groups.iter().map(|g| g.attributes.transactions.len()).sum();
-    check_complete("/v1/transactions", total, splits)?;
+    let groups = fetch_groups(cx, &query).await?;
 
     let mut guard = cx.state.lock().await;
     let state = &mut *guard;
@@ -91,6 +86,69 @@ pub async fn import_transactions(
         }
     }
     Ok(())
+}
+
+/// All groups, complete. Firefly pages transactions by split, so a group
+/// with several splits can be cut in two by a page boundary and arrive as two
+/// parts with the same ID; the parts are merged by journal ID. If splits are
+/// still missing (data changed while reading), the listing is repeated.
+async fn fetch_groups(
+    cx: &ImportCx,
+    query: &[(&str, &str)],
+) -> Result<Vec<Resource<TransactionGroup>>, ImportError> {
+    let mut groups: Vec<Resource<TransactionGroup>> = Vec::new();
+    let mut expected = 0;
+    for _ in 0..MAX_PASSES {
+        let (parts, total) = cx
+            .firefly
+            .list_with_total::<TransactionGroup>("/v1/transactions", query)
+            .await?;
+        expected = total;
+        groups = merge_parts(groups, parts);
+        if split_count(&groups) as u64 >= total {
+            return Ok(groups);
+        }
+    }
+    check_complete("/v1/transactions", expected, split_count(&groups))?;
+    Ok(groups)
+}
+
+fn split_count(groups: &[Resource<TransactionGroup>]) -> usize {
+    groups.iter().map(|g| g.attributes.transactions.len()).sum()
+}
+
+/// Adds `parts` to `groups`: a known group gains the splits it lacked.
+fn merge_parts(
+    groups: Vec<Resource<TransactionGroup>>,
+    parts: Vec<Resource<TransactionGroup>>,
+) -> Vec<Resource<TransactionGroup>> {
+    let mut merged = groups;
+    let mut index: HashMap<String, usize> = merged
+        .iter()
+        .enumerate()
+        .map(|(i, g)| (g.id.clone(), i))
+        .collect();
+    for part in parts {
+        match index.get(&part.id) {
+            Some(&i) => {
+                let group = &mut merged[i].attributes;
+                for split in part.attributes.transactions {
+                    if !group
+                        .transactions
+                        .iter()
+                        .any(|s| s.transaction_journal_id == split.transaction_journal_id)
+                    {
+                        group.transactions.push(split);
+                    }
+                }
+            }
+            None => {
+                index.insert(part.id.clone(), merged.len());
+                merged.push(part);
+            }
+        }
+    }
+    merged
 }
 
 async fn import_group(

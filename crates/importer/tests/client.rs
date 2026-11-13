@@ -56,8 +56,10 @@ async fn follows_pages_drops_duplicates_and_sends_the_token() {
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"
         ]
     );
+    // `list` keeps the first part of group 4 only; the transactions importer
+    // merges the parts instead (see transactions_arrive_paged_by_split).
     let splits: usize = groups.iter().map(|g| g.attributes.transactions.len()).sum();
-    assert_eq!(splits, 13);
+    assert_eq!(splits, 12);
 }
 
 #[tokio::test]
@@ -167,4 +169,28 @@ async fn downloads_bytes() {
             .unwrap(),
         b"hello"
     );
+}
+
+#[tokio::test]
+async fn transactions_arrive_paged_by_split() {
+    use saldo_importer::firefly::models::TransactionGroup;
+    let server = MockServer::start().await;
+    for page in ["1", "2"] {
+        Mock::given(method("GET"))
+            .and(path("/api/v1/transactions"))
+            .and(query_param("page", page))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(fixture(&format!("transactions-{page}.json"))),
+            )
+            .mount(&server)
+            .await;
+    }
+    let (parts, total) = client(&server)
+        .list_with_total::<TransactionGroup>("/v1/transactions", &[])
+        .await
+        .unwrap();
+    // Group 4 has two splits, one on each page: two parts with the same ID.
+    assert_eq!(parts.iter().filter(|g| g.id == "4").count(), 2);
+    assert_eq!(total, 13);
 }
