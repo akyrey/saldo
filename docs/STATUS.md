@@ -9,8 +9,8 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 0 Scaffold | done | main / c3cc9b0 | Workspace, 4 crate skeletons, lints, toolchain, CI |
 | 1 Core | done | main / b2e1f5e | saldo-core: 75 unit/property tests + 1 doc test, 99.93% line coverage |
 | 2 Server | done | main / 4d431a6 | 186 tests workspace-wide, 96.83% line coverage; manual curl flow passed |
-| 3 Importer + export | not started | | |
-| 4 Web | not started | | |
+| 3 Importer + export | in progress | | |
+| 4 Web | in progress | branch phase-4-web (worktree) | Built in parallel by a delegated agent, minus the export page and the Docker web stage |
 | 5 Planning features | not started | | |
 | 6 Events | not started | | |
 | 7 Clients | not started | | |
@@ -75,10 +75,27 @@ Manual check (2026-11-13): fresh database, `saldo serve`, then setup, login, add
 
 - Approve or reject the two Phase 2 deviations marked "not yet approved" (cookie `Secure` only on https; no events for sessions and tokens).
 
-- Phase 3 will need the URL and a personal access token of the Firefly III instance, and its version number.
 
 ## Findings about Firefly III
 
 Facts checked against the owner's instance (Phase 3 fills this in; see ARCHITECTURE.md section 9.1 for the list of unconfirmed points).
 
-- none yet
+Checked 2026-11-13 against the owner's instance, Firefly III 6.7.9 (API 6.7.9, PostgreSQL), with read-only GET requests only.
+
+- Scale: 876 accounts (750 expense, 87 revenue, 25 asset, 1 liability, 1 cash, 10 initial-balance, 2 reconciliation; 10 inactive), 12,550 splits in 12,362 groups, 98 categories, 1,197 tags, 130 attachments, 42 currencies (3 enabled: EUR 2, USD 2, TKT 0 decimal places), 326 transaction links, 6 budgets, 28 subscriptions, 29 rules, 21 recurrences, 0 piggy banks.
+- `limit` has no practical maximum: 5000 returned all 876 accounts on one page. The importer uses 500.
+- `GET /v1/transactions` without `type` omits opening balances and reconciliations (12,538 vs 12,550). Always pass `type=all`.
+- Paging transactions is not stable: one group appeared on two consecutive pages (no split was lost). The importer de-duplicates by ID and checks the unique split count against `meta.pagination.total`.
+- Amounts have 12 decimals (`"185.000000000000"`), independent of the currency. The importer trims zero padding to the currency's decimal places before `Money::parse_decimal`; any non-zero digit beyond them is an error.
+- Dates are local date-times with an offset (`2026-11-10T08:40:00+01:00`); the split date is the first 10 characters. Some splits are dated in the future (up to 2027-09). `current_balance` is as of `current_balance_date` (today), so the balance check must compare up to that date.
+- Liability sign: Saldo's rule (incoming minus outgoing, ARCHITECTURE.md 4.2) gives exactly Firefly's `current_balance` for the loan (`liability_direction` `debit`, balance negative). No sign flip is needed. `debit` maps to `i_owe`, `credit` to `owed_to_me`. The loan's `opening_balance` field has no matching transaction and is informational only.
+- Account types on read: `asset`, `expense`, `revenue`, `liabilities` (plural; split `source_type`/`destination_type` say `Loan`), `cash`, `initial-balance` (one per asset account, 10), `reconciliation` (2). Asset roles seen: `defaultAsset`, `sharedAsset`, `savingAsset`, `ccAsset`, `cashWalletAsset`.
+- Split groups: every multi-split group (123, up to 18 splits) shares one source; 10 have different destinations; types never mix within a group. So Firefly does force a shared source (for withdrawals) and the kind comparison per split is safe.
+- Opening balances: 10 groups `Initial balance account` → `Asset account`. Reconciliations: 2, one in each direction.
+- Foreign amounts: 436 splits. One split has `foreign_currency_code` equal to its own currency (EUR/EUR) and a different amount; Firefly ignores it for balances. Saldo rejects it (rule 7), so the importer drops that foreign amount and reports it.
+- Cross-currency: TKT asset account (0 decimals) with withdrawals in TKT (some with EUR foreign amounts) and one TKT→EUR transfer with an EUR foreign amount, which matches Saldo's transfer rule.
+- Balance check simulated on the downloaded data with Saldo's rules (foreign amount when the account is in the foreign currency, same-currency foreign amounts dropped, up to `current_balance_date`): all 26 asset and liability balances match exactly.
+- `/v1/transaction-links` exposes `link_type_id`, `inward_id`, `outward_id`, `notes` on read.
+- Piggy bank `accounts[]`: not confirmable, the instance has no piggy banks (Phase 5 must use the spec only).
+- Splits carry `subscription_id` and the deprecated `bill_id`; tags as names; `category_id` on all but one split.
+
