@@ -1,0 +1,52 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.date AS \"date!\", s.currency_code AS \"currency!\",\n                  SUM(CASE WHEN s.kind = 'deposit' THEN s.amount_minor ELSE 0 END) AS \"income!: i64\",\n                  SUM(CASE WHEN s.kind = 'withdrawal' THEN s.amount_minor ELSE 0 END) AS \"expenses!: i64\"\n           FROM splits s\n           WHERE s.household_id = ?1 AND s.date >= ?2 AND s.date <= ?3\n             AND s.kind IN ('withdrawal', 'deposit')\n             AND (?4 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = s.household_id\n                   AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?4))\n           GROUP BY s.date, s.currency_code",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "currency!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "income!: i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "expenses!: i64",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e3d3f8038a4d0f3d96387eeb351a4bd0640526020c49c8eeaaaa56e78a9cb2a7"
+}

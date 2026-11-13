@@ -1,0 +1,76 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.date AS \"date!\", s.currency_code AS \"currency!\", t.id AS \"key?\", t.name AS \"name?\",\n                  SUM(CASE WHEN s.kind = 'deposit' THEN s.amount_minor ELSE 0 END) AS \"income!: i64\",\n                  SUM(CASE WHEN s.kind = 'withdrawal' THEN s.amount_minor ELSE 0 END) AS \"expenses!: i64\"\n           FROM splits s\n           LEFT JOIN split_tags st ON st.split_id = s.id\n           LEFT JOIN tags t ON t.id = st.tag_id AND t.household_id = s.household_id\n           WHERE s.household_id = ?1 AND s.date >= ?2 AND s.date <= ?3\n             AND s.kind IN ('withdrawal', 'deposit')\n             AND (?4 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = s.household_id\n                   AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?4))\n           GROUP BY s.date, s.currency_code, t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "currency!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "key?",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tags",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name?",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tags",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "income!: i64",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "expenses!: i64",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "92b47f29f1ac9e58e7c0f040bfd81f81bc93f2b9adc48b2a30d8ecbf73c6dc7d"
+}
