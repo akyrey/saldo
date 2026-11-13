@@ -1,6 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ChartColumn,
+  Download,
+  FolderTree,
+  LogOut,
+  PiggyBank,
+  Tags,
+  Wallet,
+} from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -10,6 +19,8 @@ const NAV = [
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
+  { to: "/budgets", label: "Budgets", icon: PiggyBank },
+  { to: "/reports", label: "Reports", icon: ChartColumn },
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
@@ -70,19 +81,18 @@ export function AppLayout() {
       {/* Bottom tab bar on phones. */}
       <nav
         aria-label="Main mobile"
-        className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
-          nav.length > NAV.length ? "grid-cols-5" : "grid-cols-4"
-        }`}
+        className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
       >
         {nav.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
-            className="flex flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground"
+            className="flex min-w-0 flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground"
             activeProps={{ className: "text-primary" }}
           >
             <Icon className="size-5" aria-hidden />
-            {label}
+            <span className="max-w-full truncate">{label}</span>
           </Link>
         ))}
       </nav>

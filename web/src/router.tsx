@@ -14,6 +14,8 @@ import { ApiError } from "@/api/errors";
 import { meQuery, setupStatusQuery } from "@/features/auth/queries";
 import { AppLayout } from "@/features/shell/AppLayout";
 import { RootLayout } from "@/features/shell/RootLayout";
+import { parseMonth } from "@/features/budgets/budget-model";
+import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
 import { parseTransactionSearch } from "@/features/transactions/search";
 import { safeRedirect } from "@/lib/safe-redirect";
@@ -155,6 +157,37 @@ const exportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/export/ExportPage"), "ExportPage"),
 });
 
+export const budgetsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "budgets",
+  validateSearch: (search: Record<string, unknown>): { month?: string } => ({
+    month: parseMonth(search.month),
+  }),
+  component: lazyRouteComponent(() => import("@/features/budgets/BudgetsPage"), "BudgetsPage"),
+});
+
+export const budgetRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "budgets/$budgetId",
+  component: lazyRouteComponent(
+    () => import("@/features/budgets/BudgetDetailPage"),
+    "BudgetDetailPage",
+  ),
+});
+
+export const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "reports",
+  component: lazyRouteComponent(() => import("@/features/reports/DashboardPage"), "DashboardPage"),
+});
+
+export const reportRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "reports/$report",
+  validateSearch: parseReportSearch,
+  component: lazyRouteComponent(() => import("@/features/reports/ReportPage"), "ReportPage"),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -170,6 +203,10 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     tagsRoute,
     exportRoute,
+    budgetsRoute,
+    budgetRoute,
+    dashboardRoute,
+    reportRoute,
   ]),
 ]);
 
