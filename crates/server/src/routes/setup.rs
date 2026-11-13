@@ -1,4 +1,5 @@
 //! `POST /setup`: the first user and household. Works only once.
+//! `GET /setup`: whether that has happened yet.
 
 use axum::Json;
 use axum::extract::State;
@@ -16,7 +17,7 @@ use crate::extract::ApiJson;
 use crate::state::AppState;
 
 pub fn router() -> OpenApiRouter<AppState> {
-    OpenApiRouter::new().routes(routes!(setup))
+    OpenApiRouter::new().routes(routes!(setup_status, setup))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -33,6 +34,22 @@ pub struct SetupRequest {
 pub struct SetupResponse {
     pub user: UserView,
     pub household: HouseholdView,
+}
+
+/// Whether the first-run setup is still needed.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SetupStatus {
+    /// True while no user exists.
+    pub needed: bool,
+}
+
+/// Tells the web app whether to show the setup screen (no authentication).
+#[utoipa::path(get, path = "/setup", tag = "auth", responses((status = 200, body = Data<SetupStatus>)))]
+pub async fn setup_status(
+    State(state): State<AppState>,
+) -> Result<Json<Data<SetupStatus>>, ApiError> {
+    let needed = state.app.identity.needs_setup().await?;
+    Ok(Json(Data::new(SetupStatus { needed })))
 }
 
 /// Creates the first user and the household (no authentication; only while

@@ -10,4 +10,5 @@ pub mod openapi;
 pub mod rate_limit;
 pub mod routes;
 pub mod server;
+pub mod spa;
 pub mod state;

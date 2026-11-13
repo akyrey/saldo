@@ -3,6 +3,7 @@
 mod household;
 mod secrets;
 mod sessions;
+mod status;
 
 pub(crate) use household::{household_view, members_in};
 pub use sessions::SESSION_LIFETIME;

@@ -1,0 +1,72 @@
+// The only place that knows the API's URLs. Types come from `schema.d.ts`,
+// which `npm run gen:api` generates from `web/openapi.json` — like generating
+// a Go client from a proto or OpenAPI file: when the server contract changes,
+// regenerating makes the compiler point at every call that no longer fits.
+import createClient, { type Middleware } from "openapi-fetch";
+import { ApiError, apiErrorFrom } from "./errors";
+import type { paths } from "./schema";
+
+/** Called when the server answers 401 (session expired or logged out). */
+type UnauthorizedListener = () => void;
+
+let onUnauthorized: UnauthorizedListener = () => {};
+
+export function setUnauthorizedListener(listener: UnauthorizedListener): void {
+  onUnauthorized = listener;
+}
+
+// Cookie-authenticated writes need this header (the server's CSRF check).
+// Sending it on every request is harmless and keeps the rule simple.
+const csrf: Middleware = {
+  onRequest({ request }) {
+    request.headers.set("X-Saldo-Csrf", "1");
+    return request;
+  },
+  onResponse({ response, schemaPath }) {
+    if (response.status === 401 && schemaPath !== "/api/v1/auth/login") onUnauthorized();
+    return response;
+  },
+};
+
+/**
+ * Creates a client. `baseUrl` is empty for the web app (same origin); the
+ * desktop app (Phase 7) passes the server's URL.
+ */
+export function createApi(baseUrl: string) {
+  const client = createClient<paths>({
+    baseUrl,
+    credentials: "include",
+    // Look `fetch` up on every call (not once at start), so tests can replace it.
+    fetch: (request) => globalThis.fetch(request),
+  });
+  client.use(csrf);
+  return client;
+}
+
+export type Api = ReturnType<typeof createApi>;
+
+export const api: Api = createApi(import.meta.env.VITE_SALDO_API_URL ?? "");
+
+/** What every openapi-fetch call resolves to, reduced to what we need. */
+interface FetchResult<T> {
+  data?: T;
+  error?: unknown;
+  response: Response;
+}
+
+/**
+ * Returns the body of a successful call or throws an `ApiError`. A failed
+ * network request (offline) becomes an `ApiError` with code `network`.
+ */
+export async function call<T>(request: Promise<FetchResult<T>>): Promise<T> {
+  let result: FetchResult<T>;
+  try {
+    result = await request;
+  } catch (cause) {
+    throw new ApiError(0, "network", cause instanceof Error ? cause.message : "network error");
+  }
+  if (result.error !== undefined || !result.response.ok) {
+    throw apiErrorFrom(result.response.status, result.error);
+  }
+  return result.data as T;
+}

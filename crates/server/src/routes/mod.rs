@@ -4,6 +4,7 @@
 pub mod accounts;
 pub mod attachments;
 pub mod auth;
+pub mod balances;
 pub mod categories;
 pub mod currencies;
 pub mod events;
@@ -28,6 +29,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(auth::router())
         .merge(household::router())
         .merge(currencies::router())
+        .merge(balances::router())
         .merge(accounts::router())
         .merge(categories::router())
         .merge(tags::router())
