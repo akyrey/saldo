@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE webhook_endpoints SET secret = ?, updated_at = ? WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "3e6cc62279d0637610781c33061875b6deb502532440c0498c54a154e5f2b239"
+}

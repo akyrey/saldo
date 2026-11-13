@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT last_seq FROM consumer_cursors WHERE consumer = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_seq",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "consumer_cursors",
+            "name": "last_seq"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "224129e4cd07fae65d59760767ff80b4e85acbc5ec1efbfd738b0a244f13ce59"
+}

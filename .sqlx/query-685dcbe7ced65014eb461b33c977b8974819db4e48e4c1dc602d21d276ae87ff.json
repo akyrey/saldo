@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT d.id AS \"id!\", d.endpoint_id, w.household_id, w.url, w.secret,\n                      e.id AS event_id, e.event_type, e.payload, d.attempts\n               FROM webhook_deliveries d\n               JOIN webhook_endpoints w ON w.id = d.endpoint_id\n               JOIN events e ON e.seq = d.event_seq\n               WHERE d.status = 'pending' AND d.next_attempt_at <= ? AND w.active = 1\n               ORDER BY d.next_attempt_at, d.event_seq LIMIT ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "endpoint_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "endpoint_id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_endpoints",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "url",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_endpoints",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "name": "secret",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_endpoints",
+            "name": "secret"
+          }
+        }
+      },
+      {
+        "name": "event_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "event_type",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "event_type"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "name": "attempts",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "attempts"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "685dcbe7ced65014eb461b33c977b8974819db4e48e4c1dc602d21d276ae87ff"
+}

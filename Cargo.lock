@@ -2047,6 +2047,7 @@ dependencies = [
  "chrono-tz",
  "hmac",
  "rand",
+ "reqwest",
  "saldo-core",
  "serde",
  "serde_json",
@@ -2057,6 +2058,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "uuid",
+ "wiremock",
  "zip",
 ]
 

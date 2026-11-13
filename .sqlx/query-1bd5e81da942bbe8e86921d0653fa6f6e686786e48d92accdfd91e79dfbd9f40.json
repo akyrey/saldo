@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE webhook_deliveries\n             SET status = 'pending', attempts = 0, next_attempt_at = ?\n             WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1bd5e81da942bbe8e86921d0653fa6f6e686786e48d92accdfd91e79dfbd9f40"
+}

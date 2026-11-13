@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT count(*) FROM webhook_deliveries d\n         JOIN webhook_endpoints w ON w.id = d.endpoint_id\n         WHERE w.household_id = ? AND d.endpoint_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "count(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d81b9a9f50508d9544a773c2c391109299c60b09ac42534984e27f6d4552a0ae"
+}

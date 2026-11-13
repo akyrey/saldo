@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE webhook_endpoints\n             SET consecutive_failures = consecutive_failures + 1,\n                 active = CASE WHEN consecutive_failures + 1 >= ?1 THEN 0 ELSE active END,\n                 disabled_reason = CASE WHEN consecutive_failures + 1 >= ?1 THEN ?2 ELSE disabled_reason END,\n                 updated_at = CASE WHEN consecutive_failures + 1 >= ?1 THEN ?3 ELSE updated_at END\n             WHERE id = ?4\n             RETURNING active",
+  "describe": {
+    "columns": [
+      {
+        "name": "active",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "webhook_endpoints",
+            "name": "active"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "141d0e23eece2124ec9e8294fefaafe6178092f2d8cbfc2e3f4fd20906007dfe"
+}

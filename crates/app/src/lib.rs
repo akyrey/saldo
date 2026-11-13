@@ -37,6 +37,7 @@ use crate::export::ExportService;
 use crate::identity::IdentityService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
+use crate::webhooks::WebhookService;
 
 /// The entry point: one value holding every service. Built once at startup
 /// and cloned cheaply (the pool and the clock are shared pointers).
@@ -54,6 +55,7 @@ pub struct App {
     pub identity: IdentityService,
     pub tags: TagService,
     pub transactions: TransactionService,
+    pub webhooks: WebhookService,
 }
 
 impl App {
@@ -76,6 +78,7 @@ impl App {
             identity: IdentityService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             transactions: TransactionService::new(pool.clone(), clock.clone()),
+            webhooks: WebhookService::new(pool.clone(), clock.clone()),
             pool,
             clock,
         }

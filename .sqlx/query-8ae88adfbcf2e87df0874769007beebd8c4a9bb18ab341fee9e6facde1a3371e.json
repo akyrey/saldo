@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT d.id AS \"id!\", d.endpoint_id, d.event_seq, e.id AS event_id,\n                  e.event_type, d.status, d.attempts, d.next_attempt_at, d.last_attempt_at,\n                  d.last_status_code, d.last_error, d.created_at\n           FROM webhook_deliveries d\n           JOIN webhook_endpoints w ON w.id = d.endpoint_id\n           JOIN events e ON e.seq = d.event_seq\n           WHERE w.household_id = ?1 AND d.endpoint_id = ?2\n           ORDER BY d.event_seq DESC LIMIT ?3 OFFSET ?4",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "endpoint_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "endpoint_id"
+          }
+        }
+      },
+      {
+        "name": "event_seq",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "event_seq"
+          }
+        }
+      },
+      {
+        "name": "event_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "event_type",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "event_type"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "attempts",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "attempts"
+          }
+        }
+      },
+      {
+        "name": "next_attempt_at",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "next_attempt_at"
+          }
+        }
+      },
+      {
+        "name": "last_attempt_at",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "last_attempt_at"
+          }
+        }
+      },
+      {
+        "name": "last_status_code",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "last_status_code"
+          }
+        }
+      },
+      {
+        "name": "last_error",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "last_error"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "8ae88adfbcf2e87df0874769007beebd8c4a9bb18ab341fee9e6facde1a3371e"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE webhook_endpoints\n             SET name = ?, url = ?, event_types = ?, include_import_events = ?, active = ?,\n                 consecutive_failures = CASE WHEN ? THEN 0 ELSE consecutive_failures END,\n                 disabled_reason = CASE WHEN ? OR ? THEN NULL ELSE disabled_reason END,\n                 updated_at = ?\n             WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "1540f1655f544a5bb142d484e153de28908376b84eeb083ccc999f23893b2b5f"
+}
