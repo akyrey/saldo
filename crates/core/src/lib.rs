@@ -78,6 +78,7 @@ pub mod ids;
 pub mod kind;
 pub mod lookup;
 pub mod money;
+pub mod recurrence;
 pub mod transaction;
 pub mod validation;
 
@@ -102,6 +103,10 @@ pub use lookup::AccountLookup;
 pub use money::Money;
 pub use transaction::{NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup, ValidatedSplit};
 pub use validation::validate_group;
+
+pub use recurrence::{
+    Pattern, RecurrenceId, RecurrenceSchedule, Repetition, ScheduleError, WeekendPolicy,
+};
 
 /// Name of the application, shared by every crate.
 pub const APP_NAME: &str = "Saldo";
