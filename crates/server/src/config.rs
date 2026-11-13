@@ -28,6 +28,9 @@ pub struct Config {
     pub cookie_secure: bool,
     /// SMTP and VAPID settings for notifications (`SALDO_SMTP_*`, `SALDO_VAPID_*`).
     pub notify: crate::notify::config::NotifyConfig,
+    /// Origins allowed by CORS (`SALDO_ALLOWED_ORIGINS`, comma-separated),
+    /// for example the desktop app's `tauri://localhost`. Empty: CORS off.
+    pub allowed_origins: Vec<String>,
 }
 
 /// A configuration problem: which variable, and what is wrong with it.
@@ -73,6 +76,7 @@ impl Config {
         let public_origin = origin_of(&public_url)
             .ok_or_else(|| error("SALDO_PUBLIC_URL", "must be an http:// or https:// URL"))?;
         let notify = crate::notify::config::from_lookup(&lookup, &public_url)?;
+        let allowed_origins = allowed_origins(&get("SALDO_ALLOWED_ORIGINS", ""))?;
         Ok(Self {
             notify,
             database_url,
@@ -82,8 +86,35 @@ impl Config {
             public_origin,
             public_url,
             log: get("SALDO_LOG", DEFAULT_LOG),
+            allowed_origins,
         })
     }
+}
+
+/// `tauri://localhost, http://tauri.localhost` → the two origins. Each must
+/// be `scheme://host[:port]`, with no path, as browsers send `Origin`.
+fn allowed_origins(text: &str) -> Result<Vec<String>, ConfigError> {
+    let bad = || {
+        error(
+            "SALDO_ALLOWED_ORIGINS",
+            "must be origins like tauri://localhost",
+        )
+    };
+    text.split(',')
+        .map(str::trim)
+        .filter(|o| !o.is_empty())
+        .map(|origin| {
+            let (scheme, host) = origin.split_once("://").ok_or_else(bad)?;
+            let valid_scheme =
+                !scheme.is_empty() && scheme.chars().all(|c| c.is_ascii_alphanumeric());
+            let valid_host = !host.is_empty() && !host.contains(['/', ' ', '?', '#']);
+            if valid_scheme && valid_host {
+                Ok(origin.to_string())
+            } else {
+                Err(bad())
+            }
+        })
+        .collect()
 }
 
 fn error(variable: &'static str, message: &str) -> ConfigError {

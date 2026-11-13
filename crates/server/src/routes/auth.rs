@@ -32,6 +32,10 @@ pub fn router() -> OpenApiRouter<AppState> {
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
+    /// `browser` (default): the session arrives as a cookie. `desktop`: the
+    /// session token is returned in the body for `Authorization: Bearer`,
+    /// and no cookie is set (the desktop app keeps it in the OS keychain).
+    pub client: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -40,6 +44,20 @@ pub struct LoginResponse {
     pub household_id: String,
     pub role: Role,
     pub expires_at: String,
+    /// Only for `client: "desktop"`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token: Option<String>,
+}
+
+/// Whether the login is for the desktop app; any other client is refused.
+fn is_desktop(client: Option<&str>) -> Result<bool, ApiError> {
+    match client {
+        None | Some("browser") => Ok(false),
+        Some("desktop") => Ok(true),
+        Some(_) => {
+            Err(saldo_app::error::AppError::invalid("client", "must be browser or desktop").into())
+        }
+    }
 }
 
 /// Checks the password and sets the `saldo_session` cookie. Rate-limited per
@@ -52,6 +70,7 @@ pub async fn login(
     ClientIp(ip): ClientIp,
     ApiJson(body): ApiJson<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let desktop = is_desktop(body.client.as_deref())?;
     let mut keys = vec![format!("email:{}", body.email.trim().to_lowercase())];
     if let Some(ip) = ip {
         keys.push(format!("ip:{ip}"));
@@ -74,11 +93,11 @@ pub async fn login(
         household_id: result.ctx.household_id.to_string(),
         role: result.ctx.role,
         expires_at: result.expires_at,
+        token: desktop.then(|| result.token.clone()),
     };
-    Ok((
-        AppendHeaders([(header::SET_COOKIE, cookie)]),
-        Json(Data::new(response)),
-    ))
+    // `Option<AppendHeaders>` adds the header only when it is `Some`.
+    let cookie_header = (!desktop).then(|| AppendHeaders([(header::SET_COOKIE, cookie)]));
+    Ok((cookie_header, Json(Data::new(response))))
 }
 
 /// Ends the current session (or revokes the token used) and clears the cookie.

@@ -1885,6 +1885,8 @@ export interface components {
         expires_at: string;
         household_id: string;
         role: components["schemas"]["Role"];
+        /** @description Only for `client: "desktop"`. */
+        token?: string | null;
         user: components["schemas"]["UserView"];
       };
     };
@@ -2642,6 +2644,12 @@ export interface components {
       meta: components["schemas"]["ListMeta"];
     };
     LoginRequest: {
+      /**
+       * @description `browser` (default): the session arrives as a cookie. `desktop`: the
+       *     session token is returned in the body for `Authorization: Bearer`,
+       *     and no cookie is set (the desktop app keeps it in the OS keychain).
+       */
+      client?: string | null;
       email: string;
       password: string;
     };
@@ -2649,6 +2657,8 @@ export interface components {
       expires_at: string;
       household_id: string;
       role: components["schemas"]["Role"];
+      /** @description Only for `client: "desktop"`. */
+      token?: string | null;
       user: components["schemas"]["UserView"];
     };
     /** @description The caller, their household and their role (`GET /auth/me`). */

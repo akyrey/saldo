@@ -8495,6 +8495,13 @@
               "role": {
                 "$ref": "#/components/schemas/Role"
               },
+              "token": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Only for `client: \"desktop\"`."
+              },
               "user": {
                 "$ref": "#/components/schemas/UserView"
               }
@@ -11292,6 +11299,13 @@
           "password"
         ],
         "properties": {
+          "client": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`browser` (default): the session arrives as a cookie. `desktop`: the\nsession token is returned in the body for `Authorization: Bearer`,\nand no cookie is set (the desktop app keeps it in the OS keychain)."
+          },
           "email": {
             "type": "string"
           },
@@ -11317,6 +11331,13 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Only for `client: \"desktop\"`."
           },
           "user": {
             "$ref": "#/components/schemas/UserView"
