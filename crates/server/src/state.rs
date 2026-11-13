@@ -6,6 +6,7 @@ use saldo_app::App;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::Config;
+use crate::notify::Senders;
 use crate::rate_limit::LoginLimiter;
 use crate::workers::EventSignal;
 
@@ -22,11 +23,14 @@ pub struct AppState {
     /// Cancelled when the server starts shutting down, so endless responses
     /// (the event stream) end and graceful shutdown can finish.
     pub shutdown: CancellationToken,
+    /// One notification sender per channel kind.
+    pub senders: Arc<Senders>,
 }
 
 impl AppState {
     pub fn new(app: App, config: Config) -> Self {
         Self {
+            senders: Arc::new(Senders::from_config(&config)),
             app,
             config: Arc::new(config),
             login_limiter: Arc::new(LoginLimiter::default()),

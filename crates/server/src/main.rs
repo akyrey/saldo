@@ -24,6 +24,10 @@ async fn main() -> ExitCode {
             out,
         } => export(format, household, out).await,
         Command::Backup { path } => backup(path).await,
+        Command::VapidKeys => {
+            print_vapid_keys();
+            Ok(())
+        }
         Command::User {
             command:
                 UserCommand::Create {
@@ -58,6 +62,12 @@ async fn run_server() -> MainResult {
         .with_env_filter(filter)
         .init();
     server::serve(config).await
+}
+
+fn print_vapid_keys() {
+    let (private_key, public_key) = saldo_server::notify::config::generate_vapid_keys();
+    println!("SALDO_VAPID_PRIVATE_KEY={private_key}");
+    println!("# public key (served at /api/v1/push/vapid-key): {public_key}");
 }
 
 async fn create_user(

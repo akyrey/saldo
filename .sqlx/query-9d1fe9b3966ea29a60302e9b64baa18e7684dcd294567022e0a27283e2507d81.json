@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO notifications (id, household_id, channel_id, event_seq, dedupe_key, created_at)\n                 VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (channel_id, dedupe_key) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "9d1fe9b3966ea29a60302e9b64baa18e7684dcd294567022e0a27283e2507d81"
+}

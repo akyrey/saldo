@@ -26,6 +26,8 @@ pub struct Config {
     pub log: String,
     /// Mark the session cookie `Secure` (when `public_url` is https).
     pub cookie_secure: bool,
+    /// SMTP and VAPID settings for notifications (`SALDO_SMTP_*`, `SALDO_VAPID_*`).
+    pub notify: crate::notify::config::NotifyConfig,
 }
 
 /// A configuration problem: which variable, and what is wrong with it.
@@ -70,7 +72,9 @@ impl Config {
             .to_string();
         let public_origin = origin_of(&public_url)
             .ok_or_else(|| error("SALDO_PUBLIC_URL", "must be an http:// or https:// URL"))?;
+        let notify = crate::notify::config::from_lookup(&lookup, &public_url)?;
         Ok(Self {
+            notify,
             database_url,
             data_dir: get("SALDO_DATA_DIR", DEFAULT_DATA_DIR).into(),
             bind,

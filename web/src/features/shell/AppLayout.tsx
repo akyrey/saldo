@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
+  Bell,
   ChartColumn,
   Download,
   FolderTree,
@@ -73,6 +74,11 @@ export function AppLayout() {
               {me.user.display_name} · {me.household.name}
             </span>
             <ScopeSwitch currentUserId={me.user.id} />
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/settings/notifications" aria-label="Notifications" title="Notifications">
+                <Bell />
+              </Link>
+            </Button>
             <Button
               variant="ghost"
               size="icon"

@@ -11,6 +11,8 @@
 //! any point and starting again is safe.
 
 mod budgets;
+pub mod notifier;
+mod reminders;
 mod signal;
 mod webhooks;
 
@@ -127,6 +129,8 @@ pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     workers.spawn(budgets::NAME, budgets::INTERVAL, None, move || {
         budgets::run(app.clone())
     });
+    reminders::spawn_bill_scheduler(&mut workers, state);
+    notifier::spawn_notifier(&mut workers, state);
     workers
 }
 
@@ -191,6 +195,31 @@ mod tests {
         signal.notify();
         settle().await;
         assert_eq!(runs.load(Ordering::SeqCst), 3);
+        workers.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn start_runs_every_background_task() {
+        let pool = saldo_app::db::connect_in_memory().await.unwrap();
+        saldo_app::db::migrate(&pool).await.unwrap();
+        let app = saldo_app::App::new(pool, Arc::new(saldo_app::clock::SystemClock));
+        let config = crate::config::Config::from_lookup(|_| None).unwrap();
+        let state = AppState::new(app, config);
+        let workers = start(&state, CancellationToken::new());
+        assert_eq!(
+            workers.names(),
+            [
+                "webhook-dispatcher",
+                "webhook-delivery",
+                "auto-budgets",
+                "bill-scheduler",
+                "notifier"
+            ]
+        );
+        // Both run once at start; a write signal wakes them again.
+        settle().await;
+        state.events.notify();
+        settle().await;
         workers.shutdown().await;
     }
 

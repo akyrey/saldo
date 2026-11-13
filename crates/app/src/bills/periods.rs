@@ -137,13 +137,14 @@ impl BillService {
     /// Records a reminder sent today: updates the period's reminder state and
     /// appends `bill.due_soon` or `bill.overdue`, in one transaction. Does
     /// nothing if a reminder was already recorded today (safe on restart).
+    /// Returns whether a reminder was recorded.
     pub async fn record_reminder(
         &self,
         ctx: &HouseholdCtx,
         period: BillPeriodId,
         kind: ReminderKind,
         today: NaiveDate,
-    ) -> Result<(), AppError> {
+    ) -> Result<bool, AppError> {
         let mut tx = self.pool.begin().await?;
         let row = period_row(&mut tx, ctx, period).await?;
         let (day, now) = (today.to_string(), format_timestamp(self.clock.now()));
@@ -156,7 +157,7 @@ impl BillService {
         .await?
         .rows_affected();
         if changed == 0 {
-            return Ok(());
+            return Ok(false);
         }
         emit(
             &mut tx,
@@ -168,7 +169,7 @@ impl BillService {
         )
         .await?;
         tx.commit().await?;
-        Ok(())
+        Ok(true)
     }
 
     /// Whether to remind about a period today; `core::reminder_due` on stored data.

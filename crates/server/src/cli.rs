@@ -34,6 +34,9 @@ pub enum Command {
         #[arg(long)]
         out: std::path::PathBuf,
     },
+    /// Print a new Web Push (VAPID) key pair; put the private key in
+    /// SALDO_VAPID_PRIVATE_KEY.
+    VapidKeys,
     /// Copy the whole database to a new file (safe while the server runs).
     Backup {
         /// File to write; must not exist yet.

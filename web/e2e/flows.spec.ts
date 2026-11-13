@@ -1,7 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type BrowserContext, expect, test, type Page } from "@playwright/test";
 import { createAccount, login, OWNER } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
+
+/** A logged-in browser state, saved by an earlier flow. */
+let session: Awaited<ReturnType<BrowserContext["storageState"]>> | undefined;
 
 function split(page: Page, number: number) {
   return page.getByRole("group", { name: `Split ${number}` });
@@ -264,6 +267,33 @@ test("a rule built in the editor categorises a new transaction", async ({ page }
   const body = (await created.json()) as { data: { splits: { category_id: string | null }[] } };
   const bread = ((await category.json()) as { data: { id: string } }).data.id;
   expect(body.data.splits[0]?.category_id).toBe(bread);
+  // The login rate limit (10 per 15 minutes per IP) is nearly used up by
+  // now: later flows reuse this session instead of logging in again.
+  session = await page.context().storageState();
+});
+
+test("a member adds, pauses and deletes an ntfy channel and the push worker is served", async ({
+  browser,
+  request,
+}) => {
+  const context = await browser.newContext({ storageState: session });
+  const page = await context.newPage();
+  await page.goto("/accounts");
+  await page.getByRole("link", { name: "Notifications" }).click();
+  await expect(page.getByRole("heading", { name: "Notifications" })).toBeVisible();
+  await expect(page.getByText(/web push is not set up/i)).toBeVisible();
+  await page.getByLabel("Name").fill("Phone");
+  await page.getByLabel("Topic").fill("saldo-e2e");
+  await page.getByRole("button", { name: "Add channel" }).click();
+  const row = page.getByTestId("channel");
+  await expect(row.getByText("https://ntfy.sh/saldo-e2e")).toBeVisible();
+  await row.getByRole("button", { name: "Pause" }).click();
+  await expect(row.getByText("paused")).toBeVisible();
+  await row.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("No channels yet.")).toBeVisible();
+  const worker = await request.get("/push-sw.js");
+  expect(await worker.text()).toContain("notificationclick");
+  await context.close();
 });
 
 test("a transaction by one member appears in the other's open tab; the owner adds a webhook", async ({

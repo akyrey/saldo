@@ -19,6 +19,7 @@ pub mod export;
 pub mod external_refs;
 pub mod identity;
 pub mod import_runs;
+pub mod notifications;
 pub mod page;
 pub mod reports;
 pub mod rules;
@@ -41,6 +42,7 @@ use crate::currencies::CurrencyService;
 use crate::events::EventService;
 use crate::export::ExportService;
 use crate::identity::IdentityService;
+use crate::notifications::NotificationService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
 use crate::tags::TagService;
@@ -62,6 +64,7 @@ pub struct App {
     pub events: EventService,
     pub export: ExportService,
     pub identity: IdentityService,
+    pub notifications: NotificationService,
     pub rules: RuleService,
     pub tags: TagService,
     pub transactions: TransactionService,
@@ -89,6 +92,7 @@ impl App {
             currencies: CurrencyService::new(pool.clone()),
             events: EventService::new(pool.clone()),
             identity: IdentityService::new(pool.clone(), clock.clone()),
+            notifications: NotificationService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             rules: RuleService::new(
                 pool.clone(),

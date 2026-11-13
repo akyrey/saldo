@@ -6,6 +6,7 @@ pub mod config;
 pub mod envelope;
 pub mod error;
 pub mod extract;
+pub mod notify;
 pub mod openapi;
 pub mod rate_limit;
 pub mod routes;

@@ -239,6 +239,15 @@ export const reportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/reports/ReportPage"), "ReportPage"),
 });
 
+const notificationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "settings/notifications",
+  component: lazyRouteComponent(
+    () => import("@/features/notifications/NotificationsPage"),
+    "NotificationsPage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -266,6 +275,7 @@ const routeTree = rootRoute.addChildren([
     budgetRoute,
     dashboardRoute,
     reportRoute,
+    notificationsRoute,
   ]),
 ]);
 

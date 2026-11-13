@@ -2681,6 +2681,282 @@
         ]
       }
     },
+    "/api/v1/notification-channels": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "operationId": "list_channels",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_ChannelView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "operationId": "create_channel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ChannelView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notification-channels/{id}": {
+      "delete": {
+        "tags": [
+          "notifications"
+        ],
+        "operationId": "delete_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "notifications"
+        ],
+        "operationId": "update_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ChannelView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notification-channels/{id}/test": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Sends a test message now, also to a paused channel.",
+        "operationId": "test_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TestResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/push/vapid-key": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "operationId": "vapid_key",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_VapidKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/reports/budget-vs-actual": {
       "get": {
         "tags": [
@@ -5946,6 +6222,116 @@
           }
         }
       },
+      "ChannelPatch": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "config": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Fields to change; others (such as a token you never see) are kept,\nand `null` removes an optional one.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ChannelSettings": {
+        "type": "object",
+        "description": "A channel's settings without secrets, as the API returns them.",
+        "required": [
+          "has_token"
+        ],
+        "properties": {
+          "has_token": {
+            "type": "boolean",
+            "description": "Whether an access token is stored (never shown)."
+          },
+          "push_service": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "webpush: the browser vendor's push service (scheme and host only)."
+          },
+          "server_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ntfy and Gotify: the server."
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "email: the recipient."
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ntfy: the topic."
+          }
+        }
+      },
+      "ChannelView": {
+        "type": "object",
+        "description": "A channel as the API returns it: no tokens or push keys.",
+        "required": [
+          "id",
+          "user_id",
+          "kind",
+          "name",
+          "active",
+          "settings",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`ntfy`, `gotify`, `email` or `webpush`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ChannelSettings"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
       "CreateAccountRequest": {
         "type": "object",
         "required": [
@@ -6203,6 +6589,37 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CreateChannelRequest": {
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "config"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "description": "ntfy: `{ server_url, topic, token? }`; gotify: `{ server_url, token }`;\nemail: `{ to }`; webpush: the browser's `PushSubscription.toJSON()`.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "description": "`ntfy`, `gotify`, `email` or `webpush`."
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -6995,6 +7412,56 @@
           }
         }
       },
+      "Data_ChannelView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A channel as the API returns it: no tokens or push keys.",
+            "required": [
+              "id",
+              "user_id",
+              "kind",
+              "name",
+              "active",
+              "settings",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "description": "`ntfy`, `gotify`, `email` or `webpush`."
+              },
+              "name": {
+                "type": "string"
+              },
+              "settings": {
+                "$ref": "#/components/schemas/ChannelSettings"
+              },
+              "updated_at": {
+                "type": "string"
+              },
+              "user_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_CreatedTokenResponse": {
         "type": "object",
         "description": "A single result.",
@@ -7552,6 +8019,33 @@
           }
         }
       },
+      "Data_TestResult": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "sent"
+            ],
+            "properties": {
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Why the send failed (never contains secrets)."
+              },
+              "sent": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
       "Data_TransactionGroupView": {
         "type": "object",
         "description": "A single result.",
@@ -7594,6 +8088,27 @@
               },
               "updated_at": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_VapidKey": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "public_key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The base64url key for `pushManager.subscribe`; `null` when the server\nhas no `SALDO_VAPID_PRIVATE_KEY` (Web Push is off)."
               }
             }
           }
@@ -7660,6 +8175,59 @@
                   "description": "`open`, `paid` or `skipped`."
                 },
                 "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_ChannelView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A channel as the API returns it: no tokens or push keys.",
+              "required": [
+                "id",
+                "user_id",
+                "kind",
+                "name",
+                "active",
+                "settings",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "`ntfy`, `gotify`, `email` or `webpush`."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "settings": {
+                  "$ref": "#/components/schemas/ChannelSettings"
+                },
+                "updated_at": {
+                  "type": "string"
+                },
+                "user_id": {
                   "type": "string"
                 }
               }
@@ -10049,6 +10617,24 @@
           }
         }
       },
+      "TestResult": {
+        "type": "object",
+        "required": [
+          "sent"
+        ],
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the send failed (never contains secrets)."
+          },
+          "sent": {
+            "type": "boolean"
+          }
+        }
+      },
       "TokenView": {
         "type": "object",
         "description": "A personal access token without its secret.",
@@ -10219,6 +10805,18 @@
           },
           "id": {
             "type": "string"
+          }
+        }
+      },
+      "VapidKey": {
+        "type": "object",
+        "properties": {
+          "public_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The base64url key for `pushManager.subscribe`; `null` when the server\nhas no `SALDO_VAPID_PRIVATE_KEY` (Web Push is off)."
           }
         }
       },

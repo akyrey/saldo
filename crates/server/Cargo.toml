@@ -11,15 +11,20 @@ name = "saldo"
 path = "src/main.rs"
 
 [dependencies]
+async-trait = "0.1.92"
 axum.workspace = true
+base64ct = { version = "1.8", features = ["alloc"] }
 chrono = { workspace = true, features = ["clock", "std"] }
 clap.workspace = true
 futures-util.workspace = true
+lettre = { version = "0.11.23", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier"] }
+reqwest.workspace = true
 rust-embed = { version = "8.14", features = ["mime-guess", "include-exclude", "debug-embed"], optional = true }
 saldo-app.workspace = true
 saldo-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+thiserror.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 tower-http.workspace = true
@@ -28,6 +33,7 @@ tracing-subscriber.workspace = true
 utoipa = { workspace = true, features = ["chrono", "uuid"] }
 utoipa-axum.workspace = true
 uuid.workspace = true
+web-push-native = "0.5"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
@@ -35,6 +41,7 @@ sqlx.workspace = true
 http-body-util.workspace = true
 tower.workspace = true
 uuid = { workspace = true, features = ["v4"] }
+wiremock.workspace = true
 
 [lints]
 workspace = true

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM notification_channels WHERE id = ? AND household_id = ? AND user_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "f90886a788f6d88add25c1ee0cfa21adfdb785be56db5ee9eb652c9685ccd09b"
+}
