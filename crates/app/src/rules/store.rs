@@ -191,7 +191,7 @@ async fn with_parts(conn: &mut SqliteConnection, row: RuleRow) -> Result<RuleVie
 /// Replaces a rule's triggers and actions with `triggers` and `actions`.
 pub(crate) async fn write_parts(
     conn: &mut SqliteConnection,
-    ids: &mut dyn FnMut() -> String,
+    ids: &mut (dyn FnMut() -> String + Send),
     rule_id: &str,
     triggers: &[TriggerView],
     actions: &[ActionView],
