@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO currencies (code, name, symbol, decimal_places) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "3088fe7329f25078e3b6eb306388caa6493cd14fb04a7984f47e12165815ccc3"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM external_refs\n             WHERE household_id = ? AND source = ? AND entity_type = ? AND external_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "534779a3f698c70d421764187fbe2ccfe114ffa31a0bd16498dbad7e6b1c3648"
+}

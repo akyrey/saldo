@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::{Sqlite, SqlitePool, Transaction};
+use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
 
 use crate::clock::{Clock, format_timestamp, new_id};
@@ -48,13 +48,14 @@ impl NewEvent {
 
 /// Appends one event inside the caller's transaction and returns its `seq`.
 ///
-/// `Transaction<'_, Sqlite>` has a lifetime: the transaction borrows a pooled
-/// connection, and `'_` tells the compiler it cannot outlive it. Like a Go
-/// `*sql.Tx` you must not use after the connection closes, but enforced.
+/// Pass `&mut tx` for an open `Transaction<'_, Sqlite>`: a transaction
+/// dereferences to its connection. The transaction's `'_` lifetime says it
+/// borrows a pooled connection and cannot outlive it, like a Go `*sql.Tx` you
+/// must not use after the connection closes, but enforced by the compiler.
 /// If the insert fails, the caller's `?` returns before `commit`, and dropping
 /// an uncommitted transaction rolls the whole change back.
 pub async fn append_event(
-    tx: &mut Transaction<'_, Sqlite>,
+    tx: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     origin: Origin,
     event: NewEvent,
@@ -92,7 +93,7 @@ pub async fn append_event(
         payload,
         occurred_at,
     )
-    .fetch_one(&mut **tx)
+    .fetch_one(&mut *tx)
     .await?;
     Ok(seq)
 }

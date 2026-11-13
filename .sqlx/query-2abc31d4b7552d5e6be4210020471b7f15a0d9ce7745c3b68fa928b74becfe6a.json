@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO import_runs (id, household_id, source, status, started_at) VALUES (?, ?, ?, 'running', ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "2abc31d4b7552d5e6be4210020471b7f15a0d9ce7745c3b68fa928b74becfe6a"
+}

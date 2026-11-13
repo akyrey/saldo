@@ -11,7 +11,7 @@ use sqlx::SqliteConnection;
 
 use super::{SplitInput, TransactionInput};
 use crate::accounts::{core_account, repo as account_repo};
-use crate::ctx::HouseholdCtx;
+use crate::ctx::{HouseholdCtx, Origin};
 use crate::db::json_list;
 use crate::error::{AppError, parse_stored};
 use crate::{categories, currencies, identity, tags};
@@ -20,6 +20,7 @@ use crate::{categories, currencies, identity, tags};
 pub(crate) async fn validate(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
+    origin: Origin,
     input: TransactionInput,
 ) -> Result<ValidatedGroup, AppError> {
     let household_id = ctx.household_id.to_string();
@@ -33,6 +34,16 @@ pub(crate) async fn validate(
         .iter()
         .map(core_account)
         .collect::<Result<Vec<_>, _>>()?;
+    // Rule 8 (both accounts active) protects new entries. An import copies
+    // history, which may sit on accounts archived since, so it is exempt.
+    let accounts: Vec<Account> = if origin == Origin::Import {
+        accounts
+            .into_iter()
+            .map(|a| Account { active: true, ..a })
+            .collect()
+    } else {
+        accounts
+    };
     let primary = identity::primary_currency(conn, ctx).await?;
 
     let mut splits = Vec::with_capacity(input.splits.len());

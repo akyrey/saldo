@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT h.id, m.user_id FROM households h\n             JOIN household_members m ON m.household_id = h.id AND m.role = 'owner'\n             WHERE h.id = ?1 OR h.name = ?1\n             ORDER BY m.created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3bc7f48e0c32e9858ea962ec7026815de67b6c2e3cf0faf3db1cc745d3cdae72"
+}

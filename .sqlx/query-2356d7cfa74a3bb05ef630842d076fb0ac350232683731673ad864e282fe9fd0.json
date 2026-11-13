@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE import_runs SET status = ?, summary = ?, finished_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "2356d7cfa74a3bb05ef630842d076fb0ac350232683731673ad864e282fe9fd0"
+}

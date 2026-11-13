@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT entity_type, external_id, local_id FROM external_refs WHERE household_id = ? AND source = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "entity_type",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "entity_type"
+          }
+        }
+      },
+      {
+        "name": "external_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "external_id"
+          }
+        }
+      },
+      {
+        "name": "local_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "local_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d6d9615a43cbc3eca27de2d8fd0c270608ec0432086c5fdfa050c4f0afb2a768"
+}

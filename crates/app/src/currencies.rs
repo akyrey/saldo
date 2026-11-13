@@ -67,3 +67,48 @@ pub(crate) async fn find(
     Currency::new(parsed, places(row.decimal_places)?)
         .map_err(|e| AppError::Internal(e.to_string()))
 }
+
+/// Whether [`ensure`] added the currency or found it already present.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Ensured {
+    Created,
+    Unchanged,
+}
+
+/// Adds a currency unless it exists. A different number of decimal places
+/// for an existing code is a conflict: amounts would be misread.
+pub async fn ensure(
+    conn: &mut SqliteConnection,
+    currency: &CurrencyView,
+) -> Result<Ensured, AppError> {
+    let existing = sqlx::query_scalar!(
+        "SELECT decimal_places FROM currencies WHERE code = ?",
+        currency.code
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    match existing {
+        Some(places) if places == i64::from(currency.decimal_places) => Ok(Ensured::Unchanged),
+        Some(places) => Err(AppError::Conflict(format!(
+            "currency {} has {places} decimal places here but {} in the source",
+            currency.code, currency.decimal_places
+        ))),
+        None => {
+            let code = CurrencyCode::new(&currency.code)
+                .map_err(|e| AppError::invalid("code", e.to_string()))?;
+            Currency::new(code, currency.decimal_places)
+                .map_err(|e| AppError::invalid("decimal_places", e.to_string()))?;
+            let places = i64::from(currency.decimal_places);
+            sqlx::query!(
+                "INSERT INTO currencies (code, name, symbol, decimal_places) VALUES (?, ?, ?, ?)",
+                currency.code,
+                currency.name,
+                currency.symbol,
+                places,
+            )
+            .execute(&mut *conn)
+            .await?;
+            Ok(Ensured::Created)
+        }
+    }
+}

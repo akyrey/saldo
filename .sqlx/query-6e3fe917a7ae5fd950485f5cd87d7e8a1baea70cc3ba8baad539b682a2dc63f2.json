@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO external_refs (household_id, source, entity_type, external_id, local_id, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?)\n             ON CONFLICT (household_id, source, entity_type, external_id)\n             DO UPDATE SET local_id = excluded.local_id, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "6e3fe917a7ae5fd950485f5cd87d7e8a1baea70cc3ba8baad539b682a2dc63f2"
+}

@@ -90,17 +90,37 @@ impl TransactionService {
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
         let mut tx = self.pool.begin().await?;
-        let group = prepare::validate(&mut tx, ctx, input).await?;
+        let result = self.create_in(&mut tx, ctx, origin, input).await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    /// Like [`Self::create`], inside the caller's transaction (used by imports).
+    pub async fn create_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        input: TransactionInput,
+    ) -> Result<TransactionGroupView, AppError> {
+        let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let household_id = ctx.household_id.to_string();
         let id = new_id(&*self.clock).to_string();
         let now = format_timestamp(self.clock.now());
         let user_id = ctx.user_id.to_string();
-        repo::insert_group(&mut tx, &household_id, &id, group.title(), &user_id, &now).await?;
-        repo::insert_splits(&mut tx, &*self.clock, &household_id, &id, &group, &now).await?;
-        let view = load_one(&mut tx, ctx, &id).await?;
+        repo::insert_group(
+            &mut *conn,
+            &household_id,
+            &id,
+            group.title(),
+            &user_id,
+            &now,
+        )
+        .await?;
+        repo::insert_splits(&mut *conn, &*self.clock, &household_id, &id, &group, &now).await?;
+        let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "created", id, &view)?;
-        append_event(&mut tx, ctx, origin, event).await?;
-        tx.commit().await?;
+        append_event(&mut *conn, ctx, origin, event).await?;
         Ok(view)
     }
 
@@ -112,20 +132,33 @@ impl TransactionService {
         id: GroupId,
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
-        let (household_id, id) = (ctx.household_id.to_string(), id.to_string());
         let mut tx = self.pool.begin().await?;
-        if !repo::group_exists(&mut tx, &household_id, &id).await? {
+        let result = self.replace_in(&mut tx, ctx, origin, id, input).await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    /// Like [`Self::replace`], inside the caller's transaction (used by imports).
+    pub async fn replace_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        id: GroupId,
+        input: TransactionInput,
+    ) -> Result<TransactionGroupView, AppError> {
+        let (household_id, id) = (ctx.household_id.to_string(), id.to_string());
+        if !repo::group_exists(&mut *conn, &household_id, &id).await? {
             return Err(AppError::NotFound);
         }
-        let group = prepare::validate(&mut tx, ctx, input).await?;
+        let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let now = format_timestamp(self.clock.now());
-        repo::update_group(&mut tx, &household_id, &id, group.title(), &now).await?;
-        repo::delete_splits(&mut tx, &household_id, &id).await?;
-        repo::insert_splits(&mut tx, &*self.clock, &household_id, &id, &group, &now).await?;
-        let view = load_one(&mut tx, ctx, &id).await?;
+        repo::update_group(&mut *conn, &household_id, &id, group.title(), &now).await?;
+        repo::delete_splits(&mut *conn, &household_id, &id).await?;
+        repo::insert_splits(&mut *conn, &*self.clock, &household_id, &id, &group, &now).await?;
+        let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "updated", id, &view)?;
-        append_event(&mut tx, ctx, origin, event).await?;
-        tx.commit().await?;
+        append_event(&mut *conn, ctx, origin, event).await?;
         Ok(view)
     }
 
@@ -136,13 +169,25 @@ impl TransactionService {
         origin: Origin,
         id: GroupId,
     ) -> Result<(), AppError> {
-        let id = id.to_string();
         let mut tx = self.pool.begin().await?;
-        let view = load_one(&mut tx, ctx, &id).await?;
-        repo::delete_group(&mut tx, &ctx.household_id.to_string(), &id).await?;
-        let event = NewEvent::new(&*self.clock, "transaction", "deleted", id, &view)?;
-        append_event(&mut tx, ctx, origin, event).await?;
+        self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
+        Ok(())
+    }
+
+    /// Like [`Self::delete`], inside the caller's transaction (used by imports).
+    pub async fn delete_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        origin: Origin,
+        id: GroupId,
+    ) -> Result<(), AppError> {
+        let id = id.to_string();
+        let view = load_one(&mut *conn, ctx, &id).await?;
+        repo::delete_group(&mut *conn, &ctx.household_id.to_string(), &id).await?;
+        let event = NewEvent::new(&*self.clock, "transaction", "deleted", id, &view)?;
+        append_event(&mut *conn, ctx, origin, event).await?;
         Ok(())
     }
 
@@ -153,6 +198,16 @@ impl TransactionService {
     ) -> Result<TransactionGroupView, AppError> {
         let mut conn = self.pool.acquire().await?;
         load_one(&mut conn, ctx, &id.to_string()).await
+    }
+
+    /// Like [`Self::get`], inside the caller's transaction.
+    pub async fn get_in(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        id: GroupId,
+    ) -> Result<TransactionGroupView, AppError> {
+        load_one(conn, ctx, &id.to_string()).await
     }
 
     /// Groups with a matching split, newest first.

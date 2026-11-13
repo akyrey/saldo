@@ -123,6 +123,33 @@ impl IdentityService {
         })
     }
 
+    /// The context for command-line tools (importer, export): the household
+    /// with this ID or name, acting as its first owner.
+    pub async fn household_context(&self, id_or_name: &str) -> Result<HouseholdCtx, AppError> {
+        let rows = sqlx::query!(
+            "SELECT h.id, m.user_id FROM households h
+             JOIN household_members m ON m.household_id = h.id AND m.role = 'owner'
+             WHERE h.id = ?1 OR h.name = ?1
+             ORDER BY m.created_at",
+            id_or_name,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let Some(first) = rows.first() else {
+            return Err(AppError::NotFound);
+        };
+        if rows.iter().any(|r| r.id != first.id) {
+            return Err(AppError::Conflict(format!(
+                "several households are called {id_or_name:?}; use the ID"
+            )));
+        }
+        Ok(HouseholdCtx {
+            household_id: parse_stored(&first.id)?,
+            user_id: parse_stored(&first.user_id)?,
+            role: Role::Owner,
+        })
+    }
+
     /// The caller, their household and their role.
     pub async fn me(&self, ctx: &HouseholdCtx) -> Result<MeView, AppError> {
         let mut conn = self.pool.acquire().await?;
