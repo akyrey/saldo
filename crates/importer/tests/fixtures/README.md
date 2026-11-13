@@ -23,3 +23,10 @@ Notes from the live instance:
   local date-times (`end` is 23:59:59 of the last day).
 - The owner has no piggy banks; `piggy-banks.json` is empty, so the piggy bank
   importer must be written from the API specification.
+
+Piggy bank fixtures written from the public API specification (6.7.8):
+`piggy-banks-spec.json` (three piggy banks: one with a target on account 2,
+one whose target is `"0"`, meaning none, and one on an account that does not
+exist) and `piggy-bank-events-1.json` (the events of piggy bank 1: one tied to
+the transfer journal 108, two without a journal). The spec's events carry no
+account; `transaction_journal_id` names the transfer.

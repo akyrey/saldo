@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, kind, moment, skip, weekend_policy FROM recurrence_repetitions\n         WHERE household_id = ? AND recurrence_id = ? ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_repetitions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_repetitions",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "moment",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_repetitions",
+            "name": "moment"
+          }
+        }
+      },
+      {
+        "name": "skip",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrence_repetitions",
+            "name": "skip"
+          }
+        }
+      },
+      {
+        "name": "weekend_policy",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_repetitions",
+            "name": "weekend_policy"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7bda786b58b6a35d0b2f909fc2a9cceb1d0f0fe7d47987f0943e7d2285be72b7"
+}

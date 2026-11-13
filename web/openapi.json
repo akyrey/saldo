@@ -2921,6 +2921,420 @@
         ]
       }
     },
+    "/api/v1/piggy-banks": {
+      "get": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "summary": "Piggy banks ordered by sort order and name.",
+        "operationId": "list_piggy_banks",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only active (`true`) or inactive (`false`) piggy banks.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_PiggyBankView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "operationId": "create_piggy_bank",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePiggyBankRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_PiggyBankView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/piggy-banks/{id}": {
+      "get": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "operationId": "get_piggy_bank",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_PiggyBankView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "summary": "Deletes the piggy bank and its events; the money stays in the accounts.",
+        "operationId": "delete_piggy_bank",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "operationId": "update_piggy_bank",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PiggyBankPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_PiggyBankView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/piggy-banks/{id}/events": {
+      "get": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "summary": "The piggy bank's events, newest first.",
+        "operationId": "list_piggy_bank_events",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_PiggyBankEventView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "piggy-banks"
+        ],
+        "summary": "Adds or removes money. Refused (422) if the account would hold less than\nzero or more than its balance, or the total would pass the target.",
+        "operationId": "create_piggy_bank_event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PiggyBankEventRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_PiggyBankEventView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/push/vapid-key": {
       "get": {
         "tags": [
@@ -2938,6 +3352,391 @@
             }
           },
           "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/recurrences": {
+      "get": {
+        "tags": [
+          "recurrences"
+        ],
+        "operationId": "list_recurrences",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_RecurrenceView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "recurrences"
+        ],
+        "summary": "Creates a recurrence. The template splits must pass the ledger rules.",
+        "operationId": "create_recurrence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurrenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RecurrenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/recurrences/preview": {
+      "post": {
+        "tags": [
+          "recurrences"
+        ],
+        "summary": "The next dates a schedule fires on, from the household's today, without\nsaving anything (for the editor's preview).",
+        "operationId": "preview_recurrence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_String"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/recurrences/{id}": {
+      "get": {
+        "tags": [
+          "recurrences"
+        ],
+        "operationId": "get_recurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RecurrenceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "recurrences"
+        ],
+        "summary": "Replaces the whole recurrence (schedule and template).",
+        "operationId": "replace_recurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurrenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RecurrenceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "recurrences"
+        ],
+        "summary": "Deletes the recurrence; transactions it created stay.",
+        "operationId": "delete_recurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/recurrences/{id}/fire": {
+      "post": {
+        "tags": [
+          "recurrences"
+        ],
+        "summary": "Creates the transaction for `date` now. Idempotent: a second call for\nthe same date returns the existing group with 200 and `created: false`.",
+        "operationId": "fire_recurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FireRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RecurrenceFiredView"
+                }
+              }
+            }
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RecurrenceFiredView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
             "content": {
               "application/json": {
                 "schema": {
@@ -6658,6 +7457,73 @@
           }
         }
       },
+      "CreatePiggyBankRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "account_ids"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Asset accounts in the piggy bank's currency; at least one."
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the household's primary currency."
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "target_amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Positive decimal string; omit for no target."
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "CreateRuleGroupRequest": {
         "type": "object",
         "required": [
@@ -7729,6 +8595,279 @@
           }
         }
       },
+      "Data_PiggyBankEventView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "piggy_bank_id",
+              "account_id",
+              "amount",
+              "currency",
+              "date",
+              "created_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "string",
+                "description": "Signed: positive added, negative removed."
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "piggy_bank_id": {
+                "type": "string"
+              },
+              "split_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Data_PiggyBankView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A piggy bank. Amounts are decimal strings in its currency.",
+            "required": [
+              "id",
+              "name",
+              "currency",
+              "saved_amount",
+              "active",
+              "sort_order",
+              "accounts",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "accounts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PiggyBankAccountView"
+                },
+                "description": "The linked accounts with the amount saved in each."
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "left_to_save": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Target minus saved, never below zero; `None` without a target."
+              },
+              "name": {
+                "type": "string"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "saved_amount": {
+                "type": "string",
+                "description": "Sum of all events."
+              },
+              "sort_order": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "start_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "target_amount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "target_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_RecurrenceFiredView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "The result of firing, also the data of the `recurrence.fired` event.",
+            "required": [
+              "recurrence_id",
+              "date",
+              "created",
+              "group"
+            ],
+            "properties": {
+              "created": {
+                "type": "boolean",
+                "description": "False when the recurrence had already fired on this date."
+              },
+              "date": {
+                "type": "string"
+              },
+              "group": {
+                "$ref": "#/components/schemas/TransactionGroupView"
+              },
+              "recurrence_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_RecurrenceView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "first_date",
+              "apply_rules",
+              "active",
+              "repetitions",
+              "splits",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "active": {
+                "type": "boolean"
+              },
+              "apply_rules": {
+                "type": "boolean",
+                "description": "Whether rules run on the transactions it creates."
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "fired_through": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The runner has handled every date up to this one."
+              },
+              "first_date": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "last_fired_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The latest date a transaction was created for."
+              },
+              "max_occurrences": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "repeat_until": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "repetitions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RepetitionView"
+                }
+              },
+              "splits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TemplateSplitView"
+                }
+              },
+              "title": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_RuleApplyResult": {
         "type": "object",
         "description": "A single result.",
@@ -8445,6 +9584,21 @@
           }
         }
       },
+      "Data_Vec_String": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Data_Vec_TokenView": {
         "type": "object",
         "description": "A single result.",
@@ -8983,6 +10137,19 @@
           },
           "source": {
             "type": "string"
+          }
+        }
+      },
+      "FireRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Defaults to the household's today."
           }
         }
       },
@@ -9724,6 +10891,266 @@
           }
         }
       },
+      "List_PiggyBankEventView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "piggy_bank_id",
+                "account_id",
+                "amount",
+                "currency",
+                "date",
+                "created_at"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Signed: positive added, negative removed."
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "piggy_bank_id": {
+                  "type": "string"
+                },
+                "split_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_PiggyBankView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A piggy bank. Amounts are decimal strings in its currency.",
+              "required": [
+                "id",
+                "name",
+                "currency",
+                "saved_amount",
+                "active",
+                "sort_order",
+                "accounts",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PiggyBankAccountView"
+                  },
+                  "description": "The linked accounts with the amount saved in each."
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "left_to_save": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Target minus saved, never below zero; `None` without a target."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "saved_amount": {
+                  "type": "string",
+                  "description": "Sum of all events."
+                },
+                "sort_order": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "start_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "target_amount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "target_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_RecurrenceView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "first_date",
+                "apply_rules",
+                "active",
+                "repetitions",
+                "splits",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "apply_rules": {
+                  "type": "boolean",
+                  "description": "Whether rules run on the transactions it creates."
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "fired_through": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The runner has handled every date up to this one."
+                },
+                "first_date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "last_fired_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The latest date a transaction was created for."
+                },
+                "max_occurrences": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "repeat_until": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "repetitions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RepetitionView"
+                  }
+                },
+                "splits": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TemplateSplitView"
+                  }
+                },
+                "title": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
       "List_TagView": {
         "type": "object",
         "description": "A page of results.",
@@ -10005,6 +11432,523 @@
             "type": "string",
             "format": "uuid",
             "description": "The split that paid this period."
+          }
+        }
+      },
+      "PiggyBankAccountView": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "saved_amount"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "saved_amount": {
+            "type": "string"
+          }
+        }
+      },
+      "PiggyBankEventRequest": {
+        "type": "object",
+        "required": [
+          "amount",
+          "date"
+        ],
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Required when more than one account is linked."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Signed decimal string: `\"25.00\"` adds, `\"-10.00\"` removes."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "split_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A transfer split into or out of the account that moved the money."
+          }
+        }
+      },
+      "PiggyBankEventView": {
+        "type": "object",
+        "required": [
+          "id",
+          "piggy_bank_id",
+          "account_id",
+          "amount",
+          "currency",
+          "date",
+          "created_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Signed: positive added, negative removed."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "piggy_bank_id": {
+            "type": "string"
+          },
+          "split_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PiggyBankPatch": {
+        "type": "object",
+        "description": "Fields left out keep their value; `null` clears a nullable one.",
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Replaces the linked accounts; one still holding money cannot go (409)."
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "target_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PiggyBankView": {
+        "type": "object",
+        "description": "A piggy bank. Amounts are decimal strings in its currency.",
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "saved_amount",
+          "active",
+          "sort_order",
+          "accounts",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PiggyBankAccountView"
+            },
+            "description": "The linked accounts with the amount saved in each."
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "left_to_save": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target minus saved, never below zero; `None` without a target."
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "saved_amount": {
+            "type": "string",
+            "description": "Sum of all events."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "PreviewRequest": {
+        "type": "object",
+        "required": [
+          "first_date",
+          "repetitions"
+        ],
+        "properties": {
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "How many dates (default 5, at most 100).",
+            "minimum": 0
+          },
+          "first_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "max_occurrences": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "repeat_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "repetitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepetitionRequest"
+            }
+          }
+        }
+      },
+      "RecurrenceFiredView": {
+        "type": "object",
+        "description": "The result of firing, also the data of the `recurrence.fired` event.",
+        "required": [
+          "recurrence_id",
+          "date",
+          "created",
+          "group"
+        ],
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "description": "False when the recurrence had already fired on this date."
+          },
+          "date": {
+            "type": "string"
+          },
+          "group": {
+            "$ref": "#/components/schemas/TransactionGroupView"
+          },
+          "recurrence_id": {
+            "type": "string"
+          }
+        }
+      },
+      "RecurrenceRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "first_date",
+          "repetitions",
+          "splits"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Default true."
+          },
+          "apply_rules": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Default true."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "max_occurrences": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repeat_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "repetitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepetitionRequest"
+            }
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSplitRequest"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "RecurrenceView": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "first_date",
+          "apply_rules",
+          "active",
+          "repetitions",
+          "splits",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "apply_rules": {
+            "type": "boolean",
+            "description": "Whether rules run on the transactions it creates."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fired_through": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The runner has handled every date up to this one."
+          },
+          "first_date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_fired_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The latest date a transaction was created for."
+          },
+          "max_occurrences": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repeat_until": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repetitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepetitionView"
+            }
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSplitView"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "RepetitionRequest": {
+        "type": "object",
+        "description": "When a recurrence fires.",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "`daily`, `weekly`, `monthly`, `nth_weekday` or `yearly`."
+          },
+          "moment": {
+            "type": "string",
+            "description": "`''` daily; `1`-`7` (Mon-Sun) weekly; `1`-`31` monthly;\n`week,weekday` (e.g. `2,3`) nth_weekday; `MM-DD` yearly."
+          },
+          "skip": {
+            "type": "integer",
+            "format": "int32",
+            "description": "`1` = every second date, and so on.",
+            "minimum": 0
+          },
+          "weekend_policy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`keep` (default), `skip`, `previous_friday` or `next_monday`."
+          }
+        }
+      },
+      "RepetitionView": {
+        "type": "object",
+        "required": [
+          "kind",
+          "moment",
+          "skip",
+          "weekend_policy"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "`daily`, `weekly`, `monthly`, `nth_weekday` or `yearly`."
+          },
+          "moment": {
+            "type": "string",
+            "description": "`''` daily; `1`-`7` (Mon-Sun) weekly; `1`-`31` monthly;\n`week,weekday` nth_weekday; `MM-DD` yearly."
+          },
+          "skip": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "weekend_policy": {
+            "type": "string",
+            "description": "`keep`, `skip`, `previous_friday` or `next_monday`."
           }
         }
       },
@@ -10602,6 +12546,163 @@
           },
           "updated_at": {
             "type": "string"
+          }
+        }
+      },
+      "TemplateSplitRequest": {
+        "type": "object",
+        "description": "One split of the transaction each firing creates.",
+        "required": [
+          "description",
+          "source_id",
+          "destination_id",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Positive decimal string."
+          },
+          "bill_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "budget_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "destination_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "foreign_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "foreign_currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "piggy_bank_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A transfer into (out of) a linked account adds to (removes from) it."
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "TemplateSplitView": {
+        "type": "object",
+        "description": "One template split. Amounts are decimal strings in their currency.",
+        "required": [
+          "position",
+          "description",
+          "source_account_id",
+          "destination_account_id",
+          "amount",
+          "currency",
+          "tag_ids"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "bill_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "budget_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "destination_account_id": {
+            "type": "string"
+          },
+          "foreign_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "foreign_currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "piggy_bank_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "source_account_id": {
+            "type": "string"
+          },
+          "tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

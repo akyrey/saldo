@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT pa.account_id,\n                  COALESCE((SELECT SUM(e.amount_minor) FROM piggy_bank_events e\n                            WHERE e.piggy_bank_id = pa.piggy_bank_id\n                              AND e.account_id = pa.account_id), 0) AS \"saved!: i64\"\n           FROM piggy_bank_accounts pa\n           WHERE pa.household_id = ? AND pa.piggy_bank_id = ?\n           ORDER BY pa.account_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_accounts",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "saved!: i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f07927b2e16ba665e64dbb574e2cb00664d3fc5c189070b9e8de7a00126c7a72"
+}

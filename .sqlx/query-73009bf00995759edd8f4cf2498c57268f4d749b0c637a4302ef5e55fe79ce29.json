@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO piggy_banks (id, household_id, name, target_amount_minor, currency_code,\n            start_date, target_date, active, sort_order, notes, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "73009bf00995759edd8f4cf2498c57268f4d749b0c637a4302ef5e55fe79ce29"
+}

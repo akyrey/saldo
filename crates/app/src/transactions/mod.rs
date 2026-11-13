@@ -2,6 +2,7 @@
 
 mod input;
 mod prepare;
+pub(crate) mod recurring;
 mod repo;
 mod view;
 

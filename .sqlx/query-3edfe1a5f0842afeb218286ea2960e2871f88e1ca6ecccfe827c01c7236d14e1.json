@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, household_id, piggy_bank_id, account_id, amount_minor, split_id, date, created_at\n         FROM piggy_bank_events WHERE household_id = ? AND piggy_bank_id = ?\n         ORDER BY date DESC, id DESC LIMIT ? OFFSET ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "piggy_bank_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "piggy_bank_id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "split_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "split_id"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_bank_events",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "3edfe1a5f0842afeb218286ea2960e2871f88e1ca6ecccfe827c01c7236d14e1"
+}

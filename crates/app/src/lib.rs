@@ -21,6 +21,8 @@ pub mod identity;
 pub mod import_runs;
 pub mod notifications;
 pub mod page;
+pub mod piggy_banks;
+pub mod recurrences;
 pub mod reports;
 pub mod rules;
 pub mod scope;
@@ -43,6 +45,8 @@ use crate::events::EventService;
 use crate::export::ExportService;
 use crate::identity::IdentityService;
 use crate::notifications::NotificationService;
+use crate::piggy_banks::PiggyBankService;
+use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
 use crate::tags::TagService;
@@ -71,11 +75,14 @@ pub struct App {
     pub webhooks: WebhookService,
     pub budgets: BudgetService,
     pub reports: ReportService,
+    pub piggy_banks: PiggyBankService,
+    pub recurrences: RecurrenceService,
 }
 
 impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
         let accounts = AccountService::new(pool.clone(), clock.clone());
+        let transactions = TransactionService::new(pool.clone(), clock.clone());
         let attachments =
             AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
@@ -94,15 +101,13 @@ impl App {
             identity: IdentityService::new(pool.clone(), clock.clone()),
             notifications: NotificationService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
-            rules: RuleService::new(
-                pool.clone(),
-                clock.clone(),
-                TransactionService::new(pool.clone(), clock.clone()),
-            ),
-            transactions: TransactionService::new(pool.clone(), clock.clone()),
+            rules: RuleService::new(pool.clone(), clock.clone(), transactions.clone()),
             webhooks: WebhookService::new(pool.clone(), clock.clone()),
             budgets: BudgetService::new(pool.clone(), clock.clone()),
             reports: ReportService::new(pool.clone()),
+            piggy_banks: PiggyBankService::new(pool.clone(), clock.clone()),
+            recurrences: RecurrenceService::new(pool.clone(), clock.clone(), transactions.clone()),
+            transactions,
             pool,
             clock,
         }

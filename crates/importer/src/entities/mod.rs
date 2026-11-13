@@ -7,6 +7,8 @@ pub mod bills;
 pub mod budgets;
 pub mod categories;
 pub mod currencies;
+pub mod piggy_banks;
+pub mod recurrences;
 pub mod rules;
 pub mod tags;
 pub mod transactions;

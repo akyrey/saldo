@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT kind, source_account_id, destination_account_id FROM splits\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "source_account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "source_account_id"
+          }
+        }
+      },
+      {
+        "name": "destination_account_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "destination_account_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b9e4b4b60b9ef374fd1f916ccf68d2c25ac52d721fa7f31ea97dfa7e3b3af12e"
+}

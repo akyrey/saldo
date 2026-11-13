@@ -248,6 +248,42 @@ const notificationsRoute = createRoute({
   ),
 });
 
+const piggyBanksRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "piggy-banks",
+  component: lazyRouteComponent(
+    () => import("@/features/piggy-banks/PiggyBanksPage"),
+    "PiggyBanksPage",
+  ),
+});
+
+const recurrencesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "recurrences",
+  component: lazyRouteComponent(
+    () => import("@/features/recurrences/RecurrencesPage"),
+    "RecurrencesPage",
+  ),
+});
+
+const newRecurrenceRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "recurrences/new",
+  component: lazyRouteComponent(
+    () => import("@/features/recurrences/RecurrenceEditorPage"),
+    "NewRecurrencePage",
+  ),
+});
+
+export const editRecurrenceRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "recurrences/$recurrenceId/edit",
+  component: lazyRouteComponent(
+    () => import("@/features/recurrences/RecurrenceEditorPage"),
+    "EditRecurrencePage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -276,6 +312,10 @@ const routeTree = rootRoute.addChildren([
     dashboardRoute,
     reportRoute,
     notificationsRoute,
+    piggyBanksRoute,
+    recurrencesRoute,
+    newRecurrenceRoute,
+    editRecurrenceRoute,
   ]),
 ]);
 

@@ -1,0 +1,182 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, position, description, source_account_id, destination_account_id, amount_minor,\n                currency_code, foreign_amount_minor, foreign_currency_code, category_id, budget_id,\n                bill_id, piggy_bank_id, tags\n         FROM recurrence_splits WHERE household_id = ? AND recurrence_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "position",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "position"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "source_account_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "source_account_id"
+          }
+        }
+      },
+      {
+        "name": "destination_account_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "destination_account_id"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "foreign_amount_minor",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "foreign_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "foreign_currency_code",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "foreign_currency_code"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "category_id"
+          }
+        }
+      },
+      {
+        "name": "budget_id",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "budget_id"
+          }
+        }
+      },
+      {
+        "name": "bill_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "bill_id"
+          }
+        }
+      },
+      {
+        "name": "piggy_bank_id",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "piggy_bank_id"
+          }
+        }
+      },
+      {
+        "name": "tags",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrence_splits",
+            "name": "tags"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "bdaa3c3baa49ac5690fa15ebabf94f53c49a2fe803d3341c3c933af4e6562fc5"
+}

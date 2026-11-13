@@ -4,6 +4,7 @@
 //! therefore has no method that sends anything but `GET`.
 
 pub mod models;
+pub mod planning_models;
 
 use std::fmt;
 use std::time::Duration;

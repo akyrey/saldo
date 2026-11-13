@@ -26,6 +26,8 @@ export interface SplitRowFieldsProps {
   canRemove: boolean;
   onChange: (changes: Partial<Omit<SplitRow, "key">>) => void;
   onRemove: () => void;
+  /** A recurrence template: no date (each firing sets it) and no notes. */
+  template?: boolean;
 }
 
 /** One split: date, description, accounts, amounts, category and tags. */
@@ -79,21 +81,23 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
         </p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Field id={id("date")} label="Date" error={errors.date}>
-          <Input
-            id={id("date")}
-            type="date"
-            required
-            value={row.date}
-            onChange={(e) => onChange({ date: e.target.value })}
-            {...errorProps(id("date"), errors.date)}
-          />
-        </Field>
+        {props.template ? null : (
+          <Field id={id("date")} label="Date" error={errors.date}>
+            <Input
+              id={id("date")}
+              type="date"
+              required
+              value={row.date}
+              onChange={(e) => onChange({ date: e.target.value })}
+              {...errorProps(id("date"), errors.date)}
+            />
+          </Field>
+        )}
         <Field
           id={id("description")}
           label="Description"
           error={errors.description}
-          className="lg:col-span-3"
+          className={props.template ? "sm:col-span-2 lg:col-span-4" : "lg:col-span-3"}
         >
           <Input
             id={id("description")}
@@ -193,7 +197,7 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
       </div>
       <details className="mt-3" open={showForeign}>
         <summary className="cursor-pointer text-sm text-muted-foreground">
-          Foreign amount and notes
+          {props.template ? "Foreign amount" : "Foreign amount and notes"}
         </summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field id={id("foreign_amount")} label="Foreign amount" error={errors.foreign_amount}>
@@ -225,13 +229,15 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
               ))}
             </NativeSelect>
           </Field>
-          <Field id={id("notes")} label="Notes" error={errors.notes} className="sm:col-span-2">
-            <Input
-              id={id("notes")}
-              value={row.notes}
-              onChange={(e) => onChange({ notes: e.target.value })}
-            />
-          </Field>
+          {props.template ? null : (
+            <Field id={id("notes")} label="Notes" error={errors.notes} className="sm:col-span-2">
+              <Input
+                id={id("notes")}
+                value={row.notes}
+                onChange={(e) => onChange({ notes: e.target.value })}
+              />
+            </Field>
+          )}
         </div>
       </details>
     </fieldset>

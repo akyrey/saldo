@@ -81,6 +81,8 @@ pub mod kind;
 pub mod lookup;
 pub mod money;
 pub mod period;
+pub mod piggy_bank;
+pub mod recurrence;
 pub mod rules;
 pub mod transaction;
 pub mod validation;
@@ -114,6 +116,14 @@ pub use rules::{
 };
 pub use transaction::{NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup, ValidatedSplit};
 pub use validation::validate_group;
+
+pub use piggy_bank::{
+    EventOutcome, PiggyBankId, PiggyBankState, PiggyEventError, check_event, check_imported_event,
+    room_to_add,
+};
+pub use recurrence::{
+    Pattern, RecurrenceId, RecurrenceSchedule, Repetition, ScheduleError, WeekendPolicy,
+};
 
 /// Name of the application, shared by every crate.
 pub const APP_NAME: &str = "Saldo";

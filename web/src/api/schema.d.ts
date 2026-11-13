@@ -607,6 +607,61 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/piggy-banks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Piggy banks ordered by sort order and name. */
+    get: operations["list_piggy_banks"];
+    put?: never;
+    post: operations["create_piggy_bank"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/piggy-banks/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_piggy_bank"];
+    put?: never;
+    post?: never;
+    /** Deletes the piggy bank and its events; the money stays in the accounts. */
+    delete: operations["delete_piggy_bank"];
+    options?: never;
+    head?: never;
+    patch: operations["update_piggy_bank"];
+    trace?: never;
+  };
+  "/api/v1/piggy-banks/{id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The piggy bank's events, newest first. */
+    get: operations["list_piggy_bank_events"];
+    put?: never;
+    /**
+     * Adds or removes money. Refused (422) if the account would hold less than
+     *     zero or more than its balance, or the total would pass the target.
+     */
+    post: operations["create_piggy_bank_event"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/push/vapid-key": {
     parameters: {
       query?: never;
@@ -617,6 +672,81 @@ export interface paths {
     get: operations["vapid_key"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/recurrences": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["list_recurrences"];
+    put?: never;
+    /** Creates a recurrence. The template splits must pass the ledger rules. */
+    post: operations["create_recurrence"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/recurrences/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The next dates a schedule fires on, from the household's today, without
+     *     saving anything (for the editor's preview).
+     */
+    post: operations["preview_recurrence"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/recurrences/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_recurrence"];
+    /** Replaces the whole recurrence (schedule and template). */
+    put: operations["replace_recurrence"];
+    post?: never;
+    /** Deletes the recurrence; transactions it created stay. */
+    delete: operations["delete_recurrence"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/recurrences/{id}/fire": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Creates the transaction for `date` now. Idempotent: a second call for
+     *     the same date returns the existing group with 200 and `created: false`.
+     */
+    post: operations["fire_recurrence"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1455,6 +1585,23 @@ export interface components {
       /** Format: date */
       start_date: string;
     };
+    CreatePiggyBankRequest: {
+      /** @description Asset accounts in the piggy bank's currency; at least one. */
+      account_ids: string[];
+      active?: boolean | null;
+      /** @description Defaults to the household's primary currency. */
+      currency?: string | null;
+      name: string;
+      notes?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+      /** Format: date */
+      start_date?: string | null;
+      /** @description Positive decimal string; omit for no target. */
+      target_amount?: string | null;
+      /** Format: date */
+      target_date?: string | null;
+    };
     CreateRuleGroupRequest: {
       active?: boolean;
       description?: string | null;
@@ -1772,6 +1919,79 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_PiggyBankEventView: {
+      data: {
+        account_id: string;
+        /** @description Signed: positive added, negative removed. */
+        amount: string;
+        created_at: string;
+        currency: string;
+        date: string;
+        id: string;
+        piggy_bank_id: string;
+        split_id?: string | null;
+      };
+    };
+    /** @description A single result. */
+    Data_PiggyBankView: {
+      /** @description A piggy bank. Amounts are decimal strings in its currency. */
+      data: {
+        /** @description The linked accounts with the amount saved in each. */
+        accounts: components["schemas"]["PiggyBankAccountView"][];
+        active: boolean;
+        created_at: string;
+        currency: string;
+        id: string;
+        /** @description Target minus saved, never below zero; `None` without a target. */
+        left_to_save?: string | null;
+        name: string;
+        notes?: string | null;
+        /** @description Sum of all events. */
+        saved_amount: string;
+        /** Format: int64 */
+        sort_order: number;
+        start_date?: string | null;
+        target_amount?: string | null;
+        target_date?: string | null;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_RecurrenceFiredView: {
+      /** @description The result of firing, also the data of the `recurrence.fired` event. */
+      data: {
+        /** @description False when the recurrence had already fired on this date. */
+        created: boolean;
+        date: string;
+        group: components["schemas"]["TransactionGroupView"];
+        recurrence_id: string;
+      };
+    };
+    /** @description A single result. */
+    Data_RecurrenceView: {
+      data: {
+        active: boolean;
+        /** @description Whether rules run on the transactions it creates. */
+        apply_rules: boolean;
+        created_at: string;
+        description?: string | null;
+        /** @description The runner has handled every date up to this one. */
+        fired_through?: string | null;
+        first_date: string;
+        id: string;
+        /** @description The latest date a transaction was created for. */
+        last_fired_date?: string | null;
+        /** Format: int64 */
+        max_occurrences?: number | null;
+        notes?: string | null;
+        repeat_until?: string | null;
+        repetitions: components["schemas"]["RepetitionView"][];
+        splits: components["schemas"]["TemplateSplitView"][];
+        title: string;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
     Data_RuleApplyResult: {
       data: {
         /** @description Groups that the rule actually changed. */
@@ -1972,6 +2192,10 @@ export interface components {
       }[];
     };
     /** @description A single result. */
+    Data_Vec_String: {
+      data: string[];
+    };
+    /** @description A single result. */
     Data_Vec_TokenView: {
       data: {
         created_at: string;
@@ -2129,6 +2353,13 @@ export interface components {
       external_id: string;
       local_id: string;
       source: string;
+    };
+    FireRequest: {
+      /**
+       * Format: date
+       * @description Defaults to the household's today.
+       */
+      date?: string | null;
     };
     Health: {
       /** @description `ok` or `unavailable`. */
@@ -2319,6 +2550,70 @@ export interface components {
       meta: components["schemas"]["ListMeta"];
     };
     /** @description A page of results. */
+    List_PiggyBankEventView: {
+      data: {
+        account_id: string;
+        /** @description Signed: positive added, negative removed. */
+        amount: string;
+        created_at: string;
+        currency: string;
+        date: string;
+        id: string;
+        piggy_bank_id: string;
+        split_id?: string | null;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_PiggyBankView: {
+      data: {
+        /** @description The linked accounts with the amount saved in each. */
+        accounts: components["schemas"]["PiggyBankAccountView"][];
+        active: boolean;
+        created_at: string;
+        currency: string;
+        id: string;
+        /** @description Target minus saved, never below zero; `None` without a target. */
+        left_to_save?: string | null;
+        name: string;
+        notes?: string | null;
+        /** @description Sum of all events. */
+        saved_amount: string;
+        /** Format: int64 */
+        sort_order: number;
+        start_date?: string | null;
+        target_amount?: string | null;
+        target_date?: string | null;
+        updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_RecurrenceView: {
+      data: {
+        active: boolean;
+        /** @description Whether rules run on the transactions it creates. */
+        apply_rules: boolean;
+        created_at: string;
+        description?: string | null;
+        /** @description The runner has handled every date up to this one. */
+        fired_through?: string | null;
+        first_date: string;
+        id: string;
+        /** @description The latest date a transaction was created for. */
+        last_fired_date?: string | null;
+        /** Format: int64 */
+        max_occurrences?: number | null;
+        notes?: string | null;
+        repeat_until?: string | null;
+        repetitions: components["schemas"]["RepetitionView"][];
+        splits: components["schemas"]["TemplateSplitView"][];
+        title: string;
+        updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
     List_TagView: {
       data: {
         created_at: string;
@@ -2398,6 +2693,160 @@ export interface components {
        * @description The split that paid this period.
        */
       split_id: string;
+    };
+    PiggyBankAccountView: {
+      account_id: string;
+      saved_amount: string;
+    };
+    PiggyBankEventRequest: {
+      /**
+       * Format: uuid
+       * @description Required when more than one account is linked.
+       */
+      account_id?: string | null;
+      /** @description Signed decimal string: `"25.00"` adds, `"-10.00"` removes. */
+      amount: string;
+      /** Format: date */
+      date: string;
+      /**
+       * Format: uuid
+       * @description A transfer split into or out of the account that moved the money.
+       */
+      split_id?: string | null;
+    };
+    PiggyBankEventView: {
+      account_id: string;
+      /** @description Signed: positive added, negative removed. */
+      amount: string;
+      created_at: string;
+      currency: string;
+      date: string;
+      id: string;
+      piggy_bank_id: string;
+      split_id?: string | null;
+    };
+    /** @description Fields left out keep their value; `null` clears a nullable one. */
+    PiggyBankPatch: {
+      /** @description Replaces the linked accounts; one still holding money cannot go (409). */
+      account_ids?: string[] | null;
+      active?: boolean | null;
+      name?: string | null;
+      notes?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+      /** Format: date */
+      start_date?: string | null;
+      target_amount?: string | null;
+      /** Format: date */
+      target_date?: string | null;
+    };
+    /** @description A piggy bank. Amounts are decimal strings in its currency. */
+    PiggyBankView: {
+      /** @description The linked accounts with the amount saved in each. */
+      accounts: components["schemas"]["PiggyBankAccountView"][];
+      active: boolean;
+      created_at: string;
+      currency: string;
+      id: string;
+      /** @description Target minus saved, never below zero; `None` without a target. */
+      left_to_save?: string | null;
+      name: string;
+      notes?: string | null;
+      /** @description Sum of all events. */
+      saved_amount: string;
+      /** Format: int64 */
+      sort_order: number;
+      start_date?: string | null;
+      target_amount?: string | null;
+      target_date?: string | null;
+      updated_at: string;
+    };
+    PreviewRequest: {
+      /** @description How many dates (default 5, at most 100). */
+      count?: number | null;
+      /** Format: date */
+      first_date: string;
+      /** Format: int32 */
+      max_occurrences?: number | null;
+      /** Format: date */
+      repeat_until?: string | null;
+      repetitions: components["schemas"]["RepetitionRequest"][];
+    };
+    /** @description The result of firing, also the data of the `recurrence.fired` event. */
+    RecurrenceFiredView: {
+      /** @description False when the recurrence had already fired on this date. */
+      created: boolean;
+      date: string;
+      group: components["schemas"]["TransactionGroupView"];
+      recurrence_id: string;
+    };
+    RecurrenceRequest: {
+      /** @description Default true. */
+      active?: boolean | null;
+      /** @description Default true. */
+      apply_rules?: boolean | null;
+      description?: string | null;
+      /** Format: date */
+      first_date: string;
+      /** Format: int32 */
+      max_occurrences?: number | null;
+      notes?: string | null;
+      /** Format: date */
+      repeat_until?: string | null;
+      repetitions: components["schemas"]["RepetitionRequest"][];
+      splits: components["schemas"]["TemplateSplitRequest"][];
+      title: string;
+    };
+    RecurrenceView: {
+      active: boolean;
+      /** @description Whether rules run on the transactions it creates. */
+      apply_rules: boolean;
+      created_at: string;
+      description?: string | null;
+      /** @description The runner has handled every date up to this one. */
+      fired_through?: string | null;
+      first_date: string;
+      id: string;
+      /** @description The latest date a transaction was created for. */
+      last_fired_date?: string | null;
+      /** Format: int64 */
+      max_occurrences?: number | null;
+      notes?: string | null;
+      repeat_until?: string | null;
+      repetitions: components["schemas"]["RepetitionView"][];
+      splits: components["schemas"]["TemplateSplitView"][];
+      title: string;
+      updated_at: string;
+    };
+    /** @description When a recurrence fires. */
+    RepetitionRequest: {
+      /** @description `daily`, `weekly`, `monthly`, `nth_weekday` or `yearly`. */
+      kind: string;
+      /**
+       * @description `''` daily; `1`-`7` (Mon-Sun) weekly; `1`-`31` monthly;
+       *     `week,weekday` (e.g. `2,3`) nth_weekday; `MM-DD` yearly.
+       */
+      moment?: string;
+      /**
+       * Format: int32
+       * @description `1` = every second date, and so on.
+       */
+      skip?: number;
+      /** @description `keep` (default), `skip`, `previous_friday` or `next_monday`. */
+      weekend_policy?: string | null;
+    };
+    RepetitionView: {
+      /** @description `daily`, `weekly`, `monthly`, `nth_weekday` or `yearly`. */
+      kind: string;
+      /**
+       * @description `''` daily; `1`-`7` (Mon-Sun) weekly; `1`-`31` monthly;
+       *     `week,weekday` nth_weekday; `MM-DD` yearly.
+       */
+      moment: string;
+      /** Format: int64 */
+      skip: number;
+      /** @description `keep`, `skip`, `previous_friday` or `next_monday`. */
+      weekend_policy: string;
     };
     /** @description What every report echoes back: the span and the interval it was cut into. */
     ReportRange: {
@@ -2568,6 +3017,48 @@ export interface components {
       id: string;
       name: string;
       updated_at: string;
+    };
+    /** @description One split of the transaction each firing creates. */
+    TemplateSplitRequest: {
+      /** @description Positive decimal string. */
+      amount: string;
+      /** Format: uuid */
+      bill_id?: string | null;
+      /** Format: uuid */
+      budget_id?: string | null;
+      /** Format: uuid */
+      category_id?: string | null;
+      currency?: string | null;
+      description: string;
+      /** Format: uuid */
+      destination_id: string;
+      foreign_amount?: string | null;
+      foreign_currency?: string | null;
+      /**
+       * Format: uuid
+       * @description A transfer into (out of) a linked account adds to (removes from) it.
+       */
+      piggy_bank_id?: string | null;
+      /** Format: uuid */
+      source_id: string;
+      tag_ids?: string[];
+    };
+    /** @description One template split. Amounts are decimal strings in their currency. */
+    TemplateSplitView: {
+      amount: string;
+      bill_id?: string | null;
+      budget_id?: string | null;
+      category_id?: string | null;
+      currency: string;
+      description: string;
+      destination_account_id: string;
+      foreign_amount?: string | null;
+      foreign_currency?: string | null;
+      piggy_bank_id?: string | null;
+      /** Format: int64 */
+      position: number;
+      source_account_id: string;
+      tag_ids: string[];
     };
     TestQueued: {
       /** @description The `webhook.test` event that will be delivered to this endpoint only. */
@@ -4544,6 +5035,257 @@ export interface operations {
       };
     };
   };
+  list_piggy_banks: {
+    parameters: {
+      query?: {
+        /** @description Only active (`true`) or inactive (`false`) piggy banks. */
+        active?: boolean;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_PiggyBankView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_piggy_bank: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePiggyBankRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_PiggyBankView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_piggy_bank: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_PiggyBankView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_piggy_bank: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_piggy_bank: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PiggyBankPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_PiggyBankView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_piggy_bank_events: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_PiggyBankEventView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_piggy_bank_event: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PiggyBankEventRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_PiggyBankEventView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   vapid_key: {
     parameters: {
       query?: never;
@@ -4562,6 +5304,246 @@ export interface operations {
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_recurrences: {
+    parameters: {
+      query?: {
+        active?: boolean;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_RecurrenceView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RecurrenceRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RecurrenceView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  preview_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PreviewRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_String"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RecurrenceView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  replace_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RecurrenceRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RecurrenceView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  fire_recurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FireRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RecurrenceFiredView"];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RecurrenceFiredView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };

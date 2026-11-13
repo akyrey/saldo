@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE recurrences SET title = ?, description = ?, first_date = ?, repeat_until = ?,\n            max_occurrences = ?, apply_rules = ?, active = ?, notes = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "a3d79a1826563e009aef81b579a28bf5463cc25e926a858e39dc5fcd88df4d09"
+}

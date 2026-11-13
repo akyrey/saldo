@@ -1,0 +1,170 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, household_id, title, description, first_date, repeat_until, max_occurrences,\n                  apply_rules AS \"apply_rules: bool\", active AS \"active: bool\", notes,\n                  fired_through, created_at, updated_at\n           FROM recurrences WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "first_date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "first_date"
+          }
+        }
+      },
+      {
+        "name": "repeat_until",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "repeat_until"
+          }
+        }
+      },
+      {
+        "name": "max_occurrences",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "max_occurrences"
+          }
+        }
+      },
+      {
+        "name": "apply_rules: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "apply_rules"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "fired_through",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "fired_through"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurrences",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "ffd8c30acfc5cc9d24f4500729d4f36a31f99e95110510a6a15d3fe2ffb068f6"
+}

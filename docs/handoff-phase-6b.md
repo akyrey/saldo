@@ -24,7 +24,7 @@ Branch `phase-6b-reminders`, built on f336043 (Phase 5 merge). Not merged and no
 - **CLI**: `saldo vapid-keys` prints a new key pair.
 - **Web** (`web/src/features/notifications/`). The page at `/settings/notifications` is reached from a bell icon in the header (not the NAV, to keep the merge simple). It lists the user's channels, with send test, pause/resume and delete. It has an add form for ntfy, Gotify and email, with server field errors shown on the right field. It also has the "Enable notifications in this browser" flow: permission prompt, `pushManager.subscribe` with the VAPID key, then `POST` of a `webpush` channel. `web/public/push-sw.js` holds the `push` and `notificationclick` handlers (focus an open tab and navigate, or open a new one). Workbox loads it through `importScripts`. The bill form already had `remind_days_before` and `remind_every_days` from Phase 5.
 
-## Deviations from ARCHITECTURE.md (need owner approval; ARCHITECTURE.md not edited)
+## Deviations from ARCHITECTURE.md (all five approved by the owner on 2026-11-13)
 
 1. **New event types** `notification_channel.created/updated/deleted`, whose data is the secret-free `ChannelView`. CLAUDE.md requires an event for every state change; 8.1 does not list these types.
 2. **Notification bookkeeping appends no events.** This covers `notifications` rows, the cursor, and the sent/failed status. It works like webhook deliveries: delivery state, and events here would loop back into the notifier.

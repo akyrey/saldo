@@ -9,7 +9,9 @@ import {
   LogOut,
   PiggyBank,
   Receipt,
+  Repeat,
   Tags,
+  Target,
   Wallet,
   Wand2,
   Webhook,
@@ -26,8 +28,10 @@ const NAV = [
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/bills", label: "Bills", icon: Receipt },
   { to: "/rules", label: "Rules", icon: Wand2 },
-  { to: "/budgets", label: "Budgets", icon: PiggyBank },
+  { to: "/budgets", label: "Budgets", icon: Target },
   { to: "/reports", label: "Reports", icon: ChartColumn },
+  { to: "/piggy-banks", label: "Piggy banks", icon: PiggyBank },
+  { to: "/recurrences", label: "Recurring", icon: Repeat },
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
@@ -98,6 +102,7 @@ export function AppLayout() {
       <nav
         aria-label="Main mobile"
         className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        // One equal column per entry, however many features add a tab.
         style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
       >
         {nav.map(({ to, label, icon: Icon }) => (

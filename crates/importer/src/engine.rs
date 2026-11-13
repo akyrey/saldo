@@ -17,16 +17,20 @@ use crate::firefly::{FireflyClient, FireflyError};
 use crate::report::ImportReport;
 
 /// Entities in import order (ARCHITECTURE.md 9.1); later phases add theirs.
-pub const ENTITIES: [&str; 9] = [
+pub const ENTITIES: [&str; 12] = [
     "currencies",
     "accounts",
     "categories",
     "tags",
     "budgets",
     "bills",
+    "piggy_banks",
     "rules",
+    "recurrences",
     "transactions",
     "attachments",
+    // After transactions, so an event's transfer journal resolves to its split.
+    "piggy_bank_events",
 ];
 
 /// Everything that can stop an import. One enum, with `#[from]` so `?`
@@ -145,8 +149,13 @@ async fn run_entities(
             "budgets" => entities::budgets::import_budgets(&cx, &mut report).await?,
             "bills" => entities::bills::import_bills(&cx, &mut report).await?,
             "rules" => entities::rules::import_rules(&cx, &mut report).await?,
+            "piggy_banks" => entities::piggy_banks::import_piggy_banks(&cx, &mut report).await?,
+            "recurrences" => entities::recurrences::import_recurrences(&cx, &mut report).await?,
             "transactions" => entities::transactions::import_transactions(&cx, &mut report).await?,
             "attachments" => entities::attachments::import_attachments(&cx, &mut report).await?,
+            "piggy_bank_events" => {
+                entities::piggy_banks::import_piggy_bank_events(&cx, &mut report).await?
+            }
             _ => {}
         }
     }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE transaction_groups SET recurrence_id = ?, recurrence_date = ?\n             WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "163e8fd04d58d55311b581dce4acb26b9a7c02f65dfa26fe05357dc620ba28e6"
+}

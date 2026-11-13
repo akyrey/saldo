@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE piggy_banks SET name = ?, target_amount_minor = ?, start_date = ?, target_date = ?,\n            active = ?, sort_order = ?, notes = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "ee4e3789fd10ff57c320a76533f6326732e97e2fe84c2a20fe8d0d2aed5ec110"
+}

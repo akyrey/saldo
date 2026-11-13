@@ -12,6 +12,7 @@
 
 mod budgets;
 pub mod notifier;
+pub mod recurrences;
 mod reminders;
 mod signal;
 mod webhooks;
@@ -131,6 +132,7 @@ pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     });
     reminders::spawn_bill_scheduler(&mut workers, state);
     notifier::spawn_notifier(&mut workers, state);
+    recurrences::spawn(&mut workers, state);
     workers
 }
 
@@ -213,7 +215,8 @@ mod tests {
                 "webhook-delivery",
                 "auto-budgets",
                 "bill-scheduler",
-                "notifier"
+                "notifier",
+                "recurrence-runner"
             ]
         );
         // Both run once at start; a write signal wakes them again.
