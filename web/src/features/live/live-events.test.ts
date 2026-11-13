@@ -4,16 +4,25 @@ import { keysFor, parseNotice, startLiveEvents, type EventSourceLike } from "./l
 
 describe("keysFor", () => {
   it("maps known entities to the query keys they affect", () => {
-    expect(keysFor("transaction")).toEqual([["transactions"], ["balances"], ["accounts"]]);
-    expect(keysFor("account")).toEqual([["accounts"], ["balances"]]);
-    expect(keysFor("tag")).toEqual([["tags"], ["transactions"]]);
+    expect(keysFor("account")).toEqual([["accounts"], ["balances"], ["reports"]]);
+    expect(keysFor("tag")).toEqual([["tags"], ["transactions"], ["reports"]]);
     expect(keysFor("household_member")).toEqual([["members"]]);
     expect(keysFor("household")).toEqual([["me"]]);
     expect(keysFor("webhook")).toEqual([["webhooks"]]);
+    expect(keysFor("budget_limit")).toEqual([["budgets"], ["reports"]]);
+    expect(keysFor("rule_group")).toEqual([["rules"]]);
+    expect(keysFor("piggy_bank")).toEqual([["piggy-banks"]]);
+    expect(keysFor("notification_channel")).toEqual([["notification-channels"]]);
+  });
+
+  it("refreshes what a new transaction changes elsewhere", () => {
+    expect(keysFor("transaction")).toEqual(
+      expect.arrayContaining([["budgets"], ["bills"], ["reports"]]),
+    );
   });
 
   it("refreshes everything for unknown entities", () => {
-    expect(keysFor("budget")).toBe("all");
+    expect(keysFor("something_new")).toBe("all");
     expect(keysFor("import")).toBe("all");
   });
 });
@@ -74,7 +83,7 @@ describe("startLiveEvents", () => {
     expect(invalidate).not.toHaveBeenCalled();
     await vi.runAllTimersAsync();
     const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
-    expect(keys).toEqual([["tags"], ["transactions"], ["categories"]]);
+    expect(keys).toEqual([["tags"], ["transactions"], ["reports"], ["categories"]]);
 
     stop();
     expect(source.closed).toBe(true);
@@ -84,7 +93,7 @@ describe("startLiveEvents", () => {
     const client = new QueryClient();
     const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue();
     startLiveEvents(client, "/s", FakeSource);
-    lastSource().emit("budget");
+    lastSource().emit("something_new");
     lastSource().emit("tag");
     await vi.runAllTimersAsync();
     expect(invalidate).toHaveBeenCalledOnce();

@@ -25,13 +25,22 @@ const BATCH_MS = 250;
 
 /** Query keys (prefixes) per entity type. Add new features here. */
 const KEYS: Record<string, QueryKey[]> = {
-  account: [["accounts"], ["balances"]],
-  transaction: [["transactions"], ["balances"], ["accounts"]],
-  category: [["categories"], ["transactions"]],
-  tag: [["tags"], ["transactions"]],
+  account: [["accounts"], ["balances"], ["reports"]],
+  // A transaction moves balances, budget spending, bill periods and reports.
+  transaction: [["transactions"], ["balances"], ["accounts"], ["budgets"], ["bills"], ["reports"]],
+  category: [["categories"], ["transactions"], ["reports"]],
+  tag: [["tags"], ["transactions"], ["reports"]],
   household_member: [["members"]],
   household: [["me"]],
   webhook: [["webhooks"]],
+  budget: [["budgets"], ["reports"]],
+  budget_limit: [["budgets"], ["reports"]],
+  bill: [["bills"]],
+  rule: [["rules"]],
+  rule_group: [["rules"]],
+  piggy_bank: [["piggy-banks"]],
+  recurrence: [["recurrences"]],
+  notification_channel: [["notification-channels"]],
 };
 
 /** The keys an entity type affects, or `"all"` when we do not know it. */
