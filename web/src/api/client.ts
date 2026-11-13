@@ -58,6 +58,15 @@ export function createApi(baseUrl: string) {
 
 export type Api = ReturnType<typeof createApi>;
 
+/**
+ * Where "Log in with Authentik" starts: a full-page navigation (the provider
+ * shows its own login page), so a URL instead of an API call.
+ */
+export function oidcStartUrl(redirect?: string): string {
+  const start = `${import.meta.env.VITE_SALDO_API_URL ?? ""}/api/v1/auth/oidc/start`;
+  return redirect ? `${start}?redirect=${encodeURIComponent(redirect)}` : start;
+}
+
 export const api: Api = createApi(import.meta.env.VITE_SALDO_API_URL ?? "");
 
 /** What every openapi-fetch call resolves to, reduced to what we need. */

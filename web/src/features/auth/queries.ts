@@ -11,6 +11,15 @@ export const meQuery = queryOptions({
   staleTime: 5 * 60_000,
 });
 
+export type AuthMethods = components["schemas"]["AuthMethods"];
+
+/** Password login, an identity provider, or both. */
+export const authMethodsQuery = queryOptions({
+  queryKey: ["auth-methods"],
+  queryFn: async (): Promise<AuthMethods> => (await call(api.GET("/api/v1/auth/methods"))).data,
+  staleTime: 5 * 60_000,
+});
+
 export const setupStatusQuery = queryOptions({
   queryKey: ["setup-status"],
   queryFn: async (): Promise<boolean> => (await call(api.GET("/api/v1/setup"))).data.needed,

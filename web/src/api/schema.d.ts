@@ -178,6 +178,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/methods": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How people can log in here (public: the login page asks before login). */
+    get: operations["methods"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/oidc/callback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Where the provider sends the browser back. Logs the person in. */
+    get: operations["callback"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/oidc/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Starts "Log in with Authentik": redirects the browser to the provider. */
+    get: operations["start"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/tokens": {
     parameters: {
       query?: never;
@@ -1287,6 +1338,11 @@ export interface components {
       size_bytes: number;
       title?: string | null;
     };
+    AuthMethods: {
+      oidc?: components["schemas"]["OidcMethod"] | null;
+      /** @description Email and password login is allowed. */
+      password: boolean;
+    };
     /** @description An automatic limit: `amount` per `period`. */
     AutoBudgetRequest: {
       /** @description Decimal string, greater than zero. */
@@ -1751,6 +1807,14 @@ export interface components {
         /** Format: int64 */
         size_bytes: number;
         title?: string | null;
+      };
+    };
+    /** @description A single result. */
+    Data_AuthMethods: {
+      data: {
+        oidc?: components["schemas"]["OidcMethod"] | null;
+        /** @description Email and password login is allowed. */
+        password: boolean;
       };
     };
     /** @description A single result. */
@@ -2818,6 +2882,10 @@ export interface components {
       /** @description The member's initial password. */
       password: string;
     };
+    OidcMethod: {
+      /** @description For the button: "Log in with <name>". */
+      name: string;
+    };
     PayRequest: {
       /**
        * Format: uuid
@@ -3851,6 +3919,69 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["ErrorEnvelope"];
         };
+      };
+    };
+  };
+  methods: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_AuthMethods"];
+        };
+      };
+    };
+  };
+  callback: {
+    parameters: {
+      query?: {
+        code?: string;
+        state?: string;
+        /** @description Set by the provider when the person cancelled or was refused. */
+        error?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Into the app with a session cookie, or back to /login with an error */
+      303: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  start: {
+    parameters: {
+      query?: {
+        /** @description Where in the app to go after login (a path such as `/accounts`). */
+        redirect?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description To the identity provider, or back to /login with an error */
+      303: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

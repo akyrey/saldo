@@ -50,8 +50,9 @@ const setupRoute = createRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "login",
-  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string; error?: string } => ({
     redirect: safeRedirect(search.redirect),
+    error: typeof search.error === "string" ? search.error : undefined,
   }),
   beforeLoad: requireServer,
   component: lazyRouteComponent(() => import("@/features/auth/LoginPage"), "LoginPage"),
