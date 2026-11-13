@@ -9,6 +9,7 @@ import { categoriesQuery } from "@/features/categories/queries";
 import { byId } from "@/features/shared/lookup";
 import { pageCount } from "@/features/shared/pagination";
 import { tagsQuery } from "@/features/tags/queries";
+import { TemplatePicker } from "@/features/templates/TemplatePicker";
 import { Pager } from "./Pager";
 import { transactionsQuery } from "./queries";
 import { TransactionFilters } from "./TransactionFilters";
@@ -29,11 +30,14 @@ export function TransactionsPage() {
       <PageHeader
         title="Transactions"
         actions={
-          <Button size="sm" asChild>
-            <Link to="/transactions/new">
-              <Plus /> New transaction
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <TemplatePicker />
+            <Button size="sm" asChild>
+              <Link to="/transactions/new">
+                <Plus /> New transaction
+              </Link>
+            </Button>
+          </div>
         }
       />
       <TransactionFilters

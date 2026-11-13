@@ -41,6 +41,7 @@ const KEYS: Record<string, QueryKey[]> = {
   piggy_bank: [["piggy-banks"]],
   recurrence: [["recurrences"]],
   notification_channel: [["notification-channels"]],
+  template: [["templates"]],
 };
 
 /** The keys an entity type affects, or `"all"` when we do not know it. */

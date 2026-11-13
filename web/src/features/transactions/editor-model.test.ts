@@ -88,6 +88,7 @@ describe("toRequest", () => {
           amount: " 12,5 ",
           category_id: "c",
           budget_id: "b1",
+          bill_id: "bill",
           tag_ids: ["t1"],
         },
         {
@@ -113,6 +114,7 @@ describe("toRequest", () => {
           amount: "12.5",
           category_id: "c",
           budget_id: "b1",
+          bill_id: "bill",
           tag_ids: ["t1"],
           foreign_amount: null,
           foreign_currency: null,
@@ -126,6 +128,7 @@ describe("toRequest", () => {
           amount: "1",
           category_id: null,
           budget_id: null,
+          bill_id: null,
           tag_ids: [],
           foreign_amount: "2.00",
           foreign_currency: "USD",

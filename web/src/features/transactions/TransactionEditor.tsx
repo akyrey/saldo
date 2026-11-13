@@ -28,6 +28,7 @@ import {
   type EditorState,
 } from "./editor-model";
 import type { TransactionRequest } from "./queries";
+import { SaveDraftAsTemplate } from "@/features/templates/SaveDraftAsTemplate";
 import { SplitRowFields } from "./SplitRowFields";
 
 const NO_ERRORS: EditorErrors = { rows: {}, form: [] };
@@ -37,6 +38,8 @@ interface TransactionEditorProps {
   submitLabel: string;
   save: (body: TransactionRequest) => Promise<unknown>;
   onSaved: () => void;
+  /** Offer "Save as template" (new transactions only). */
+  allowTemplate?: boolean;
 }
 
 /** The currency the amount of `row` is in: the asset or liability side's. */
@@ -46,7 +49,8 @@ function rowCurrency(accounts: readonly Account[], sourceId: string, destination
 }
 
 /** A group with one or more splits; each split has its own accounts. */
-export function TransactionEditor({ initial, submitLabel, save, onSaved }: TransactionEditorProps) {
+export function TransactionEditor(props: TransactionEditorProps) {
+  const { initial, submitLabel, save, onSaved } = props;
   const queryClient = useQueryClient();
   const [state, setState] = useState(initial);
   const [errors, setErrors] = useState<EditorErrors>(NO_ERRORS);
@@ -122,6 +126,7 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
           tags={tags.data ?? []}
           currencies={currencies.data ?? []}
           canRemove={state.splits.length > 1}
+          kindHint={state.kind}
           onChange={(changes) => setState((s) => updateSplit(s, index, changes))}
           onRemove={() => {
             setState((s) => removeSplit(s, index));
@@ -153,10 +158,13 @@ export function TransactionEditor({ initial, submitLabel, save, onSaved }: Trans
       {Object.keys(errors.rows).length > 0 ? (
         <Alert>Some splits need attention; see the messages above.</Alert>
       ) : null}
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? "Saving…" : submitLabel}
         </Button>
+        {props.allowTemplate ? (
+          <SaveDraftAsTemplate state={state} accounts={accountList} onErrors={setErrors} />
+        ) : null}
       </div>
     </form>
   );

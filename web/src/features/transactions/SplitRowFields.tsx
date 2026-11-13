@@ -11,7 +11,8 @@ import type { Category } from "@/features/categories/queries";
 import type { Tag } from "@/features/tags/queries";
 import { cn } from "@/lib/utils";
 import { AccountSelect } from "./AccountSelect";
-import { deriveKind, KIND_LABELS, type SplitRow } from "./editor-model";
+import { deriveKind, KIND_LABELS, type SplitRow, type TemplateKind } from "./editor-model";
+import { accountTypesFor } from "./prefill";
 import { TagPicker } from "./TagPicker";
 
 export interface SplitRowFieldsProps {
@@ -28,6 +29,8 @@ export interface SplitRowFieldsProps {
   onRemove: () => void;
   /** A recurrence template: no date (each firing sets it) and no notes. */
   template?: boolean;
+  /** From a transaction template: offer only the accounts of this kind. */
+  kindHint?: TemplateKind;
 }
 
 /** One split: date, description, accounts, amounts, category and tags. */
@@ -37,6 +40,7 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
   const source = accounts.find((a) => a.id === row.source_id);
   const destination = accounts.find((a) => a.id === row.destination_id);
   const kind = deriveKind(source, destination);
+  const sides = accountTypesFor(props.kindHint);
   const budgetAllowed = kind === undefined || kind === "withdrawal";
   const currency = [source, destination].find(
     (a) => a && a.type !== "expense" && a.type !== "revenue" && a.type !== "equity",
@@ -117,6 +121,7 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
             id={id("source")}
             required
             accounts={accounts}
+            types={sides?.source}
             value={row.source_id}
             onChange={(e) => onChange({ source_id: e.target.value })}
             {...errorProps(id("source"), errors.source_id)}
@@ -132,6 +137,7 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
             id={id("destination")}
             required
             accounts={accounts}
+            types={sides?.destination}
             value={row.destination_id}
             onChange={(e) => onChange({ destination_id: e.target.value })}
             {...errorProps(id("destination"), errors.destination_id)}
