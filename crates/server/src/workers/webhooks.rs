@@ -56,3 +56,62 @@ pub fn register(workers: &mut Workers, state: &AppState) {
         },
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use saldo_app::clock::SystemClock;
+    use saldo_app::ctx::Origin;
+    use saldo_app::identity::SetupInput;
+    use saldo_app::webhooks::NewWebhook;
+    use saldo_app::{App, db};
+    use tokio_util::sync::CancellationToken;
+
+    use super::*;
+    use crate::config::Config;
+
+    #[tokio::test]
+    async fn new_events_are_dispatched_and_attempted() {
+        let pool = db::connect_in_memory().await.unwrap();
+        db::migrate(&pool).await.unwrap();
+        let app = App::new(pool.clone(), Arc::new(SystemClock));
+        let setup = SetupInput {
+            email: "o@example.com".into(),
+            password: "correct horse battery".into(),
+            display_name: "O".into(),
+            household_name: "Home".into(),
+            primary_currency: "EUR".into(),
+        };
+        let ctx = app.identity.setup(Origin::Api, setup).await.unwrap().ctx;
+        let state = AppState::new(app.clone(), Config::from_lookup(|_| None).unwrap());
+        let mut workers = Workers::new(CancellationToken::new());
+        register(&mut workers, &state);
+        assert_eq!(workers.names(), ["webhook-dispatcher", "webhook-delivery"]);
+
+        // Port 9 (discard) is closed: the attempt fails and is recorded.
+        let hook = NewWebhook {
+            name: "Closed".into(),
+            url: "http://127.0.0.1:9/hook".into(),
+            ..NewWebhook::default()
+        };
+        app.webhooks.create(&ctx, Origin::Api, hook).await.unwrap();
+        state.events.notify();
+
+        let mut attempts = 0;
+        for _ in 0..100 {
+            (attempts,) = sqlx::query_as::<_, (i64,)>(
+                "SELECT coalesce(max(attempts), 0) FROM webhook_deliveries",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+            if attempts > 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        assert_eq!(attempts, 1);
+        workers.shutdown().await;
+    }
+}
