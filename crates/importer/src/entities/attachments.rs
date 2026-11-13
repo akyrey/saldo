@@ -6,6 +6,7 @@ use saldo_core::AttachmentId;
 
 use super::transactions::SPLIT_REF;
 use crate::engine::{ImportCx, ImportError};
+use crate::firefly::FireflyError;
 use crate::firefly::models::Attachment;
 use crate::report::ImportReport;
 
@@ -63,10 +64,23 @@ pub async fn import_attachments(
             report.created(ENTITY);
             continue;
         }
-        let bytes = cx
-            .firefly
-            .get_bytes(&format!("/v1/attachments/{}/download", item.id))
-            .await?;
+        let path = format!("/v1/attachments/{}/download", item.id);
+        let bytes = match cx.firefly.get_bytes(&path).await {
+            Ok(bytes) => bytes,
+            // Firefly answers 500 when the stored file is gone: skip this one
+            // attachment instead of failing the whole import.
+            Err(FireflyError::Status { status, .. }) => {
+                report.skipped(
+                    ENTITY,
+                    format!(
+                        "{:?}: Firefly could not serve the file (HTTP {status})",
+                        a.filename
+                    ),
+                );
+                continue;
+            }
+            Err(other) => return Err(other.into()),
+        };
         let input = NewAttachment {
             attachable_type: "split".into(),
             attachable_id: split_id,

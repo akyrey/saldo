@@ -320,3 +320,57 @@ async fn changed_groups_are_replaced_and_removed_splits_forgotten() {
         12
     );
 }
+
+#[tokio::test]
+async fn an_attachment_firefly_cannot_serve_is_skipped() {
+    let (app, ctx) = household().await;
+    let server = MockServer::start().await;
+    // Mounted first, so it wins over the working download in `firefly()`.
+    Mock::given(method("GET"))
+        .and(path("/api/v1/attachments/1/download"))
+        .respond_with(ResponseTemplate::new(500))
+        .mount(&server)
+        .await;
+    for request in [
+        ("currencies", "currencies.json"),
+        ("accounts", "accounts.json"),
+        ("categories", "categories.json"),
+        ("tags", "tags.json"),
+        ("attachments", "attachments.json"),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(format!("/api/v1/{}", request.0)))
+            .respond_with(ResponseTemplate::new(200).set_body_json(fixture(request.1)))
+            .mount(&server)
+            .await;
+    }
+    for page in ["1", "2"] {
+        Mock::given(method("GET"))
+            .and(path("/api/v1/transactions"))
+            .and(query_param("page", page))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(fixture(&format!("transactions-{page}.json"))),
+            )
+            .mount(&server)
+            .await;
+    }
+
+    let report = import(&app, ctx, &server, false).await;
+
+    assert_eq!(
+        counts(&report, "attachments"),
+        Counts {
+            created: 0,
+            updated: 0,
+            unchanged: 0,
+            skipped: 1
+        }
+    );
+    assert!(report.messages.iter().any(|m| m.contains("HTTP 500")));
+    assert_eq!(
+        counts(&report, "transactions").created,
+        12,
+        "the rest of the import still happened"
+    );
+}
