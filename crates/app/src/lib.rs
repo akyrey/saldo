@@ -21,6 +21,7 @@ pub mod page;
 pub mod scope;
 pub mod tags;
 pub mod transactions;
+pub mod webhooks;
 
 use std::path::PathBuf;
 

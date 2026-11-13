@@ -2045,6 +2045,7 @@ dependencies = [
  "argon2",
  "chrono",
  "chrono-tz",
+ "hmac",
  "rand",
  "saldo-core",
  "serde",

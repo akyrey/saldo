@@ -10,6 +10,7 @@ publish.workspace = true
 argon2.workspace = true
 chrono = { workspace = true, features = ["clock", "std"] }
 chrono-tz.workspace = true
+hmac.workspace = true
 rand.workspace = true
 saldo-core.workspace = true
 serde.workspace = true
