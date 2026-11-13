@@ -448,3 +448,72 @@ async fn events_are_filtered_by_type_and_seq() {
             .all(|e| e.event_type == "account.created" && e.seq > 1)
     );
 }
+
+#[tokio::test]
+async fn today_follows_the_household_timezone() {
+    let (test, setup) = with_household().await;
+    // 2026-11-13 23:30 UTC is already the 14th in Rome and still the 13th in New York.
+    test.clock.advance(TimeDelta::minutes(14 * 60 + 30));
+    assert_eq!(
+        test.app
+            .identity
+            .household_today(&setup.ctx)
+            .await
+            .unwrap()
+            .to_string(),
+        "2026-11-13"
+    );
+    for (zone, expected) in [
+        ("Europe/Rome", "2026-11-14"),
+        ("America/New_York", "2026-11-13"),
+    ] {
+        let update = HouseholdUpdate {
+            timezone: Some(zone.into()),
+            ..Default::default()
+        };
+        test.app
+            .identity
+            .update_household(&setup.ctx, Origin::Api, update)
+            .await
+            .unwrap();
+        assert_eq!(
+            test.app
+                .identity
+                .household_today(&setup.ctx)
+                .await
+                .unwrap()
+                .to_string(),
+            expected
+        );
+    }
+}
+
+#[tokio::test]
+async fn unknown_timezones_are_rejected() {
+    let (test, setup) = with_household().await;
+    let update = HouseholdUpdate {
+        timezone: Some("Mars/Olympus".into()),
+        ..Default::default()
+    };
+    let result = test
+        .app
+        .identity
+        .update_household(&setup.ctx, Origin::Api, update)
+        .await;
+    assert!(matches!(result, Err(AppError::Invalid { ref field, .. }) if field == "timezone"));
+}
+
+#[tokio::test]
+async fn background_tasks_get_one_context_per_household() {
+    let (test, setup) = with_household().await;
+    add_member(&test, &setup.ctx, "partner@example.com").await;
+    let other = other_household(&test).await;
+    let mut contexts = test.app.identity.household_contexts().await.unwrap();
+    contexts.sort_by_key(|c| c.household_id);
+    let mut expected = vec![setup.ctx, other];
+    expected.sort_by_key(|c| c.household_id);
+    assert_eq!(
+        contexts, expected,
+        "each household once, acting as its first owner"
+    );
+}

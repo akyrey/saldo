@@ -38,6 +38,7 @@ utoipa-axum = "0.3.0"
 http-body-util = "0.1.5"
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "query", "rustls", "http2"] }
 wiremock = "0.6.5"
+chrono-tz = "0.10.4"
 zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]

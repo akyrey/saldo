@@ -180,7 +180,11 @@ impl IdentityService {
             None => current.name,
         };
         let timezone = match update.timezone {
-            Some(timezone) => required("timezone", &timezone)?,
+            Some(timezone) => {
+                let name = required("timezone", &timezone)?;
+                super::time::parse_timezone("timezone", &name)?;
+                name
+            }
             None => current.timezone,
         };
         let primary_currency = match update.primary_currency {

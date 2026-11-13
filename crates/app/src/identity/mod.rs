@@ -4,9 +4,11 @@ mod household;
 mod secrets;
 mod sessions;
 mod status;
+mod time;
 
 pub(crate) use household::{household_view, members_in};
 pub use sessions::SESSION_LIFETIME;
+pub use time::today_in;
 
 use serde::Serialize;
 use sqlx::SqlitePool;

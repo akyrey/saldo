@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT timezone FROM households WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "timezone",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "timezone"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6946dfd56d7c64a4ff2337bfdd152251bb4dc4c1db23c3ed5c5f8ea80d0c7287"
+}

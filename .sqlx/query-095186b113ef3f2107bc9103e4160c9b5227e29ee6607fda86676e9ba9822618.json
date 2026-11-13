@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.household_id AS \"household_id!\", m.user_id AS \"user_id!\" FROM household_members m\n               WHERE m.role = 'owner' AND m.created_at = (\n                   SELECT min(o.created_at) FROM household_members o\n                   WHERE o.household_id = m.household_id AND o.role = 'owner')\n               GROUP BY m.household_id ORDER BY m.household_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "household_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "user_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "household_members",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "095186b113ef3f2107bc9103e4160c9b5227e29ee6607fda86676e9ba9822618"
+}
