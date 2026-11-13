@@ -25,8 +25,11 @@ const REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 pub fn build_router(state: AppState) -> Router {
     let (router, document) = openapi::router().split_for_parts();
     let document = Arc::new(document);
-    router
-        .route("/api/v1/openapi.json", get(move || async move { Json(document.as_ref().clone()) }))
+    let router = router.route(
+        "/api/v1/openapi.json",
+        get(move || async move { Json(document.as_ref().clone()) }),
+    );
+    crate::spa::with_web_app(router)
         // Layers wrap every request, like Laravel middleware. The last one
         // added runs first: set a request ID, log, then copy the ID to the
         // response.
