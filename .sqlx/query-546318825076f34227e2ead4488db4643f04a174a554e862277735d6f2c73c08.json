@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bill_periods SET status = 'paid', paid_split_id = ?, paid_at = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "546318825076f34227e2ead4488db4643f04a174a554e862277735d6f2c73c08"
+}

@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT min(due_date) FROM bill_periods WHERE household_id = ? AND bill_id = ? AND status = 'open'",
+  "describe": {
+    "columns": [
+      {
+        "name": "min(due_date)",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "00b13b5178a64caa439502b2315fc05f2b47956e159b4b3c38f1eb841ffe88e8"
+}

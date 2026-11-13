@@ -14,7 +14,7 @@ use crate::accounts::{core_account, repo as account_repo};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::db::json_list;
 use crate::error::{AppError, parse_stored};
-use crate::{categories, currencies, identity, tags};
+use crate::{bills, categories, currencies, identity, tags};
 
 /// Validates `input` against the ledger rules for the caller's household.
 pub(crate) async fn validate(
@@ -157,6 +157,14 @@ async fn build_lookup(
     }
     for id in tags::existing(conn, ctx, &json_list(&tag_ids)?).await? {
         lookup = lookup.with_tag(parse_stored(&id)?);
+    }
+    let bill_ids: Vec<String> = splits
+        .iter()
+        .filter_map(|s| s.bill)
+        .map(|b| b.to_string())
+        .collect();
+    for id in bills::existing(conn, ctx, &json_list(&bill_ids)?).await? {
+        lookup = lookup.with_bill(parse_stored(&id)?);
     }
     Ok(lookup)
 }

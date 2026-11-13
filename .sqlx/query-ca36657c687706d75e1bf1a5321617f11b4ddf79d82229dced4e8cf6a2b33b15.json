@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bill_periods (id, household_id, bill_id, due_date, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (bill_id, due_date) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "ca36657c687706d75e1bf1a5321617f11b4ddf79d82229dced4e8cf6a2b33b15"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bills SET name = ?, amount_min_minor = ?, amount_max_minor = ?, first_due_date = ?, end_date = ?,\n            repeat_freq = ?, skip = ?, remind_days_before = ?, remind_every_days = ?, active = ?, sort_order = ?,\n            notes = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 15
+    },
+    "nullable": []
+  },
+  "hash": "4b5bc059f4dc30028395b15478d390365b62ce19f13a8c1c37254fdcb9292afc"
+}

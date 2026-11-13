@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.id FROM bill_periods p JOIN splits s ON s.id = p.paid_split_id\n         WHERE s.household_id = ? AND s.group_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bill_periods",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5eb371d4708f51e78675903125324584303a67d5475dff5eecd7b6b29d456d46"
+}

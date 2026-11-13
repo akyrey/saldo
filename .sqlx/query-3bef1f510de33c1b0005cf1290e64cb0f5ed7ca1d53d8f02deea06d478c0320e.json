@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bills (id, household_id, name, amount_min_minor, amount_max_minor, currency_code,\n            first_due_date, end_date, repeat_freq, skip, remind_days_before, remind_every_days, active,\n            sort_order, notes, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 17
+    },
+    "nullable": []
+  },
+  "hash": "3bef1f510de33c1b0005cf1290e64cb0f5ed7ca1d53d8f02deea06d478c0320e"
+}

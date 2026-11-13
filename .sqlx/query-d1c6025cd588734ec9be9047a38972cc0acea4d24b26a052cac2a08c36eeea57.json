@@ -1,0 +1,218 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, household_id, name, amount_min_minor, amount_max_minor, currency_code, first_due_date,\n                  end_date, repeat_freq, skip, remind_days_before, remind_every_days,\n                  active AS \"active: bool\", sort_order, notes, created_at, updated_at\n           FROM bills WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "household_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "household_id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "amount_min_minor",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "amount_min_minor"
+          }
+        }
+      },
+      {
+        "name": "amount_max_minor",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "amount_max_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "first_due_date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "first_due_date"
+          }
+        }
+      },
+      {
+        "name": "end_date",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "end_date"
+          }
+        }
+      },
+      {
+        "name": "repeat_freq",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "repeat_freq"
+          }
+        }
+      },
+      {
+        "name": "skip",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "skip"
+          }
+        }
+      },
+      {
+        "name": "remind_days_before",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "remind_days_before"
+          }
+        }
+      },
+      {
+        "name": "remind_every_days",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "remind_every_days"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "sort_order",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "sort_order"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 15,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 16,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d1c6025cd588734ec9be9047a38972cc0acea4d24b26a052cac2a08c36eeea57"
+}
