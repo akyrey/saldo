@@ -125,6 +125,23 @@ test("a server validation error is shown on the right split row", async ({ page 
   await expect(page.getByTestId("balance-Checking")).toHaveText("-€42.50");
 });
 
+test("a second household member sees the owner's transaction", async ({ page }) => {
+  await login(page);
+  const origin = new URL(page.url()).origin;
+  const member = { email: "bo@example.com", display_name: "Bo", password: "another long password" };
+  const added = await page.request.post("/api/v1/household/members", {
+    headers: { "X-Saldo-Csrf": "1", Origin: origin },
+    data: member,
+  });
+  expect(added.status(), await added.text()).toBe(201);
+  await page.getByRole("button", { name: "Log out" }).click();
+
+  await login(page, member.email, member.password);
+  await expect(page.getByTestId("balance-Checking")).toHaveText("-€42.50");
+  await page.getByRole("link", { name: "Transactions" }).first().click();
+  await expect(page.getByText("Saturday")).toBeVisible();
+});
+
 test("the PWA manifest and service worker are served", async ({ request }) => {
   const manifest = await request.get("/manifest.webmanifest");
   expect(manifest.ok()).toBe(true);
