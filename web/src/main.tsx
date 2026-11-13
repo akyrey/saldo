@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { setUnauthorizedListener } from "@/api/client";
 import { createQueryClient } from "@/lib/query-client";
+import { initPlatform, platform } from "@/platform";
 import { createAppRouter } from "@/router";
 import "./index.css";
 
@@ -21,13 +22,22 @@ setUnauthorizedListener(() => {
   void router.navigate({ to: "/login", search: { redirect: router.state.location.href } });
 });
 
-const root = document.getElementById("root");
-if (!root) throw new Error("index.html has no #root element");
+async function start(): Promise<void> {
+  const root = document.getElementById("root");
+  if (!root) throw new Error("index.html has no #root element");
+  // Browser or desktop app: decided once, before the first request.
+  await initPlatform();
+  if (platform().kind === "browser") {
+    const { registerSW } = await import("virtual:pwa-register");
+    registerSW({ immediate: true });
+  }
+  createRoot(root).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+}
 
-createRoot(root).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+void start();

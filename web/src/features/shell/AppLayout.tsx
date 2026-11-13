@@ -4,6 +4,7 @@ import { Bell, LogOut } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
+import { platform } from "@/platform";
 import { MoreMenu } from "./MoreMenu";
 import { MORE_NAV, OWNER_NAV, PRIMARY_NAV } from "./nav";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -16,7 +17,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const logout = useMutation({
     mutationFn: () => call(api.POST("/api/v1/auth/logout")),
-    onSettled: () => {
+    onSettled: async () => {
+      // The desktop app forgets its token even if the server was unreachable.
+      await platform().clearToken();
       queryClient.clear();
       void navigate({ to: "/login", search: { redirect: undefined } });
     },

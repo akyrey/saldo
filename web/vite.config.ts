@@ -16,6 +16,9 @@ export default defineConfig({
     // API responses are never cached: Saldo has no offline data.
     VitePWA({
       registerType: "autoUpdate",
+      // Registered from main.tsx, and only in the browser: the desktop app
+      // (Tauri) serves its files itself and has no use for a service worker.
+      injectRegister: false,
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Saldo",

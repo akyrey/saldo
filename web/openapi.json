@@ -10198,12 +10198,27 @@
       "Health": {
         "type": "object",
         "required": [
-          "status"
+          "status",
+          "app",
+          "api",
+          "version"
         ],
         "properties": {
+          "api": {
+            "type": "string",
+            "description": "The API version clients speak (`v1`)."
+          },
+          "app": {
+            "type": "string",
+            "description": "Always `saldo`: lets the desktop app check it found a Saldo server."
+          },
           "status": {
             "type": "string",
             "description": "`ok` or `unavailable`."
+          },
+          "version": {
+            "type": "string",
+            "description": "The server's version, for example `0.1.0`."
           }
         }
       },

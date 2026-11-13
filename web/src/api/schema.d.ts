@@ -2369,8 +2369,14 @@ export interface components {
       date?: string | null;
     };
     Health: {
+      /** @description The API version clients speak (`v1`). */
+      api: string;
+      /** @description Always `saldo`: lets the desktop app check it found a Saldo server. */
+      app: string;
       /** @description `ok` or `unavailable`. */
       status: string;
+      /** @description The server's version, for example `0.1.0`. */
+      version: string;
     };
     HouseholdPatch: {
       name?: string | null;
