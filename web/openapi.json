@@ -905,6 +905,562 @@
         ]
       }
     },
+    "/api/v1/budget-limits/{id}": {
+      "delete": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "delete_limit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "update_limit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetLimitView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/budgets": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Budgets ordered by `sort_order`, then name.",
+        "operationId": "list_budgets",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only active (`true`) or only inactive (`false`) budgets.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_BudgetView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Creates a budget; an automatic limit also creates the current period's limit.",
+        "operationId": "create_budget",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/budgets/{id}": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "get_budget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Deletes the budget and its limits; splits that used it keep no budget.",
+        "operationId": "delete_budget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "update_budget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/budgets/{id}/limits": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "The budget's limits, newest first, with what was spent against each.",
+        "operationId": "list_limits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Only limits ending on or after this date, `YYYY-MM-DD`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Only limits starting on or before this date, `YYYY-MM-DD`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_BudgetLimitView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Adds a limit; limits of one budget in one currency may not overlap (409).",
+        "operationId": "create_limit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLimitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BudgetLimitView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/categories": {
       "get": {
         "tags": [
@@ -2563,6 +3119,62 @@
           }
         }
       },
+      "AutoBudgetRequest": {
+        "type": "object",
+        "description": "An automatic limit: `amount` per `period`.",
+        "required": [
+          "type",
+          "period",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Decimal string, greater than zero."
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the household's primary currency."
+          },
+          "period": {
+            "type": "string",
+            "description": "`daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "type": {
+            "type": "string",
+            "description": "`reset` (the same amount every period) or `rollover` (plus what was left)."
+          }
+        }
+      },
+      "AutoBudgetView": {
+        "type": "object",
+        "description": "An automatic limit: `amount` per `period`.",
+        "required": [
+          "type",
+          "period",
+          "amount",
+          "currency"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string",
+            "description": "`daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "type": {
+            "type": "string",
+            "description": "`reset` or `rollover`."
+          }
+        }
+      },
       "BalanceView": {
         "type": "object",
         "description": "An account's balance on a date (all time when `date` is `None`).",
@@ -2586,6 +3198,152 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "BudgetLimitView": {
+        "type": "object",
+        "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+        "required": [
+          "id",
+          "budget_id",
+          "start_date",
+          "end_date",
+          "amount",
+          "currency",
+          "spent",
+          "available",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "available": {
+            "type": "string"
+          },
+          "budget_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spent": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "BudgetPatch": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "auto_budget": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AutoBudgetRequest",
+                "description": "`null` removes the automatic limit (existing limits stay)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` clears the notes."
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "BudgetView": {
+        "type": "object",
+        "description": "A budget as the API returns it.",
+        "required": [
+          "id",
+          "name",
+          "active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "auto_budget": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AutoBudgetView",
+                "description": "`None` when the budget has no automatic limit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       },
@@ -2747,6 +3505,48 @@
           }
         }
       },
+      "CreateBudgetRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Default `true`."
+          },
+          "auto_budget": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AutoBudgetRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Default 0."
+          }
+        }
+      },
       "CreateCategoryRequest": {
         "type": "object",
         "required": [
@@ -2761,6 +3561,41 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CreateLimitRequest": {
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Decimal string, greater than zero."
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the household's primary currency."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -3053,6 +3888,128 @@
                   "string",
                   "null"
                 ]
+              }
+            }
+          }
+        }
+      },
+      "Data_BudgetLimitView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+            "required": [
+              "id",
+              "budget_id",
+              "start_date",
+              "end_date",
+              "amount",
+              "currency",
+              "spent",
+              "available",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "amount": {
+                "type": "string"
+              },
+              "available": {
+                "type": "string"
+              },
+              "budget_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "end_date": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "spent": {
+                "type": "string"
+              },
+              "start_date": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_BudgetView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A budget as the API returns it.",
+            "required": [
+              "id",
+              "name",
+              "active",
+              "sort_order",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "active": {
+                "type": "boolean"
+              },
+              "auto_budget": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AutoBudgetView",
+                    "description": "`None` when the budget has no automatic limit."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sort_order": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "updated_at": {
+                "type": "string"
               }
             }
           }
@@ -3789,6 +4746,45 @@
           }
         }
       },
+      "LimitPatch": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new currency needs a new `amount` too."
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` clears the notes."
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "ListMeta": {
         "type": "object",
         "required": [
@@ -3980,6 +4976,142 @@
                     "string",
                     "null"
                   ]
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_BudgetLimitView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+              "required": [
+                "id",
+                "budget_id",
+                "start_date",
+                "end_date",
+                "amount",
+                "currency",
+                "spent",
+                "available",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "amount": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "string"
+                },
+                "budget_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "end_date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "spent": {
+                  "type": "string"
+                },
+                "start_date": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_BudgetView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A budget as the API returns it.",
+              "required": [
+                "id",
+                "name",
+                "active",
+                "sort_order",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "auto_budget": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AutoBudgetView",
+                      "description": "`None` when the budget has no automatic limit."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sort_order": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "updated_at": {
+                  "type": "string"
                 }
               }
             }

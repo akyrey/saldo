@@ -213,6 +213,75 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/budget-limits/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["delete_limit"];
+    options?: never;
+    head?: never;
+    patch: operations["update_limit"];
+    trace?: never;
+  };
+  "/api/v1/budgets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Budgets ordered by `sort_order`, then name. */
+    get: operations["list_budgets"];
+    put?: never;
+    /** Creates a budget; an automatic limit also creates the current period's limit. */
+    post: operations["create_budget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/budgets/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_budget"];
+    put?: never;
+    post?: never;
+    /** Deletes the budget and its limits; splits that used it keep no budget. */
+    delete: operations["delete_budget"];
+    options?: never;
+    head?: never;
+    patch: operations["update_budget"];
+    trace?: never;
+  };
+  "/api/v1/budgets/{id}/limits": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The budget's limits, newest first, with what was spent against each. */
+    get: operations["list_limits"];
+    put?: never;
+    /** Adds a limit; limits of one budget in one currency may not overlap (409). */
+    post: operations["create_limit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/categories": {
     parameters: {
       query?: never;
@@ -542,12 +611,71 @@ export interface components {
       size_bytes: number;
       title?: string | null;
     };
+    /** @description An automatic limit: `amount` per `period`. */
+    AutoBudgetRequest: {
+      /** @description Decimal string, greater than zero. */
+      amount: string;
+      /** @description Defaults to the household's primary currency. */
+      currency?: string | null;
+      /** @description `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      period: string;
+      /** @description `reset` (the same amount every period) or `rollover` (plus what was left). */
+      type: string;
+    };
+    /** @description An automatic limit: `amount` per `period`. */
+    AutoBudgetView: {
+      amount: string;
+      currency: string;
+      /** @description `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      period: string;
+      /** @description `reset` or `rollover`. */
+      type: string;
+    };
     /** @description An account's balance on a date (all time when `date` is `None`). */
     BalanceView: {
       account_id: string;
       balance: string;
       currency: string;
       date?: string | null;
+    };
+    /**
+     * @description A budget limit with what was spent against it (withdrawals booked on the
+     *     budget, dated inside the limit, in its currency or with a foreign amount
+     *     in it) and what is left (negative when overspent).
+     */
+    BudgetLimitView: {
+      amount: string;
+      available: string;
+      budget_id: string;
+      created_at: string;
+      currency: string;
+      end_date: string;
+      id: string;
+      notes?: string | null;
+      spent: string;
+      start_date: string;
+      updated_at: string;
+    };
+    BudgetPatch: {
+      active?: boolean | null;
+      auto_budget?: components["schemas"]["AutoBudgetRequest"] | null;
+      name?: string | null;
+      /** @description `null` clears the notes. */
+      notes?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+    };
+    /** @description A budget as the API returns it. */
+    BudgetView: {
+      active: boolean;
+      auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+      created_at: string;
+      id: string;
+      name: string;
+      notes?: string | null;
+      /** Format: int64 */
+      sort_order: number;
+      updated_at: string;
     };
     CategoryPatch: {
       name?: string | null;
@@ -588,9 +716,32 @@ export interface components {
       /** @description Decimal string. */
       virtual_balance?: string | null;
     };
+    CreateBudgetRequest: {
+      /** @description Default `true`. */
+      active?: boolean | null;
+      auto_budget?: components["schemas"]["AutoBudgetRequest"] | null;
+      name: string;
+      notes?: string | null;
+      /**
+       * Format: int64
+       * @description Default 0.
+       */
+      sort_order?: number | null;
+    };
     CreateCategoryRequest: {
       name: string;
       notes?: string | null;
+    };
+    CreateLimitRequest: {
+      /** @description Decimal string, greater than zero. */
+      amount: string;
+      /** @description Defaults to the household's primary currency. */
+      currency?: string | null;
+      /** Format: date */
+      end_date: string;
+      notes?: string | null;
+      /** Format: date */
+      start_date: string;
     };
     CreateTagRequest: {
       description?: string | null;
@@ -668,6 +819,42 @@ export interface components {
         balance: string;
         currency: string;
         date?: string | null;
+      };
+    };
+    /** @description A single result. */
+    Data_BudgetLimitView: {
+      /**
+       * @description A budget limit with what was spent against it (withdrawals booked on the
+       *     budget, dated inside the limit, in its currency or with a foreign amount
+       *     in it) and what is left (negative when overspent).
+       */
+      data: {
+        amount: string;
+        available: string;
+        budget_id: string;
+        created_at: string;
+        currency: string;
+        end_date: string;
+        id: string;
+        notes?: string | null;
+        spent: string;
+        start_date: string;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_BudgetView: {
+      /** @description A budget as the API returns it. */
+      data: {
+        active: boolean;
+        auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+        created_at: string;
+        id: string;
+        name: string;
+        notes?: string | null;
+        /** Format: int64 */
+        sort_order: number;
+        updated_at: string;
       };
     };
     /** @description A single result. */
@@ -868,6 +1055,17 @@ export interface components {
       timezone: string;
       updated_at: string;
     };
+    LimitPatch: {
+      amount?: string | null;
+      /** @description A new currency needs a new `amount` too. */
+      currency?: string | null;
+      /** Format: date */
+      end_date?: string | null;
+      /** @description `null` clears the notes. */
+      notes?: string | null;
+      /** Format: date */
+      start_date?: string | null;
+    };
     ListMeta: {
       /** Format: int32 */
       page: number;
@@ -914,6 +1112,38 @@ export interface components {
         balance: string;
         currency: string;
         date?: string | null;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_BudgetLimitView: {
+      data: {
+        amount: string;
+        available: string;
+        budget_id: string;
+        created_at: string;
+        currency: string;
+        end_date: string;
+        id: string;
+        notes?: string | null;
+        spent: string;
+        start_date: string;
+        updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_BudgetView: {
+      data: {
+        active: boolean;
+        auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+        created_at: string;
+        id: string;
+        name: string;
+        notes?: string | null;
+        /** Format: int64 */
+        sort_order: number;
+        updated_at: string;
       }[];
       meta: components["schemas"]["ListMeta"];
     };
@@ -1694,6 +1924,345 @@ export interface operations {
         content?: never;
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_limit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_limit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LimitPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetLimitView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_budgets: {
+    parameters: {
+      query?: {
+        /** @description Only active (`true`) or only inactive (`false`) budgets. */
+        active?: boolean;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_BudgetView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_budget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateBudgetRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_budget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_budget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_budget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BudgetPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_limits: {
+    parameters: {
+      query?: {
+        /** @description Only limits ending on or after this date, `YYYY-MM-DD`. */
+        from?: string;
+        /** @description Only limits starting on or before this date, `YYYY-MM-DD`. */
+        to?: string;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_BudgetLimitView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_limit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateLimitRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BudgetLimitView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };
