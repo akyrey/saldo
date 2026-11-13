@@ -262,3 +262,19 @@ pub(crate) async fn existing(
     .await?;
     Ok(ids)
 }
+
+/// Every category of the household (for export).
+pub async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<CategoryView>, AppError> {
+    let household_id = ctx.household_id.to_string();
+    let rows = sqlx::query_as!(
+        CategoryView,
+        "SELECT id, name, notes, created_at, updated_at FROM categories WHERE household_id = ? ORDER BY name",
+        household_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows)
+}

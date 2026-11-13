@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT g.id AS \"id!\" FROM transaction_groups g WHERE g.household_id = ?\n           ORDER BY (SELECT min(s.date) FROM splits s WHERE s.group_id = g.id), g.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_groups",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3fdb3ac05846b73eea3de098867207da936b40240d7cf4fda00d98ee6bb99a76"
+}

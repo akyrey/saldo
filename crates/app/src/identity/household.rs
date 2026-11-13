@@ -399,7 +399,7 @@ pub(crate) async fn user_view(
     })
 }
 
-async fn household_view(
+pub(crate) async fn household_view(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
 ) -> Result<HouseholdView, AppError> {
@@ -445,4 +445,31 @@ async fn member_view(
         role: Role::parse(&row.role)?,
         joined_at: row.created_at,
     })
+}
+
+/// Every member of the household, inside the caller's transaction.
+pub(crate) async fn members_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<MemberView>, AppError> {
+    let household_id = ctx.household_id.to_string();
+    let rows = sqlx::query!(
+        "SELECT u.id, u.email, u.display_name, m.role, m.created_at
+         FROM household_members m JOIN users u ON u.id = m.user_id
+         WHERE m.household_id = ? ORDER BY m.created_at, u.email",
+        household_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    rows.into_iter()
+        .map(|row| {
+            Ok(MemberView {
+                user_id: row.id,
+                email: row.email,
+                display_name: row.display_name,
+                role: Role::parse(&row.role)?,
+                joined_at: row.created_at,
+            })
+        })
+        .collect()
 }

@@ -20,6 +20,10 @@ tokio.workspace = true
 tracing.workspace = true
 utoipa = { workspace = true, features = ["chrono", "uuid"] }
 uuid = { workspace = true, features = ["v7"] }
+zip.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+uuid = { workspace = true, features = ["v4"] }

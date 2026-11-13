@@ -278,3 +278,19 @@ pub async fn ids_by_name(
     .await?;
     Ok(rows.into_iter().map(|r| (r.name, r.id)).collect())
 }
+
+/// Every tag of the household (for export).
+pub async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<TagView>, AppError> {
+    let household_id = ctx.household_id.to_string();
+    let rows = sqlx::query_as!(
+        TagView,
+        "SELECT id, name, description, created_at, updated_at FROM tags WHERE household_id = ? ORDER BY name",
+        household_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows)
+}

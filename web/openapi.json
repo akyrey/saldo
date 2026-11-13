@@ -1177,6 +1177,77 @@
         ]
       }
     },
+    "/api/v1/export/csv": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "summary": "A zip with one CSV file per entity; `transactions.csv` has one row per split.",
+        "operationId": "export_csv",
+        "responses": {
+          "200": {
+            "description": "Zip archive",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/export/json": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "summary": "Everything of the household in one JSON document (format `saldo-export`, version 1).",
+        "operationId": "export_json",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/household": {
       "get": {
         "tags": [
@@ -3396,6 +3467,113 @@
             "format": "int64"
           },
           "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ExportDocument": {
+        "type": "object",
+        "description": "The whole household in the API's own representations. Attachment files\nare not embedded (only their metadata and SHA-256); sessions, the event\nlog and import bookkeeping are not exported.",
+        "required": [
+          "format",
+          "version",
+          "exported_at",
+          "household",
+          "members",
+          "currencies",
+          "accounts",
+          "categories",
+          "tags",
+          "transactions",
+          "attachments",
+          "external_refs"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountView"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentView"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryView"
+            }
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyView"
+            }
+          },
+          "exported_at": {
+            "type": "string"
+          },
+          "external_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalRefView"
+            }
+          },
+          "format": {
+            "type": "string",
+            "description": "Always `saldo-export`."
+          },
+          "household": {
+            "$ref": "#/components/schemas/HouseholdView"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberView"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagView"
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionGroupView"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "ExternalRefView": {
+        "type": "object",
+        "description": "One import mapping (`external_refs`), so re-imports keep working after a restore.",
+        "required": [
+          "source",
+          "entity_type",
+          "external_id",
+          "local_id"
+        ],
+        "properties": {
+          "entity_type": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "local_id": {
+            "type": "string"
+          },
+          "source": {
             "type": "string"
           }
         }

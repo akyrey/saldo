@@ -13,6 +13,7 @@ pub mod currencies;
 pub mod db;
 pub mod error;
 pub mod events;
+pub mod export;
 pub mod external_refs;
 pub mod identity;
 pub mod import_runs;
@@ -31,6 +32,7 @@ use crate::categories::CategoryService;
 use crate::clock::SharedClock;
 use crate::currencies::CurrencyService;
 use crate::events::EventService;
+use crate::export::ExportService;
 use crate::identity::IdentityService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
@@ -47,6 +49,7 @@ pub struct App {
     pub categories: CategoryService,
     pub currencies: CurrencyService,
     pub events: EventService,
+    pub export: ExportService,
     pub identity: IdentityService,
     pub tags: TagService,
     pub transactions: TransactionService,
@@ -54,13 +57,18 @@ pub struct App {
 
 impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
+        let accounts = AccountService::new(pool.clone(), clock.clone());
+        let attachments =
+            AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
-            accounts: AccountService::new(pool.clone(), clock.clone()),
-            attachments: AttachmentService::new(
+            export: ExportService::new(
                 pool.clone(),
                 clock.clone(),
-                PathBuf::from(DEFAULT_DATA_DIR),
+                accounts.clone(),
+                attachments.clone(),
             ),
+            accounts,
+            attachments,
             categories: CategoryService::new(pool.clone(), clock.clone()),
             currencies: CurrencyService::new(pool.clone()),
             events: EventService::new(pool.clone()),
@@ -79,8 +87,16 @@ pub const DEFAULT_DATA_DIR: &str = "/data";
 impl App {
     /// Stores attachment files under `data_dir` (`SALDO_DATA_DIR`).
     pub fn with_data_dir(self, data_dir: PathBuf) -> Self {
+        let attachments = AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir);
+        let export = ExportService::new(
+            self.pool.clone(),
+            self.clock.clone(),
+            self.accounts.clone(),
+            attachments.clone(),
+        );
         Self {
-            attachments: AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir),
+            attachments,
+            export,
             ..self
         }
     }

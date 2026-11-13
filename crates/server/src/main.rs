@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use clap::Parser;
 use saldo_app::ctx::Origin;
 use saldo_app::identity::SetupInput;
-use saldo_server::cli::{Cli, Command, UserCommand};
+use saldo_server::cli::{Cli, Command, ExportFormat, UserCommand};
 use saldo_server::config::Config;
 use saldo_server::{openapi, server};
 use tracing_subscriber::EnvFilter;
@@ -18,6 +18,12 @@ async fn main() -> ExitCode {
     let result = match cli.command {
         Command::Openapi => print_openapi(),
         Command::Serve => run_server().await,
+        Command::Export {
+            format,
+            household,
+            out,
+        } => export(format, household, out).await,
+        Command::Backup { path } => backup(path).await,
         Command::User {
             command:
                 UserCommand::Create {
@@ -77,5 +83,29 @@ async fn create_user(
         "Created {} in household {} ({})",
         setup.user.email, setup.household.name, setup.household.id
     );
+    Ok(())
+}
+
+async fn export(format: ExportFormat, household: String, out: std::path::PathBuf) -> MainResult {
+    if out.exists() {
+        return Err(format!("{} already exists", out.display()).into());
+    }
+    let config = Config::from_env()?;
+    let app = server::open_app(&config).await?;
+    let ctx = app.identity.household_context(&household).await?;
+    let bytes = match format {
+        ExportFormat::Json => serde_json::to_vec_pretty(&app.export.json(&ctx).await?)?,
+        ExportFormat::Csv => app.export.csv_zip(&ctx).await?,
+    };
+    std::fs::write(&out, bytes)?;
+    println!("Wrote {}", out.display());
+    Ok(())
+}
+
+async fn backup(path: std::path::PathBuf) -> MainResult {
+    let config = Config::from_env()?;
+    let app = server::open_app(&config).await?;
+    saldo_app::db::backup(&app.pool, &path).await?;
+    println!("Backed up the database to {}", path.display());
     Ok(())
 }

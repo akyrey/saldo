@@ -22,6 +22,29 @@ pub enum Command {
     },
     /// Print the OpenAPI document as JSON.
     Openapi,
+    /// Export a household to a file (owner's view of everything).
+    Export {
+        /// `json` (one document) or `csv` (a zip of CSV files).
+        #[arg(value_enum)]
+        format: ExportFormat,
+        /// Household ID or name.
+        #[arg(long)]
+        household: String,
+        /// File to write; must not exist yet.
+        #[arg(long)]
+        out: std::path::PathBuf,
+    },
+    /// Copy the whole database to a new file (safe while the server runs).
+    Backup {
+        /// File to write; must not exist yet.
+        path: std::path::PathBuf,
+    },
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum ExportFormat {
+    Json,
+    Csv,
 }
 
 #[derive(Debug, Subcommand)]

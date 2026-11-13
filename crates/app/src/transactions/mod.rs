@@ -260,3 +260,24 @@ async fn load_one(
         .pop()
         .ok_or(AppError::NotFound)
 }
+
+/// Every group of the household, oldest first (for export), loaded in chunks.
+pub async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<TransactionGroupView>, AppError> {
+    const CHUNK: usize = 500;
+    let household_id = ctx.household_id.to_string();
+    let ids = sqlx::query_scalar!(
+        r#"SELECT g.id AS "id!" FROM transaction_groups g WHERE g.household_id = ?
+           ORDER BY (SELECT min(s.date) FROM splits s WHERE s.group_id = g.id), g.id"#,
+        household_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let mut groups = Vec::with_capacity(ids.len());
+    for chunk in ids.chunks(CHUNK) {
+        groups.extend(view::load(&mut *conn, &household_id, chunk).await?);
+    }
+    Ok(groups)
+}

@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT source, entity_type, external_id, local_id FROM external_refs\n         WHERE household_id = ? ORDER BY source, entity_type, external_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "source",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "name": "entity_type",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "entity_type"
+          }
+        }
+      },
+      {
+        "name": "external_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "external_id"
+          }
+        }
+      },
+      {
+        "name": "local_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "external_refs",
+            "name": "local_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c35b3c3effb1da26605bd2dea20417550d7d18c1425f8f424bbe863ee6421d36"
+}

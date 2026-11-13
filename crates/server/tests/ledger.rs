@@ -489,3 +489,33 @@ async fn another_household_gets_404s_over_http() {
     assert_eq!(steal.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(steal.body["error"]["details"][0]["code"], "unknown_account");
 }
+
+#[tokio::test]
+async fn owners_download_exports_members_get_403() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    account(&server, &owner, "Checking", "asset").await;
+    let json = server.get("/api/v1/export/json", &owner).await;
+    assert_eq!(json.status, StatusCode::OK);
+    assert_eq!(json.body["format"], "saldo-export");
+    assert_eq!(json.body["accounts"].as_array().unwrap().len(), 3);
+    let disposition = json.headers["content-disposition"].to_str().unwrap();
+    assert!(
+        disposition.starts_with("attachment; filename=\"saldo-export-2026-11-13"),
+        "{disposition}"
+    );
+    let csv = server.get("/api/v1/export/csv", &owner).await;
+    assert_eq!(
+        (csv.status, csv.headers["content-type"].to_str().unwrap()),
+        (StatusCode::OK, "application/zip")
+    );
+
+    let member =
+        json!({ "email": "partner@example.com", "display_name": "Partner", "password": PASSWORD });
+    create(&server, &owner, "/api/v1/household/members", member).await;
+    let partner = Auth::Cookie(server.login("partner@example.com", PASSWORD).await);
+    assert_eq!(
+        server.get("/api/v1/export/json", &partner).await.status,
+        StatusCode::FORBIDDEN
+    );
+}

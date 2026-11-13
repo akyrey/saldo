@@ -55,6 +55,33 @@ pub(crate) fn json_list(ids: &[String]) -> Result<String, crate::error::AppError
         .map_err(|e| crate::error::AppError::Internal(format!("cannot encode id list: {e}")))
 }
 
+/// Writes a consistent copy of the whole database to `path` (`VACUUM INTO`),
+/// safe while the server runs. The target file must not exist yet.
+pub async fn backup(
+    pool: &SqlitePool,
+    path: &std::path::Path,
+) -> Result<(), crate::error::AppError> {
+    if path.exists() {
+        return Err(crate::error::AppError::Conflict(format!(
+            "{} already exists",
+            path.display()
+        )));
+    }
+    // The path goes in as an SQL string literal with its quotes doubled.
+    // The existence check below catches a silent no-op (SQLx's in-memory
+    // databases, opened as shared-cache URIs, write nothing here).
+    let literal = path.to_string_lossy().replace('\'', "''");
+    let sql = format!("VACUUM INTO '{literal}'");
+    sqlx::query(sqlx::AssertSqlSafe(sql)).execute(pool).await?;
+    if !path.exists() {
+        return Err(crate::error::AppError::Internal(format!(
+            "backup did not create {}",
+            path.display()
+        )));
+    }
+    Ok(())
+}
+
 /// Applies every migration that has not run yet.
 pub async fn migrate(pool: &SqlitePool) -> Result<(), MigrateError> {
     MIGRATOR.run(pool).await
@@ -123,6 +150,34 @@ mod tests {
 
         assert!(update.unwrap_err().to_string().contains("append-only"));
         assert!(delete.unwrap_err().to_string().contains("append-only"));
+    }
+
+    #[tokio::test]
+    async fn backup_copies_the_database_once() {
+        // A file database, like production. (SQLx opens in-memory databases as
+        // shared-cache URIs, and VACUUM INTO silently writes nothing from those.)
+        let dir = std::env::temp_dir().join(format!("saldo-backup-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let pool = connect(&format!("sqlite://{}", dir.join("live.db").display()))
+            .await
+            .unwrap();
+        migrate(&pool).await.unwrap();
+        // A quote in the name checks the escaping.
+        let path = dir.join("o'clock.db");
+        backup(&pool, &path).await.unwrap();
+        let copy = connect(&format!("sqlite://{}", path.display()))
+            .await
+            .unwrap();
+        let (count,): (i64,) = sqlx::query_as("SELECT count(*) FROM currencies")
+            .fetch_one(&copy)
+            .await
+            .unwrap();
+        assert!(count > 0);
+        assert!(backup(&pool, &path).await.is_err(), "never overwrites");
+        copy.close().await;
+        pool.close().await;
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[tokio::test]
