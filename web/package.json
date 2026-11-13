@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "gen:api": "openapi-typescript openapi.json -o src/api/schema.d.ts && prettier --write src/api/schema.d.ts",
-    "size": "node scripts/initial-size.mjs"
+    "size": "node scripts/initial-size.mjs",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
@@ -39,6 +40,7 @@
     "@types/react": "*",
     "@types/react-dom": "*",
     "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "*",

@@ -5,3 +5,4 @@ playwright-report
 test-results
 openapi.json
 package-lock.json
+coverage

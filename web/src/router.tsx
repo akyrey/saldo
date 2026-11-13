@@ -2,6 +2,7 @@
 // the first screen downloads only the shell and the page it shows.
 import type { QueryClient } from "@tanstack/react-query";
 import {
+  type RouterHistory,
   createRootRouteWithContext,
   createRoute,
   createRouter,
@@ -165,9 +166,11 @@ const routeTree = rootRoute.addChildren([
   ]),
 ]);
 
-export function createAppRouter(queryClient: QueryClient) {
+/** `history` is for tests (a memory history); the browser's is the default. */
+export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
   return createRouter({
     routeTree,
+    history,
     context: { queryClient },
     defaultPreload: "intent",
     // Preloading through the router would bypass TanStack Query's cache.

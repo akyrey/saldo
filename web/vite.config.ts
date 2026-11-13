@@ -56,5 +56,11 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
+    // jsdom's fetch needs absolute URLs; the app uses same-origin paths.
+    env: { VITE_SALDO_API_URL: "http://saldo.test" },
+    coverage: {
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/api/schema.d.ts", "src/**/*.test.{ts,tsx}", "src/test/**"],
+    },
   },
 });

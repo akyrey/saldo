@@ -33,7 +33,12 @@ const csrf: Middleware = {
  * desktop app (Phase 7) passes the server's URL.
  */
 export function createApi(baseUrl: string) {
-  const client = createClient<paths>({ baseUrl, credentials: "include" });
+  const client = createClient<paths>({
+    baseUrl,
+    credentials: "include",
+    // Look `fetch` up on every call (not once at start), so tests can replace it.
+    fetch: (request) => globalThis.fetch(request),
+  });
   client.use(csrf);
   return client;
 }
