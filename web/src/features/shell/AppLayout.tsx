@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
+import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet, Webhook } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
@@ -14,7 +14,10 @@ const NAV = [
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
-const OWNER_NAV = [{ to: "/export", label: "Export", icon: Download }] as const;
+const OWNER_NAV = [
+  { to: "/export", label: "Export", icon: Download },
+  { to: "/webhooks", label: "Webhooks", icon: Webhook },
+] as const;
 
 export function AppLayout() {
   const { me } = useRouteContext({ from: "/app" });
@@ -72,9 +75,8 @@ export function AppLayout() {
       {/* Bottom tab bar on phones. */}
       <nav
         aria-label="Main mobile"
-        className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
-          nav.length > NAV.length ? "grid-cols-5" : "grid-cols-4"
-        }`}
+        className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
       >
         {nav.map(({ to, label, icon: Icon }) => (
           <Link

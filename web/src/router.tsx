@@ -155,6 +155,12 @@ const exportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/export/ExportPage"), "ExportPage"),
 });
 
+const webhooksRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "webhooks",
+  component: lazyRouteComponent(() => import("@/features/webhooks/WebhooksPage"), "WebhooksPage"),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -170,6 +176,7 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     tagsRoute,
     exportRoute,
+    webhooksRoute,
   ]),
 ]);
 
