@@ -10,6 +10,7 @@
 //! Every task keeps its progress in the database, so killing the process at
 //! any point and starting again is safe.
 
+pub mod notifier;
 mod reminders;
 mod signal;
 
@@ -122,6 +123,7 @@ async fn changed(wake: &mut Option<tokio::sync::watch::Receiver<u64>>) {
 pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     let mut workers = Workers::new(cancel);
     reminders::spawn_bill_scheduler(&mut workers, state);
+    notifier::spawn_notifier(&mut workers, state);
     workers
 }
 
