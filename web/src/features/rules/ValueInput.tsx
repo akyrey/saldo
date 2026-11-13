@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { accountsQuery, currenciesQuery } from "@/features/accounts/queries";
 import { billsQuery } from "@/features/bills/queries";
+import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
 import { SPLIT_KINDS, valueKind } from "./rule-form";
@@ -15,6 +16,11 @@ interface ValueInputProps {
   onChange: (value: string) => void;
 }
 
+interface Option {
+  value: string;
+  label: string;
+}
+
 /** The right control for a trigger's or action's value: text, or a picker. */
 export function ValueInput({ id, label, kind, value, onChange }: ValueInputProps) {
   const type = valueKind(kind);
@@ -22,25 +28,22 @@ export function ValueInput({ id, label, kind, value, onChange }: ValueInputProps
   const tags = useQuery({ ...tagsQuery, enabled: type === "tag" });
   const accounts = useQuery({ ...accountsQuery(), enabled: type === "account" });
   const bills = useQuery({ ...billsQuery, enabled: type === "bill" });
+  const budgets = useQuery({ ...budgetsQuery, enabled: type === "budget" });
   const currencies = useQuery({ ...currenciesQuery, enabled: type === "currency" });
 
-  const options: { value: string; label: string }[] | null =
-    type === "category"
-      ? (categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))
-      : type === "tag"
-        ? (tags.data ?? []).map((t) => ({ value: t.id, label: t.name }))
-        : type === "account"
-          ? (accounts.data ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.type})` }))
-          : type === "bill"
-            ? (bills.data ?? []).map((b) => ({ value: b.id, label: b.name }))
-            : type === "currency"
-              ? (currencies.data ?? []).map((c) => ({
-                  value: c.code,
-                  label: `${c.code} · ${c.name}`,
-                }))
-              : type === "kind"
-                ? SPLIT_KINDS.map((k) => ({ value: k, label: k.replace("_", " ") }))
-                : null;
+  // The picker's options for each value kind; kinds missing here are typed.
+  const pickers: Record<string, () => Option[]> = {
+    category: () => (categories.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+    tag: () => (tags.data ?? []).map((t) => ({ value: t.id, label: t.name })),
+    account: () =>
+      (accounts.data ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.type})` })),
+    bill: () => (bills.data ?? []).map((b) => ({ value: b.id, label: b.name })),
+    budget: () => (budgets.data ?? []).map((b) => ({ value: b.id, label: b.name })),
+    currency: () =>
+      (currencies.data ?? []).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` })),
+    kind: () => SPLIT_KINDS.map((k) => ({ value: k, label: k.replace("_", " ") })),
+  };
+  const options = pickers[type]?.() ?? null;
 
   if (type === "none") return null;
   if (options) {
@@ -65,7 +68,7 @@ export function ValueInput({ id, label, kind, value, onChange }: ValueInputProps
       id={id}
       aria-label={label}
       inputMode={type === "amount" ? "decimal" : undefined}
-      placeholder={type === "budget" ? "Budget ID" : type === "amount" ? "e.g. 12.50" : ""}
+      placeholder={type === "amount" ? "e.g. 12.50" : ""}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />

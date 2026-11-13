@@ -46,6 +46,18 @@ function api() {
     "GET /api/v1/categories": list([{ id: "c1", name: "Housing", created_at: "", updated_at: "" }]),
     "GET /api/v1/tags": list([]),
     "GET /api/v1/bills": list([]),
+    "GET /api/v1/budgets": list([
+      {
+        id: "b1",
+        name: "Groceries",
+        active: true,
+        sort_order: 0,
+        notes: null,
+        auto_budget: null,
+        created_at: "",
+        updated_at: "",
+      },
+    ]),
     "GET /api/v1/rule-groups": { data: [GROUP] },
     "GET /api/v1/rules": { data: [rule("r1", "Rent", 0), rule("r2", "Fuel", 1)] },
     "GET /api/v1/rules/r1": { data: rule("r1", "Rent", 0) },
@@ -110,6 +122,25 @@ describe("rule pages", () => {
       triggers: [{ kind: "description_contains", value: "supermarket", negate: false }],
       actions: [{ kind: "set_category", value: "c1" }],
     });
+  });
+
+  it("picks a budget by name for a set_budget action", async () => {
+    const seen = api();
+    renderApp("/rules/new?group=g1");
+    await userEvent.type(await screen.findByLabelText("Title"), "Food");
+    await userEvent.type(screen.getByLabelText("Trigger 1 value"), "market");
+    await userEvent.selectOptions(screen.getByLabelText("Action 1 kind"), "set_budget");
+    const budget = screen.getByLabelText("Action 1 value");
+    await waitFor(() =>
+      expect(within(budget).getByRole("option", { name: "Groceries" })).toBeInTheDocument(),
+    );
+    await userEvent.selectOptions(budget, "b1");
+    await userEvent.click(screen.getByRole("button", { name: "Create rule" }));
+    await waitFor(() =>
+      expect(seen.some((r) => r.method === "POST" && r.url.endsWith("/api/v1/rules"))).toBe(true),
+    );
+    const post = seen.find((r) => r.method === "POST" && r.url.endsWith("/api/v1/rules"));
+    expect(await post?.json()).toMatchObject({ actions: [{ kind: "set_budget", value: "b1" }] });
   });
 
   it("previews the transactions a saved rule matches", async () => {
