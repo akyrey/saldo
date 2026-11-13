@@ -1,5 +1,5 @@
 // The export page inside the whole app, against a fake API.
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENCIES, fakeApi, list, ME, MEMBERS } from "@/test/fake-api";
@@ -64,6 +64,8 @@ describe("export page", () => {
   it("shows the export link in the navigation to owners only", async () => {
     api(ME);
     renderApp("/accounts");
-    expect((await screen.findAllByRole("link", { name: /export/i })).length).toBeGreaterThan(0);
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    await userEvent.click(within(nav).getByRole("button", { name: "More" }));
+    expect(within(nav).getByRole("link", { name: "Export" })).toBeInTheDocument();
   });
 });

@@ -1,48 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import {
-  ArrowLeftRight,
-  Bell,
-  ChartColumn,
-  Download,
-  FolderTree,
-  LogOut,
-  PiggyBank,
-  Receipt,
-  Repeat,
-  Tags,
-  Target,
-  Wallet,
-  Wand2,
-  Webhook,
-} from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
+import { MoreMenu } from "./MoreMenu";
+import { MORE_NAV, OWNER_NAV, PRIMARY_NAV } from "./nav";
 import { ScopeSwitch } from "./ScopeSwitch";
-
-const NAV = [
-  { to: "/accounts", label: "Accounts", icon: Wallet },
-  { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { to: "/categories", label: "Categories", icon: FolderTree },
-  { to: "/tags", label: "Tags", icon: Tags },
-  { to: "/bills", label: "Bills", icon: Receipt },
-  { to: "/rules", label: "Rules", icon: Wand2 },
-  { to: "/budgets", label: "Budgets", icon: Target },
-  { to: "/reports", label: "Reports", icon: ChartColumn },
-  { to: "/piggy-banks", label: "Piggy banks", icon: PiggyBank },
-  { to: "/recurrences", label: "Recurring", icon: Repeat },
-] as const;
-
-/** Only the owner can export, so only the owner sees the link. */
-const OWNER_NAV = [
-  { to: "/export", label: "Export", icon: Download },
-  { to: "/webhooks", label: "Webhooks", icon: Webhook },
-] as const;
 
 export function AppLayout() {
   const { me } = useRouteContext({ from: "/app" });
-  const nav = me.role === "owner" ? [...NAV, ...OWNER_NAV] : NAV;
+  const more = me.role === "owner" ? [...MORE_NAV, ...OWNER_NAV] : MORE_NAV;
   const queryClient = useQueryClient();
   useLiveEvents();
   const navigate = useNavigate();
@@ -61,8 +29,8 @@ export function AppLayout() {
           <Link to="/accounts" className="mr-2 font-semibold text-primary">
             Saldo
           </Link>
-          <nav aria-label="Main" className="hidden gap-1 md:flex">
-            {nav.map(({ to, label }) => (
+          <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+            {PRIMARY_NAV.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
@@ -72,6 +40,7 @@ export function AppLayout() {
                 {label}
               </Link>
             ))}
+            <MoreMenu items={more} variant="header" />
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -102,10 +71,10 @@ export function AppLayout() {
       <nav
         aria-label="Main mobile"
         className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
-        // One equal column per entry, however many features add a tab.
-        style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
+        // One equal column per main page, plus one for "More".
+        style={{ gridTemplateColumns: `repeat(${PRIMARY_NAV.length + 1}, minmax(0, 1fr))` }}
       >
-        {nav.map(({ to, label, icon: Icon }) => (
+        {PRIMARY_NAV.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
@@ -116,6 +85,7 @@ export function AppLayout() {
             <span className="max-w-full truncate">{label}</span>
           </Link>
         ))}
+        <MoreMenu items={more} variant="bar" />
       </nav>
     </div>
   );

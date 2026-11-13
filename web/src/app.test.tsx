@@ -148,7 +148,9 @@ describe("accounts", () => {
         true,
       ),
     );
-    await user.click(screen.getAllByRole("link", { name: "Categories" })[0] as HTMLElement);
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    await user.click(within(nav).getByRole("button", { name: "More" }));
+    await user.click(within(nav).getByRole("link", { name: "Categories" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/categories"));
     expect(router.state.location.search).toMatchObject({ scope: "mine" });
   });

@@ -160,7 +160,8 @@ test("the PWA manifest and service worker are served", async ({ request }) => {
 
 test("the owner downloads the JSON and CSV exports", async ({ page }) => {
   await login(page);
-  await page.getByRole("link", { name: "Export" }).first().click();
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("link", { name: "Export" }).click();
   await expect(page.getByRole("heading", { name: "Export" })).toBeVisible();
 
   const [json] = await Promise.all([
@@ -333,7 +334,8 @@ test("a transaction by one member appears in the other's open tab; the owner add
   await expect(member.getByText("Live coffee").first()).toBeVisible({ timeout: 10_000 });
 
   // The owner's webhook page, in the same session (logins are rate-limited).
-  await owner.getByRole("link", { name: "Webhooks" }).first().click();
+  await owner.getByRole("button", { name: "More" }).click();
+  await owner.getByRole("link", { name: "Webhooks" }).click();
   await owner.getByLabel("Name").fill("Catcher");
   await owner.getByLabel("URL").fill("http://127.0.0.1:9/hook");
   await owner.getByRole("button", { name: "Add webhook" }).click();
