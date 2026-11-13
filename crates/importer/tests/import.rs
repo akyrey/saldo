@@ -34,6 +34,8 @@ async fn firefly(page_one: Option<Value>, page_two: Option<Value>) -> MockServer
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
         ("subscriptions", "subscriptions.json"),
+        ("rule-groups", "rule-groups.json"),
+        ("rules", "rules.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))
@@ -121,6 +123,10 @@ async fn snapshot(app: &App) -> Vec<String> {
         "external_refs",
         "bills",
         "bill_periods",
+        "rule_groups",
+        "rules",
+        "rule_triggers",
+        "rule_actions",
     ];
     let mut rows = Vec::new();
     for table in tables {
@@ -247,6 +253,45 @@ async fn first_import_creates_everything_and_balances_match() {
         1
     );
     assert_eq!(counts(&report, "bills").created, 2);
+    assert_eq!(counts(&report, "rule_groups").created, 1);
+    assert_eq!(counts(&report, "rules").created, 3);
+    let inactive: Vec<(String,)> = sqlx::query_as("SELECT title FROM rules WHERE active = 0")
+        .fetch_all(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        inactive,
+        [("Exotic".to_string(),)],
+        "unsupported journal_id trigger"
+    );
+    assert!(
+        report
+            .messages
+            .iter()
+            .any(|m| m.contains("\"Exotic\" imported inactive")),
+        "{:?}",
+        report.messages
+    );
+    let (kind, value): (String, Option<String>) = sqlx::query_as(
+        "SELECT a.kind, a.value FROM rule_actions a JOIN rules r ON r.id = a.rule_id WHERE r.title = 'Rent' AND a.kind = 'link_to_bill'",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    let rent_bill: (String,) = sqlx::query_as("SELECT id FROM bills WHERE name = 'Rent'")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        (kind, value),
+        ("link_to_bill".to_string(), Some(rent_bill.0))
+    );
+    let currency: (Option<String>,) =
+        sqlx::query_as("SELECT value FROM rule_triggers WHERE kind = 'currency_is'")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(currency.0.as_deref(), Some("EUR"));
     // The two rent splits linked to the subscription paid November and January.
     let paid: Vec<(String,)> =
         sqlx::query_as("SELECT due_date FROM bill_periods WHERE status = 'paid' ORDER BY due_date")
@@ -278,6 +323,8 @@ async fn second_import_changes_nothing() {
     assert_eq!(counts(&second, "accounts").unchanged, 12);
     assert_eq!(counts(&second, "attachments").unchanged, 2);
     assert_eq!(counts(&second, "bills").unchanged, 2);
+    assert_eq!(counts(&second, "rules").unchanged, 3);
+    assert_eq!(counts(&second, "rule_groups").unchanged, 1);
     assert_eq!(second.balance_mismatches(), 0);
     assert_eq!(
         snapshot(&app).await,
@@ -378,6 +425,8 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
         ("subscriptions", "subscriptions.json"),
+        ("rule-groups", "rule-groups.json"),
+        ("rules", "rules.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{}", request.0)))
@@ -426,6 +475,8 @@ async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockSe
         ("currencies", fixture("currencies.json")),
         ("attachments", fixture("attachments.json")),
         ("subscriptions", fixture("subscriptions.json")),
+        ("rule-groups", fixture("rule-groups.json")),
+        ("rules", fixture("rules.json")),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))

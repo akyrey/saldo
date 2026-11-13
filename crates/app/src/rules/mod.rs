@@ -3,6 +3,7 @@
 
 mod check;
 pub(crate) mod engine;
+mod names;
 mod store;
 
 use serde::Serialize;
@@ -16,6 +17,7 @@ use crate::identity::required;
 use crate::transactions::{self, TransactionService};
 
 pub use check::TRIGGER_ON;
+pub use names::{RuleNames, names_in};
 pub use saldo_core::rules::{ACTION_KINDS, TRIGGER_KINDS};
 pub use store::{ActionView, RuleGroupView, RuleView, TriggerView};
 
