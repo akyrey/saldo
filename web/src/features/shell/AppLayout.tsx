@@ -1,6 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Download,
+  FolderTree,
+  LogOut,
+  PiggyBank,
+  Tags,
+  Wallet,
+} from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -10,6 +18,7 @@ const NAV = [
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
+  { to: "/piggy-banks", label: "Piggy banks", icon: PiggyBank },
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
@@ -70,9 +79,9 @@ export function AppLayout() {
       {/* Bottom tab bar on phones. */}
       <nav
         aria-label="Main mobile"
-        className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
-          nav.length > NAV.length ? "grid-cols-5" : "grid-cols-4"
-        }`}
+        className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        // One equal column per entry, however many features add a tab.
+        style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
       >
         {nav.map(({ to, label, icon: Icon }) => (
           <Link

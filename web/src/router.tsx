@@ -155,6 +155,15 @@ const exportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/export/ExportPage"), "ExportPage"),
 });
 
+const piggyBanksRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "piggy-banks",
+  component: lazyRouteComponent(
+    () => import("@/features/piggy-banks/PiggyBanksPage"),
+    "PiggyBanksPage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -170,6 +179,7 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     tagsRoute,
     exportRoute,
+    piggyBanksRoute,
   ]),
 ]);
 
