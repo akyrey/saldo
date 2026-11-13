@@ -6,6 +6,7 @@ import {
   FolderTree,
   LogOut,
   PiggyBank,
+  Repeat,
   Tags,
   Wallet,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/piggy-banks", label: "Piggy banks", icon: PiggyBank },
+  { to: "/recurrences", label: "Recurring", icon: Repeat },
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
