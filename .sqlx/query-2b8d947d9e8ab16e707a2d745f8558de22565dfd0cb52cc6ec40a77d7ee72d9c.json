@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transaction_templates\n            (id, household_id, name, kind, title, splits, sort_order, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "2b8d947d9e8ab16e707a2d745f8558de22565dfd0cb52cc6ec40a77d7ee72d9c"
+}

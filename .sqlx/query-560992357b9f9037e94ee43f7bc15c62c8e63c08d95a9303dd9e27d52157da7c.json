@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT coalesce(max(sort_order) + 1, 0) AS \"next!: i64\"\n           FROM transaction_templates WHERE household_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "next!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "560992357b9f9037e94ee43f7bc15c62c8e63c08d95a9303dd9e27d52157da7c"
+}
