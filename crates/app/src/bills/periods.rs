@@ -410,6 +410,23 @@ async fn all_rows(
 }
 
 /// A bill's periods (optionally of one status), oldest first.
+/// Every period of the household's bills, for the export.
+pub(crate) async fn all_periods_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<BillPeriodView>, AppError> {
+    let household_id = ctx.household_id.to_string();
+    let rows = sqlx::query_as!(
+        PeriodRow,
+        "SELECT id, bill_id, due_date, status, paid_split_id, paid_at, last_reminded_on, reminder_count, created_at, updated_at
+         FROM bill_periods WHERE household_id = ? ORDER BY bill_id, due_date",
+        household_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows)
+}
+
 async fn period_rows(
     conn: &mut SqliteConnection,
     bill_id: &str,

@@ -1298,6 +1298,8 @@ export interface components {
     ExportDocument: {
       accounts: components["schemas"]["AccountView"][];
       attachments: components["schemas"]["AttachmentView"][];
+      bill_periods: components["schemas"]["BillPeriodView"][];
+      bills: components["schemas"]["BillView"][];
       categories: components["schemas"]["CategoryView"][];
       currencies: components["schemas"]["CurrencyView"][];
       exported_at: string;
@@ -1306,6 +1308,8 @@ export interface components {
       format: string;
       household: components["schemas"]["HouseholdView"];
       members: components["schemas"]["MemberView"][];
+      rule_groups: components["schemas"]["RuleGroupView"][];
+      rules: components["schemas"]["RuleView"][];
       tags: components["schemas"]["TagView"][];
       transactions: components["schemas"]["TransactionGroupView"][];
       /** Format: int32 */

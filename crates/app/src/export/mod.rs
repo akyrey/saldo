@@ -2,12 +2,14 @@
 //! files (ARCHITECTURE.md 9.2). Owner only.
 
 mod csv;
+mod planning_csv;
 
 use serde::Serialize;
 use sqlx::{SqliteConnection, SqlitePool};
 
 use crate::accounts::{AccountFilter, AccountService, AccountView};
 use crate::attachments::{AttachmentService, AttachmentView};
+use crate::bills::{self, BillPeriodView, BillView};
 use crate::categories::{self, CategoryView};
 use crate::clock::{SharedClock, format_timestamp};
 use crate::ctx::HouseholdCtx;
@@ -15,6 +17,7 @@ use crate::currencies::{self, CurrencyView};
 use crate::error::AppError;
 use crate::identity::{HouseholdView, MemberView, household_view, members_in};
 use crate::page::{MAX_PER_PAGE, PageRequest};
+use crate::rules::{self, RuleGroupView, RuleView};
 use crate::tags::{self, TagView};
 use crate::transactions::{self, TransactionGroupView};
 
@@ -48,6 +51,10 @@ pub struct ExportDocument {
     pub transactions: Vec<TransactionGroupView>,
     pub attachments: Vec<AttachmentView>,
     pub external_refs: Vec<ExternalRefView>,
+    pub bills: Vec<BillView>,
+    pub bill_periods: Vec<BillPeriodView>,
+    pub rule_groups: Vec<RuleGroupView>,
+    pub rules: Vec<RuleView>,
 }
 
 #[derive(Clone)]
@@ -77,6 +84,7 @@ impl ExportService {
     pub async fn json(&self, ctx: &HouseholdCtx) -> Result<ExportDocument, AppError> {
         ctx.require_owner()?;
         let mut tx = self.pool.begin().await?;
+        let (rule_groups, rules) = rules::all_in(&mut tx, ctx).await?;
         let document = ExportDocument {
             format: FORMAT.to_string(),
             version: VERSION,
@@ -90,6 +98,10 @@ impl ExportService {
             transactions: transactions::all_in(&mut tx, ctx).await?,
             attachments: self.attachments.list_in(&mut tx, ctx).await?,
             external_refs: external_refs(&mut tx, ctx).await?,
+            bills: bills::all_in(&mut tx, ctx).await?,
+            bill_periods: bills::all_periods_in(&mut tx, ctx).await?,
+            rule_groups,
+            rules,
         };
         tx.rollback().await?;
         Ok(document)

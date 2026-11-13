@@ -6,10 +6,12 @@ use std::io::Read;
 
 use common::*;
 use saldo_app::attachments::NewAttachment;
+use saldo_app::bills::NewBill;
 use saldo_app::categories::NewCategory;
 use saldo_app::ctx::Origin;
 use saldo_app::error::AppError;
 use saldo_app::external_refs::{ExternalRefs, FIREFLY};
+use saldo_app::rules::{ActionView, NewRuleGroup, RuleInput, TriggerView};
 use saldo_app::tags::NewTag;
 
 /// A household with a bit of everything.
@@ -47,11 +49,13 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
         )
         .await
         .unwrap();
+    let bill = seed_bill_and_rule(&test, &setup.ctx).await;
     let mut first = split(1, &checking, &food, "42.50");
     first.description = "Shop \"weekly\"".into();
     first.tag_ids = vec![tag.id.parse().unwrap()];
     let mut second = split(1, &checking, &rent, "800");
     second.category_id = Some(category.id.parse().unwrap());
+    second.bill_id = Some(bill.parse().unwrap());
     let view = test
         .app
         .transactions
@@ -92,6 +96,75 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
     (test, setup)
 }
 
+/// A monthly rent bill and one rule; returns the bill's ID.
+async fn seed_bill_and_rule(test: &TestApp, ctx: &saldo_app::ctx::HouseholdCtx) -> String {
+    let bill = test
+        .app
+        .bills
+        .create(
+            ctx,
+            Origin::Api,
+            NewBill {
+                name: "Rent".into(),
+                amount_min: "800".into(),
+                amount_max: "800".into(),
+                currency: None,
+                first_due_date: date(1),
+                end_date: None,
+                repeat_freq: "monthly".into(),
+                skip: None,
+                remind_days_before: None,
+                remind_every_days: None,
+                active: None,
+                sort_order: None,
+                notes: None,
+            },
+        )
+        .await
+        .unwrap();
+    let rule_group = test
+        .app
+        .rules
+        .create_group(
+            ctx,
+            Origin::Api,
+            NewRuleGroup {
+                title: "Default".into(),
+                active: true,
+                ..NewRuleGroup::default()
+            },
+        )
+        .await
+        .unwrap();
+    let rule = RuleInput {
+        rule_group_id: rule_group.id,
+        title: "Shop, weekly".into(),
+        description: None,
+        trigger_on: "create".into(),
+        strict: true,
+        stop_processing: false,
+        active: true,
+        sort_order: 0,
+        triggers: vec![TriggerView {
+            kind: "description_contains".into(),
+            value: Some("Shop".into()),
+            negate: false,
+        }],
+        actions: vec![ActionView {
+            kind: "set_notes".into(),
+            value: Some("weekly shop".into()),
+            stop_processing: false,
+            active: true,
+        }],
+    };
+    test.app
+        .rules
+        .create_rule(ctx, Origin::Api, rule)
+        .await
+        .unwrap();
+    bill.id
+}
+
 #[tokio::test]
 async fn json_export_contains_every_row_of_the_household() {
     let (test, setup) = seeded().await;
@@ -123,6 +196,12 @@ async fn json_export_contains_every_row_of_the_household() {
     assert_eq!(splits, rows("splits").await);
     assert_eq!(doc.attachments.len(), rows("attachments").await);
     assert_eq!(doc.external_refs.len(), rows("external_refs").await);
+    assert_eq!(doc.bills.len(), rows("bills").await);
+    assert_eq!(doc.bill_periods.len(), rows("bill_periods").await);
+    assert!(!doc.bill_periods.is_empty());
+    assert_eq!(doc.rule_groups.len(), rows("rule_groups").await);
+    assert_eq!(doc.rules.len(), rows("rules").await);
+    assert_eq!(doc.rules[0].triggers.len(), 1);
     assert_eq!(
         doc.currencies.len(),
         count(&test, "currencies").await as usize
@@ -147,9 +226,13 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
         [
             "accounts.csv",
             "attachments.csv",
+            "bill_periods.csv",
+            "bills.csv",
             "categories.csv",
             "currencies.csv",
             "members.csv",
+            "rule_groups.csv",
+            "rules.csv",
             "tags.csv",
             "transactions.csv"
         ]
@@ -175,8 +258,21 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
     );
     assert!(shop.contains(",monthly,"), "tag names: {shop}");
     assert!(
-        lines.iter().any(|l| l.contains(",Rent,800.00,EUR,,,Home,")),
-        "category name"
+        lines
+            .iter()
+            .any(|l| l.contains(",Rent,800.00,EUR,,,Home,Rent,")),
+        "category and bill names"
+    );
+
+    let mut rules = String::new();
+    archive
+        .by_name("rules.csv")
+        .unwrap()
+        .read_to_string(&mut rules)
+        .unwrap();
+    assert!(
+        rules.contains("Default,\"Shop, weekly\",create,true,false,true,0,description_contains=Shop,set_notes=weekly shop"),
+        "rules with readable triggers and actions: {rules}"
     );
 }
 

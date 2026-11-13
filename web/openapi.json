@@ -5618,7 +5618,11 @@
           "tags",
           "transactions",
           "attachments",
-          "external_refs"
+          "external_refs",
+          "bills",
+          "bill_periods",
+          "rule_groups",
+          "rules"
         ],
         "properties": {
           "accounts": {
@@ -5631,6 +5635,18 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AttachmentView"
+            }
+          },
+          "bill_periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillPeriodView"
+            }
+          },
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillView"
             }
           },
           "categories": {
@@ -5665,6 +5681,18 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MemberView"
+            }
+          },
+          "rule_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleGroupView"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleView"
             }
           },
           "tags": {
