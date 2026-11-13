@@ -5,6 +5,7 @@ use std::sync::Arc;
 use saldo_app::App;
 
 use crate::config::Config;
+use crate::notify::Senders;
 use crate::rate_limit::LoginLimiter;
 use crate::workers::EventSignal;
 
@@ -18,11 +19,14 @@ pub struct AppState {
     pub login_limiter: Arc<LoginLimiter>,
     /// Bumped after every successful write; wakes the background tasks.
     pub events: EventSignal,
+    /// One notification sender per channel kind.
+    pub senders: Arc<Senders>,
 }
 
 impl AppState {
     pub fn new(app: App, config: Config) -> Self {
         Self {
+            senders: Arc::new(Senders::from_config(&config)),
             app,
             config: Arc::new(config),
             login_limiter: Arc::new(LoginLimiter::default()),
