@@ -13,7 +13,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 4 Web | done | main / 4bd407b | React SPA embedded in the server; 69 Vitest + 6 Playwright flows pass; initial route 130 kB gzipped; PWA install on a phone not yet checked |
 | 5 Planning features | done | main / 356a8f3 (last track merge), integration up to 05d1d71 | Four tracks: bills (449e839), rules (f336043), budgets + reports (9690610), piggy banks + recurrences (356a8f3); export of the new tables (9666dc5, b6b8ec4). 469 Rust tests, 147 Vitest, 12 Playwright flows |
 | 6 Events | done | main / ee236b3 (part B), b1f1ca0 (part A) | Webhooks, SSE live updates, bill reminders, ntfy/Gotify/email/Web Push. Verified for real: signed webhook delivery and retry (local catcher, Go example), reminders to a local ntfy stand-in. Not verified: real ntfy, Gotify, SMTP, browser push |
-| 7 Clients | not started | | |
+| 7 Clients | done (manual device checks open) | branch phase-7-clients | Tauri 2 desktop app (Saldo.app 11 MB, built on macOS), PWA install banner and app badge, desktop bearer login + CORS, backup script. 479 Rust + 2 desktop tests, 177 Vitest, 12 Playwright flows. Not yet run by hand: the desktop app against a server, phone installs and push |
 | 8 Templates | not started | | Brief added 2026-11-13 at the owner's request (`docs/phases/phase-8-templates.md`) |
 
 States: not started, in progress, blocked (say on what), done.
@@ -50,6 +50,13 @@ Record every place where the code differs from the architecture document, why, a
 ## Decisions made during implementation
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
+
+- 2026-11-13 Phase 7: `web/src/platform/` is the one place that knows where the app runs: `Platform` (serverUrl, token, saveToken/clearToken, notify, openExternal) with a browser and a Tauri implementation; `initPlatform()` runs before the first render and loads the Tauri code only inside Tauri (a separate 1.4 kB chunk). The API client sends every request through `sendRequest`, which, on desktop, rewrites it to the chosen server, adds `Authorization: Bearer`, drops the CSRF header and omits cookies.
+- 2026-11-13 Phase 7: the desktop token is the normal 30-day session (`POST /auth/login` with `client: "desktop"` returns it in the body, no cookie); after it expires the app shows the login again. Logout revokes it on the server and deletes it from the keychain. Choosing another server forgets the token.
+- 2026-11-13 Phase 7: desktop shell in `desktop/` (Tauri 2.12, plugins notification 2.8, opener 2.7, window-state 2.5; `keyring` 3.6 for the OS keychain via three `#[tauri::command]`s). It is excluded from the main Cargo workspace (own lock file and target), so server builds and CI never compile Tauri. The capability file allows only core defaults, notifications, window state and opening http/https/mailto links. CSP allows API calls to any http(s) server, since the server is chosen at run time.
+- 2026-11-13 Phase 7: desktop bill reminders come from the event stream (`bill.due_soon`, `bill.overdue` → `GET /bills/{id}` → a system notification). Reminders recorded while the app was closed are not shown later; Web Push and the other channels still deliver them.
+- 2026-11-13 Phase 7: PWA: the service worker registers from `main.tsx` in the browser only (`injectRegister: false`); an install banner offers Chrome's prompt or Safari's "Add to Home Screen" steps and links to notification settings (dismissal remembered in localStorage); the App Badging API shows the number of overdue bills where supported; the transaction editor's save button stays in a sticky bar above the phone tab bar. The tag field is now a search box with chips and "Create tag …" instead of a list of every tag (owner's request).
+- 2026-11-13 Phase 7: CI gained a `desktop` job on `macos-latest` (main and manual runs only) that checks, tests and builds the app and uploads `saldo-desktop-macos`. `scripts/backup.sh` backs up a compose install (database via `saldo backup`, attachments as a tarball, `KEEP_DAYS` retention).
 
 - 2026-11-13 Phase 5/6: built as five worktree tracks (bills and rules by the lead; budgets + reports, piggy banks + recurrences, 6A and 6B by delegates). Each delegate's hand-off file was folded into this file and deleted. Shared files (App fields, route and worker registration, importer `ENTITIES`, router, nav) only ever got appended lines.
 - 2026-11-13 Phase 5: the transaction service runs rules after create and update (`create_in`, `replace_in`); `write_create_in` and `write_replace_in` skip them. A recurrence fires through `write_create_in` and runs the rules only when `apply_rules` is set (fixed in ab19b41; before, rules always ran). A rule's change that breaks a ledger rule is logged and dropped.
@@ -157,6 +164,13 @@ Earlier run, Phase 3 entities only (2026-11-13, into a scratch database; counts 
 Balance check: 26 asset/liability accounts, 0 mismatches, both runs. `saldo export json` held 867 accounts, 12,362 groups and 12,550 splits (equal to the database), `transactions.csv` 12,550 rows. The token appeared nowhere in the database, the export, the reports or `import_runs.summary`. Notes: 41 liability payments are transfers in Saldo (withdrawals in Firefly); 1 same-currency foreign amount dropped; 1,986 budget and 449 subscription links and 7 bill attachments wait for Phase 5.
 
 Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 for their files (missing on the Firefly server). Groups deleted in Firefly after an import stay in Saldo (counted as a note). Transaction links (`/v1/transaction-links`) are not imported. Piggy bank import is tested against the public spec only, since the owner has no piggy banks.
+
+## Follow-ups the owner may want
+
+- SQLite write contention: services open deferred transactions (`BEGIN`), so a transaction that reads and then writes fails with `database is locked` (code 517) if another connection wrote in between. Seen once in the Phase 7 backup check (the webhook dispatcher retried and lost nothing). It can also hit API writes while the importer runs. Fix: start write transactions with `BEGIN IMMEDIATE` in one `db` helper.
+- Desktop: code signing and notarisation (the builds are unsigned), auto-update, Windows and Linux builds in CI, Tauri mobile, catching up on reminders missed while closed.
+- Web Push: deactivate a channel whose subscription is gone (HTTP 404/410).
+- Single sign-on (OIDC) instead of passwords.
 
 ## Open questions for the owner
 
