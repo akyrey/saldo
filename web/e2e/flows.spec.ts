@@ -180,3 +180,45 @@ test("the owner downloads the JSON and CSV exports", async ({ page }) => {
   ]);
   expect(csv.suggestedFilename()).toMatch(/\.zip$/);
 });
+
+test("a bill is created and a period is marked paid with a transaction", async ({ page }) => {
+  await login(page);
+  const checking = await createAccount(page, "Bills checking", "asset");
+  const landlord = await createAccount(page, "Bills landlord", "expense");
+  const today = new Date().toISOString().slice(0, 10);
+  const origin = new URL(page.url()).origin;
+  const payment = await page.request.post("/api/v1/transactions", {
+    headers: { "X-Saldo-Csrf": "1", Origin: origin },
+    data: {
+      splits: [
+        {
+          date: today,
+          description: "Flat rent",
+          source_id: checking,
+          destination_id: landlord,
+          amount: "750",
+        },
+      ],
+    },
+  });
+  expect(payment.status(), await payment.text()).toBe(201);
+
+  await page.goto("/bills/new");
+  await page.getByLabel("Name").fill("Flat rent");
+  await page.getByLabel("Minimum amount").fill("750");
+  await page.getByLabel("Maximum amount").fill("750");
+  await page.getByLabel("First due date").fill(today);
+  await page.getByRole("button", { name: "Create bill" }).click();
+  await expect(page.getByRole("heading", { name: "Flat rent" })).toBeVisible();
+
+  const row = page.getByRole("row").filter({ hasText: today });
+  await row.getByRole("button", { name: "Mark paid" }).click();
+  const picker = row.getByLabel("Paying transaction");
+  const option = picker.locator("option", { hasText: "Flat rent" });
+  await picker.selectOption((await option.getAttribute("value")) ?? "");
+  await row.getByRole("button", { name: "Confirm payment" }).click();
+  await expect(row.getByText("paid", { exact: true })).toBeVisible();
+
+  await page.goto("/bills");
+  await expect(page.getByRole("link", { name: "Flat rent" })).toBeVisible();
+});
