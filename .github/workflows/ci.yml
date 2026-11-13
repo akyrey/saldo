@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -54,3 +55,41 @@ jobs:
         with:
           name: playwright-report
           path: web/test-results
+
+  # The desktop app (Tauri) for macOS. Slow, so only on main or on demand.
+  desktop:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - run: npm ci
+        working-directory: web
+      - run: npm ci
+        working-directory: desktop
+      - run: cargo fmt --check
+        working-directory: desktop/src-tauri
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: desktop/src-tauri
+      - run: cargo test
+        working-directory: desktop/src-tauri
+      - run: npm run tauri build
+        working-directory: desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saldo-desktop-macos
+          path: |
+            desktop/src-tauri/target/release/bundle/macos/*.app
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg

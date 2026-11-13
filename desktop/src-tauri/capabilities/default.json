@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the web app may ask of the desktop shell: nothing beyond the features it uses.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "window-state:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }, { "url": "http://*" }, { "url": "mailto:*" }]
+    }
+  ]
+}

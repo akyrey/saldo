@@ -3,6 +3,8 @@
 // a Go client from a proto or OpenAPI file: when the server contract changes,
 // regenerating makes the compiler point at every call that no longer fits.
 import createClient, { type Middleware } from "openapi-fetch";
+import { platform } from "@/platform";
+import { toServerRequest } from "@/platform/request";
 import { ApiError, apiErrorFrom } from "./errors";
 import type { paths } from "./schema";
 
@@ -29,15 +31,26 @@ const csrf: Middleware = {
 };
 
 /**
- * Creates a client. `baseUrl` is empty for the web app (same origin); the
- * desktop app (Phase 7) passes the server's URL.
+ * Sends one request: unchanged in the browser; to the configured server with
+ * the bearer token in the desktop app. Every API call, download and the
+ * desktop event stream go through here.
+ */
+export async function sendRequest(request: Request): Promise<Response> {
+  const current = platform();
+  const target = { serverUrl: current.serverUrl(), token: current.token() };
+  // Look `fetch` up on every call (not once at start), so tests can replace it.
+  return globalThis.fetch(await toServerRequest(request, target));
+}
+
+/**
+ * Creates a client. `baseUrl` is empty for the web app and the desktop app
+ * (the platform supplies the server); a development build may set it.
  */
 export function createApi(baseUrl: string) {
   const client = createClient<paths>({
     baseUrl,
     credentials: "include",
-    // Look `fetch` up on every call (not once at start), so tests can replace it.
-    fetch: (request) => globalThis.fetch(request),
+    fetch: sendRequest,
   });
   client.use(csrf);
   return client;

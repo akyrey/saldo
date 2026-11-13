@@ -20,6 +20,9 @@
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
     "@tanstack/react-router": "^1.170.46",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-notification": "^2.8.1",
+    "@tauri-apps/plugin-opener": "^2.7.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.72.0",

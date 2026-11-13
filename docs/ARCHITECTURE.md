@@ -738,7 +738,7 @@ Conventions:
 
 | Area | Endpoints | Phase |
 |---|---|---|
-| Setup, auth | `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
+| Setup, auth | `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login` (`client: "desktop"` returns the session token in the body and sets no cookie; Phase 7), `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
 | Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}` | 2 |
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
@@ -756,13 +756,15 @@ Conventions:
 | Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `POST /webhooks/{id}/test` (202 `{ event_id }`), `POST /webhooks/{id}/rotate-secret`, `GET /webhooks/{id}/deliveries`, `POST /webhook-deliveries/{id}/redeliver`. Owner only. The list is unpaginated; create and rotate answer `{ webhook, secret }`, the only place the secret appears | 6 |
 | Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields | 6 |
 
-Health: `GET /healthz` (no auth, checks the database).
+Health: `GET /healthz` (no auth, checks the database): `{ status, app: "saldo", api: "v1", version }`, which the desktop app checks before connecting.
 
 ## 7. Auth and household
 
 - Passwords are hashed with Argon2id. Login is rate-limited per IP and per email.
 - A login creates a `sessions` row and returns a random 256-bit token. The web app receives it as a cookie `saldo_session` (HttpOnly, SameSite=Lax, and Secure when `SALDO_PUBLIC_URL` is https). The token is never in the login response body. Desktop, scripts and the importer send `Authorization: Bearer <token>`. Personal access tokens are rows of kind `token`, shown once at creation.
 - CSRF: a request authenticated by cookie that is not GET/HEAD must carry the header `X-Saldo-Csrf: 1` and an `Origin` matching `SALDO_PUBLIC_URL`. Bearer requests are exempt.
+- CORS is off unless `SALDO_ALLOWED_ORIGINS` lists origins (the desktop app: `tauri://localhost`, `http://tauri.localhost`). Allowed: GET, POST, PUT, PATCH, DELETE with `Authorization`, `Content-Type` and `Last-Event-ID`; never credentials, so cookies stay same-origin.
+- The desktop app logs in with `client: "desktop"`, keeps the 30-day session token in the OS keychain and sends it as a bearer token; it reads `GET /events/stream` with `fetch`, since `EventSource` cannot send that header.
 - First run: `POST /setup` creates the first user and the household, and only works while the `users` table is empty. The same is available as `saldo user create`.
 - An owner adds members with an initial password. v1 has no email invitations and no password-reset email.
 - Authorization in v1 is household membership: a member can read and write everything in the household. Owner-only: managing members, webhooks, export and household settings.
@@ -899,7 +901,7 @@ Chosen: React + TypeScript + Vite, TanStack Query (server state) and TanStack Ro
 - One image built in stages: Node builds `web/`, Rust builds the two binaries (with `cargo-chef` for layer caching), the final stage is a slim Debian image running as a non-root user.
 - One volume `/data`: `saldo.db` (plus WAL files) and `attachments/`.
 - `docker-compose.yml` with the single service, the volume, a health check on `/healthz`, and an `.env.example`.
-- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/TLS/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`) and `SALDO_VAPID_SUBJECT`, `SALDO_LOG` (level). The server refuses to start with invalid configuration and says which variable is wrong.
+- Configuration by environment variables: `SALDO_DATABASE_URL` (default `sqlite:///data/saldo.db`), `SALDO_DATA_DIR`, `SALDO_BIND` (default `0.0.0.0:8080`), `SALDO_PUBLIC_URL`, `SALDO_SMTP_HOST/PORT/TLS/USER/PASSWORD/FROM`, `SALDO_VAPID_PRIVATE_KEY` (from `saldo vapid-keys`) and `SALDO_VAPID_SUBJECT`, `SALDO_ALLOWED_ORIGINS` (CORS, for the desktop app), `SALDO_LOG` (level). The server refuses to start with invalid configuration and says which variable is wrong.
 - Migrations run at startup. TLS is expected from a reverse proxy.
 - Logs are structured (`tracing`), one line per request with a request ID; secrets and tokens are never logged.
 

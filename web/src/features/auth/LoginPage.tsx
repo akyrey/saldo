@@ -7,6 +7,7 @@ import { Field } from "@/components/Field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { platform } from "@/platform";
 import { AuthCard } from "./AuthCard";
 import { meQuery, setupStatusQuery } from "./queries";
 
@@ -18,8 +19,16 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const desktop = platform().kind === "desktop";
   const login = useMutation({
-    mutationFn: () => call(api.POST("/api/v1/auth/login", { body: { email, password } })),
+    mutationFn: async () => {
+      // The desktop app asks for the token itself instead of a cookie.
+      const client = desktop ? "desktop" : undefined;
+      const result = await call(
+        api.POST("/api/v1/auth/login", { body: { email, password, client } }),
+      );
+      if (result.data.token) await platform().saveToken(result.data.token);
+    },
     onSuccess: async () => {
       await queryClient.fetchQuery(meQuery);
       await navigate({ to: redirect ?? "/accounts" });
@@ -68,6 +77,14 @@ export function LoginPage() {
           {login.isPending ? "Logging in…" : "Log in"}
         </Button>
       </form>
+      {desktop ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Server: {platform().serverUrl()} ·{" "}
+          <Link to="/connect" className="text-primary underline">
+            Change
+          </Link>
+        </p>
+      ) : null}
     </AuthCard>
   );
 }

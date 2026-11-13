@@ -9,6 +9,13 @@ async fn healthz_reports_ok_and_carries_a_request_id() {
     let response = server.get("/healthz", &Auth::None).await;
     assert_eq!(response.status, StatusCode::OK);
     assert_eq!(response.body["status"], "ok");
+    assert_eq!(response.body["app"], "saldo");
+    assert_eq!(response.body["api"], "v1");
+    assert!(
+        response.body["version"]
+            .as_str()
+            .is_some_and(|v| !v.is_empty())
+    );
     assert!(response.headers.contains_key("x-request-id"));
 }
 

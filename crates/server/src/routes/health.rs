@@ -12,6 +12,23 @@ use crate::state::AppState;
 pub struct Health {
     /// `ok` or `unavailable`.
     pub status: String,
+    /// Always `saldo`: lets the desktop app check it found a Saldo server.
+    pub app: String,
+    /// The API version clients speak (`v1`).
+    pub api: String,
+    /// The server's version, for example `0.1.0`.
+    pub version: String,
+}
+
+impl Health {
+    fn new(status: &str) -> Self {
+        Self {
+            status: status.into(),
+            app: "saldo".into(),
+            api: "v1".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }
+    }
 }
 
 /// Health check (no authentication).
@@ -19,17 +36,10 @@ pub struct Health {
     responses((status = 200, body = Health), (status = 503, body = Health)))]
 pub async fn healthz(State(state): State<AppState>) -> (StatusCode, Json<Health>) {
     match sqlx_ping(&state).await {
-        true => (
-            StatusCode::OK,
-            Json(Health {
-                status: "ok".into(),
-            }),
-        ),
+        true => (StatusCode::OK, Json(Health::new("ok"))),
         false => (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(Health {
-                status: "unavailable".into(),
-            }),
+            Json(Health::new("unavailable")),
         ),
     }
 }

@@ -6,13 +6,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::{Request as AxumRequest, State};
-use axum::http::{HeaderName, Method, Request};
+use axum::http::{HeaderName, HeaderValue, Method, Request, header};
 use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::routing::get;
 use axum::{Json, Router};
 use saldo_app::clock::SystemClock;
 use saldo_app::{App, db};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{Level, info};
@@ -32,7 +33,13 @@ pub fn build_router(state: AppState) -> Router {
         "/api/v1/openapi.json",
         get(move || async move { Json(document.as_ref().clone()) }),
     );
-    crate::spa::with_web_app(router)
+    let router = crate::spa::with_web_app(router);
+    // CORS wraps everything, so a preflight is answered before any auth check.
+    let router = match cors(&state.config.allowed_origins) {
+        Some(layer) => router.layer(layer),
+        None => router,
+    };
+    router
         // Layers wrap every request, like Laravel middleware. The last one
         // added runs first: set a request ID, log, then copy the ID to the
         // response.
@@ -51,6 +58,37 @@ pub fn build_router(state: AppState) -> Router {
         .layer(middleware::from_fn_with_state(state.clone(), wake_after_writes))
         .with_state(state)
 }
+
+/// CORS for the configured origins only (the desktop app). Bearer tokens
+/// only: credentials (cookies) are never allowed cross-origin.
+fn cors(origins: &[String]) -> Option<CorsLayer> {
+    if origins.is_empty() {
+        return None;
+    }
+    let origins: Vec<HeaderValue> = origins
+        .iter()
+        .filter_map(|o| HeaderValue::from_str(o).ok())
+        .collect();
+    let layer = CorsLayer::new()
+        .allow_origin(AllowOrigin::list(origins))
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+        ])
+        .allow_headers([
+            header::AUTHORIZATION,
+            header::CONTENT_TYPE,
+            HeaderName::from_static("last-event-id"),
+        ])
+        .max_age(Duration::from_secs(CORS_MAX_AGE_SECS));
+    Some(layer)
+}
+
+/// How long a browser may cache a preflight answer.
+const CORS_MAX_AGE_SECS: u64 = 3600;
 
 /// After a successful request that may have changed data, wake the
 /// background tasks (webhook dispatcher, notifier, ...) instead of letting

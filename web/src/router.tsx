@@ -19,6 +19,7 @@ import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
 import { parseTransactionSearch } from "@/features/transactions/search";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { platform } from "@/platform";
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -26,9 +27,23 @@ export interface RouterContext {
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({ component: RootLayout });
 
+/** The desktop app needs a server before anything else can load. */
+function requireServer(): void {
+  if (platform().kind === "desktop" && platform().serverUrl() === "") {
+    throw redirect({ to: "/connect" });
+  }
+}
+
+const connectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "connect",
+  component: lazyRouteComponent(() => import("@/features/auth/ConnectPage"), "ConnectPage"),
+});
+
 const setupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "setup",
+  beforeLoad: requireServer,
   component: lazyRouteComponent(() => import("@/features/auth/SetupPage"), "SetupPage"),
 });
 
@@ -38,6 +53,7 @@ const loginRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
     redirect: safeRedirect(search.redirect),
   }),
+  beforeLoad: requireServer,
   component: lazyRouteComponent(() => import("@/features/auth/LoginPage"), "LoginPage"),
 });
 
@@ -51,6 +67,7 @@ const appRoute = createRoute({
   // Links inside the app keep the scope switch's value.
   search: { middlewares: [retainSearchParams(["scope"])] },
   beforeLoad: async ({ context, location }) => {
+    requireServer();
     try {
       return { me: await context.queryClient.ensureQueryData(meQuery) };
     } catch (error) {
@@ -285,6 +302,7 @@ export const editRecurrenceRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
+  connectRoute,
   setupRoute,
   loginRoute,
   appRoute.addChildren([

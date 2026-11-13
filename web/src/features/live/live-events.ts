@@ -67,6 +67,7 @@ export function startLiveEvents(
   queryClient: QueryClient,
   url: string,
   Source: EventSourceFactory | undefined,
+  onNotice: (notice: EventNotice) => void = () => {},
 ): () => void {
   if (!Source) return () => {};
   const source = new Source(url, { withCredentials: true });
@@ -90,6 +91,7 @@ export function startLiveEvents(
   source.onmessage = (event) => {
     const notice = parseNotice(event.data);
     if (!notice) return;
+    onNotice(notice);
     const keys = keysFor(notice.entity_type);
     if (keys === "all") everything = true;
     else for (const key of keys) pending.add(JSON.stringify(key));

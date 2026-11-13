@@ -45,6 +45,11 @@ pub struct Response {
 }
 
 pub async fn server() -> TestServer {
+    server_with_env(&[]).await
+}
+
+/// A server whose configuration also has these `SALDO_*` variables set.
+pub async fn server_with_env(extra: &[(&str, &str)]) -> TestServer {
     let pool = db::connect_in_memory().await.unwrap();
     db::migrate(&pool).await.unwrap();
     let clock = Arc::new(FixedClock::new(
@@ -53,7 +58,13 @@ pub async fn server() -> TestServer {
     let data_dir = std::env::temp_dir().join(format!("saldo-server-test-{}", uuid::Uuid::new_v4()));
     let app = App::new(pool, clock.clone()).with_data_dir(data_dir.clone());
     let config = Config::from_lookup(|name| {
-        (name == "SALDO_DATA_DIR").then(|| data_dir.display().to_string())
+        if name == "SALDO_DATA_DIR" {
+            return Some(data_dir.display().to_string());
+        }
+        extra
+            .iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, value)| value.to_string())
     })
     .unwrap();
     TestServer {
