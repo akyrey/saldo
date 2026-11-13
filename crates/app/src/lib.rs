@@ -5,6 +5,7 @@
 //! commits. Every method takes a [`ctx::HouseholdCtx`] first.
 
 pub mod accounts;
+pub mod attachments;
 pub mod categories;
 pub mod clock;
 pub mod ctx;
@@ -20,9 +21,12 @@ pub mod scope;
 pub mod tags;
 pub mod transactions;
 
+use std::path::PathBuf;
+
 use sqlx::SqlitePool;
 
 use crate::accounts::AccountService;
+use crate::attachments::AttachmentService;
 use crate::categories::CategoryService;
 use crate::clock::SharedClock;
 use crate::currencies::CurrencyService;
@@ -39,6 +43,7 @@ pub struct App {
     pub pool: SqlitePool,
     pub clock: SharedClock,
     pub accounts: AccountService,
+    pub attachments: AttachmentService,
     pub categories: CategoryService,
     pub currencies: CurrencyService,
     pub events: EventService,
@@ -51,6 +56,11 @@ impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
         Self {
             accounts: AccountService::new(pool.clone(), clock.clone()),
+            attachments: AttachmentService::new(
+                pool.clone(),
+                clock.clone(),
+                PathBuf::from(DEFAULT_DATA_DIR),
+            ),
             categories: CategoryService::new(pool.clone(), clock.clone()),
             currencies: CurrencyService::new(pool.clone()),
             events: EventService::new(pool.clone()),
@@ -63,7 +73,18 @@ impl App {
     }
 }
 
+/// Where files live unless [`App::with_data_dir`] says otherwise.
+pub const DEFAULT_DATA_DIR: &str = "/data";
+
 impl App {
+    /// Stores attachment files under `data_dir` (`SALDO_DATA_DIR`).
+    pub fn with_data_dir(self, data_dir: PathBuf) -> Self {
+        Self {
+            attachments: AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir),
+            ..self
+        }
+    }
+
     /// Checks the database answers (for `/healthz`).
     pub async fn ping(&self) -> Result<(), error::AppError> {
         sqlx::query("SELECT 1").execute(&self.pool).await?;

@@ -5,7 +5,7 @@
 //! one where the other is expected. Go's `type AccountID string` is close, except
 //! Rust never converts implicitly. PHP would need a small value-object class.
 //!
-//! The nine types are written out by hand on purpose: no macros of our own.
+//! The types are written out by hand on purpose: no macros of our own.
 
 use std::fmt;
 use std::str::FromStr;
@@ -196,6 +196,25 @@ impl FromStr for BillId {
     }
 }
 
+/// Identifies an attachment (a stored file linked to a split, account, ...).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct AttachmentId(pub Uuid);
+
+impl fmt::Display for AttachmentId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl FromStr for AttachmentId {
+    type Err = IdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_uuid(s).map(Self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +258,7 @@ mod tests {
         assert_round_trips(TagId);
         assert_round_trips(BudgetId);
         assert_round_trips(BillId);
+        assert_round_trips(AttachmentId);
     }
 
     #[test]

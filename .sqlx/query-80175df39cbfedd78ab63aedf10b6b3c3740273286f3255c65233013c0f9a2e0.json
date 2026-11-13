@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS (SELECT 1 FROM tags WHERE household_id = ? AND id = ?)",
+  "describe": {
+    "columns": [
+      {
+        "name": "EXISTS (SELECT 1 FROM tags WHERE household_id = ? AND id = ?)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "80175df39cbfedd78ab63aedf10b6b3c3740273286f3255c65233013c0f9a2e0"
+}

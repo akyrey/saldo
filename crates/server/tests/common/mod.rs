@@ -50,8 +50,12 @@ pub async fn server() -> TestServer {
     let clock = Arc::new(FixedClock::new(
         Utc.with_ymd_and_hms(2026, 11, 13, 9, 0, 0).unwrap(),
     ));
-    let app = App::new(pool, clock.clone());
-    let config = Config::from_lookup(|_| None).unwrap();
+    let data_dir = std::env::temp_dir().join(format!("saldo-server-test-{}", uuid::Uuid::new_v4()));
+    let app = App::new(pool, clock.clone()).with_data_dir(data_dir.clone());
+    let config = Config::from_lookup(|name| {
+        (name == "SALDO_DATA_DIR").then(|| data_dir.display().to_string())
+    })
+    .unwrap();
     TestServer {
         router: build_router(AppState::new(app.clone(), config)),
         app,
@@ -105,6 +109,43 @@ impl TestServer {
             serde_json::from_slice(&bytes)
                 .unwrap_or(Value::String(String::from_utf8_lossy(&bytes).into()))
         };
+        Response {
+            status,
+            headers,
+            body,
+        }
+    }
+
+    /// A request with a raw body and content type (multipart uploads).
+    pub async fn send_raw(
+        &self,
+        method: Method,
+        path: &str,
+        content_type: &str,
+        body: Vec<u8>,
+        auth: &Auth,
+    ) -> Response {
+        let mut request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::CONTENT_TYPE, content_type);
+        if let Auth::Cookie(token) = auth {
+            request = request
+                .header(header::COOKIE, format!("saldo_session={token}"))
+                .header("x-saldo-csrf", "1")
+                .header(header::ORIGIN, ORIGIN);
+        }
+        let response = self
+            .router
+            .clone()
+            .oneshot(request.body(Body::from(body)).unwrap())
+            .await
+            .unwrap();
+        let status = response.status();
+        let headers = response.headers().clone();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body = serde_json::from_slice(&bytes)
+            .unwrap_or(Value::String(String::from_utf8_lossy(&bytes).into()));
         Response {
             status,
             headers,

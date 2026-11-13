@@ -30,6 +30,7 @@ uuid.workspace = true
 sqlx.workspace = true
 http-body-util.workspace = true
 tower.workspace = true
+uuid = { workspace = true, features = ["v4"] }
 
 [lints]
 workspace = true

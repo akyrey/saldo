@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS (SELECT 1 FROM accounts WHERE household_id = ? AND id = ?)",
+  "describe": {
+    "columns": [
+      {
+        "name": "EXISTS (SELECT 1 FROM accounts WHERE household_id = ? AND id = ?)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "42f1c2256289dcf5d5eb8eecee7e67b149c440c3d3342365242c6712ecb369a0"
+}

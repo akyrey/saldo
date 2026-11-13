@@ -364,6 +364,191 @@
         ]
       }
     },
+    "/api/v1/attachments": {
+      "post": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "Uploads a file (at most 20 MiB; PDF, images, text, CSV, XML).",
+        "operationId": "upload_attachment",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_AttachmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/attachments/{id}": {
+      "get": {
+        "tags": [
+          "attachments"
+        ],
+        "operationId": "get_attachment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_AttachmentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "attachments"
+        ],
+        "operationId": "delete_attachment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/attachments/{id}/download": {
+      "get": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "The file itself, always as a download (never rendered inline).",
+        "operationId": "download_attachment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -2131,6 +2316,59 @@
           }
         }
       },
+      "AttachmentView": {
+        "type": "object",
+        "required": [
+          "id",
+          "attachable_type",
+          "attachable_id",
+          "filename",
+          "mime_type",
+          "size_bytes",
+          "sha256",
+          "created_at"
+        ],
+        "properties": {
+          "attachable_id": {
+            "type": "string"
+          },
+          "attachable_type": {
+            "type": "string",
+            "description": "`split`, `account` or `tag`."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "BalanceView": {
         "type": "object",
         "description": "An account's balance on a date (all time when `date` is `None`).",
@@ -2524,6 +2762,68 @@
               },
               "virtual_balance": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_AttachmentView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "attachable_type",
+              "attachable_id",
+              "filename",
+              "mime_type",
+              "size_bytes",
+              "sha256",
+              "created_at"
+            ],
+            "properties": {
+              "attachable_id": {
+                "type": "string"
+              },
+              "attachable_type": {
+                "type": "string",
+                "description": "`split`, `account` or `tag`."
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "mime_type": {
+                "type": "string"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           }
@@ -4016,6 +4316,42 @@
             "items": {
               "$ref": "#/components/schemas/SplitRequest"
             }
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UploadForm": {
+        "type": "object",
+        "description": "The multipart form (documentation only; the handler reads the parts).",
+        "required": [
+          "attachable_type",
+          "attachable_id",
+          "file"
+        ],
+        "properties": {
+          "attachable_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attachable_type": {
+            "type": "string",
+            "description": "`split`, `account` or `tag`."
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "The file; its part's file name and content type are kept."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "title": {
             "type": [

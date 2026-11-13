@@ -2,6 +2,7 @@
 //! adding a feature means one new line here.
 
 pub mod accounts;
+pub mod attachments;
 pub mod auth;
 pub mod categories;
 pub mod currencies;
@@ -31,6 +32,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(tags::router())
         .merge(transactions::router())
         .merge(events::router())
+        .merge(attachments::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

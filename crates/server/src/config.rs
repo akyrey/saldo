@@ -7,12 +7,15 @@ const DEFAULT_DATABASE_URL: &str = "sqlite:///data/saldo.db";
 const DEFAULT_BIND: &str = "0.0.0.0:8080";
 const DEFAULT_PUBLIC_URL: &str = "http://localhost:8080";
 const DEFAULT_LOG: &str = "info";
+const DEFAULT_DATA_DIR: &str = "/data";
 
 /// Server settings. Invalid values stop the server at startup with a message
 /// naming the variable.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub database_url: String,
+    /// Folder for attachment files (`<data dir>/attachments/`).
+    pub data_dir: std::path::PathBuf,
     pub bind: SocketAddr,
     /// Where users reach Saldo, for example `https://money.example.com`.
     pub public_url: String,
@@ -69,6 +72,7 @@ impl Config {
             .ok_or_else(|| error("SALDO_PUBLIC_URL", "must be an http:// or https:// URL"))?;
         Ok(Self {
             database_url,
+            data_dir: get("SALDO_DATA_DIR", DEFAULT_DATA_DIR).into(),
             bind,
             cookie_secure: public_url.starts_with("https://"),
             public_origin,
@@ -115,6 +119,7 @@ mod tests {
         assert_eq!(config.bind.to_string(), "0.0.0.0:8080");
         assert_eq!(config.public_origin, "http://localhost:8080");
         assert_eq!(config.log, "info");
+        assert_eq!(config.data_dir, std::path::PathBuf::from("/data"));
         assert!(!config.cookie_secure);
     }
 

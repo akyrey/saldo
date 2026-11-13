@@ -1,0 +1,134 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, attachable_type, attachable_id, filename, title, mime_type, size_bytes, sha256, notes, created_at\n         FROM attachments WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "attachable_type",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "attachable_type"
+          }
+        }
+      },
+      {
+        "name": "attachable_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "attachable_id"
+          }
+        }
+      },
+      {
+        "name": "filename",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "filename"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "mime_type",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "mime_type"
+          }
+        }
+      },
+      {
+        "name": "size_bytes",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "size_bytes"
+          }
+        }
+      },
+      {
+        "name": "sha256",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "sha256"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "457bc10dd9f64ad2ea38f8ee5461cfa221fd61a41dccdde8dee29e1b6987c196"
+}

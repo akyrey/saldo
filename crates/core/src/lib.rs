@@ -94,7 +94,8 @@ pub use error::{
     CurrencyError, IdError, InvalidAccountPair, MoneyError, Reference, ValidationError,
 };
 pub use ids::{
-    AccountId, BillId, BudgetId, CategoryId, GroupId, HouseholdId, SplitId, TagId, UserId,
+    AccountId, AttachmentId, BillId, BudgetId, CategoryId, GroupId, HouseholdId, SplitId, TagId,
+    UserId,
 };
 pub use kind::SplitKind;
 pub use lookup::AccountLookup;

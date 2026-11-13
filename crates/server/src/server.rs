@@ -53,7 +53,7 @@ pub async fn open_app(config: &Config) -> Result<App, Box<dyn std::error::Error>
     }
     let pool = db::connect(&config.database_url).await?;
     db::migrate(&pool).await?;
-    Ok(App::new(pool, Arc::new(SystemClock)))
+    Ok(App::new(pool, Arc::new(SystemClock)).with_data_dir(config.data_dir.clone()))
 }
 
 /// `sqlite:///data/saldo.db?mode=rwc` → `/data/saldo.db`; `None` for in-memory.

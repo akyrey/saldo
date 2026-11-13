@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS (SELECT 1 FROM splits WHERE household_id = ? AND id = ?)",
+  "describe": {
+    "columns": [
+      {
+        "name": "EXISTS (SELECT 1 FROM splits WHERE household_id = ? AND id = ?)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "af3e9e6ce473644319203ae7ca06fb7371efbba8351f7112e96638419aadc27b"
+}

@@ -67,7 +67,8 @@ async fn household() -> (App, HouseholdCtx) {
     let clock = Arc::new(FixedClock::new(
         Utc.with_ymd_and_hms(2026, 11, 13, 9, 0, 0).unwrap(),
     ));
-    let app = App::new(pool, clock);
+    let data_dir = std::env::temp_dir().join(format!("saldo-import-test-{}", uuid::Uuid::new_v4()));
+    let app = App::new(pool, clock).with_data_dir(data_dir);
     let input = SetupInput {
         email: "owner@example.com".into(),
         password: "correct horse battery".into(),
@@ -242,6 +243,7 @@ async fn second_import_changes_nothing() {
     assert!(!second.has_changes(), "{}", second.render());
     assert_eq!(counts(&second, "transactions").unchanged, 12);
     assert_eq!(counts(&second, "accounts").unchanged, 12);
+    assert_eq!(counts(&second, "attachments").unchanged, 1);
     assert_eq!(second.balance_mismatches(), 0);
     assert_eq!(
         snapshot(&app).await,
@@ -268,6 +270,8 @@ async fn dry_run_reports_but_saves_nothing() {
     assert_eq!(report.balance_mismatches(), 0);
     assert_eq!(scalar(&app, "SELECT count(*) FROM splits").await, 0);
     assert_eq!(scalar(&app, "SELECT count(*) FROM external_refs").await, 0);
+    assert_eq!(scalar(&app, "SELECT count(*) FROM attachments").await, 0);
+    assert_eq!(counts(&report, "attachments").created, 1);
     assert_eq!(scalar(&app, "SELECT count(*) FROM import_runs").await, 1);
 }
 

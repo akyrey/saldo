@@ -81,7 +81,9 @@ async fn import(args: FireflyArgs) -> Result<ExitCode, Box<dyn std::error::Error
         std::env::var("SALDO_DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_string());
     let pool = db::connect(&url).await?;
     db::migrate(&pool).await?;
-    let app = App::new(pool, Arc::new(SystemClock));
+    let data_dir =
+        std::env::var("SALDO_DATA_DIR").unwrap_or_else(|_| saldo_app::DEFAULT_DATA_DIR.to_string());
+    let app = App::new(pool, Arc::new(SystemClock)).with_data_dir(data_dir.into());
     let ctx = app.identity.household_context(&args.household).await?;
 
     let options = Options {
