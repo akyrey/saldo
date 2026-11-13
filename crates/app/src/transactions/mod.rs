@@ -9,6 +9,7 @@ use saldo_core::{AccountId, BillId, BudgetId, CategoryId, GroupId, TagId};
 use serde_json::{Map, Value};
 use sqlx::{SqliteConnection, SqlitePool};
 
+use crate::bills;
 use crate::clock::{SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
@@ -121,6 +122,8 @@ impl TransactionService {
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "created", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
+        // Splits with a bill pay that bill's matching period (`bill.paid`).
+        bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
         Ok(view)
     }
 
@@ -154,11 +157,15 @@ impl TransactionService {
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let now = format_timestamp(self.clock.now());
         repo::update_group(&mut *conn, &household_id, &id, group.title(), &now).await?;
+        // The old splits go: periods they paid open again, then the new
+        // splits may pay them once more.
+        bills::release_group_in(&mut *conn, &*self.clock, ctx, origin, &id).await?;
         repo::delete_splits(&mut *conn, &household_id, &id).await?;
         repo::insert_splits(&mut *conn, &*self.clock, &household_id, &id, &group, &now).await?;
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "updated", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
+        bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
         Ok(view)
     }
 
@@ -185,6 +192,7 @@ impl TransactionService {
     ) -> Result<(), AppError> {
         let id = id.to_string();
         let view = load_one(&mut *conn, ctx, &id).await?;
+        bills::release_group_in(&mut *conn, &*self.clock, ctx, origin, &id).await?;
         repo::delete_group(&mut *conn, &ctx.household_id.to_string(), &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "deleted", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;

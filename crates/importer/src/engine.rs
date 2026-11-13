@@ -17,11 +17,12 @@ use crate::firefly::{FireflyClient, FireflyError};
 use crate::report::ImportReport;
 
 /// Entities in import order (ARCHITECTURE.md 9.1); later phases add theirs.
-pub const ENTITIES: [&str; 6] = [
+pub const ENTITIES: [&str; 7] = [
     "currencies",
     "accounts",
     "categories",
     "tags",
+    "bills",
     "transactions",
     "attachments",
 ];
@@ -139,6 +140,7 @@ async fn run_entities(
             "accounts" => entities::accounts::import_accounts(&cx, &mut report).await?,
             "categories" => entities::categories::import_categories(&cx, &mut report).await?,
             "tags" => entities::tags::import_tags(&cx, &mut report).await?,
+            "bills" => entities::bills::import_bills(&cx, &mut report).await?,
             "transactions" => entities::transactions::import_transactions(&cx, &mut report).await?,
             "attachments" => entities::attachments::import_attachments(&cx, &mut report).await?,
             _ => {}

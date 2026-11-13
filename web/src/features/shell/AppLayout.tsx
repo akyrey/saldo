@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
+import { ArrowLeftRight, Download, FolderTree, LogOut, Receipt, Tags, Wallet } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -10,7 +10,15 @@ const NAV = [
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/tags", label: "Tags", icon: Tags },
+  { to: "/bills", label: "Bills", icon: Receipt },
 ] as const;
+
+/** Tailwind needs whole class names in the source, so no `grid-cols-${n}`. */
+const MOBILE_COLUMNS: Record<number, string> = {
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+};
 
 /** Only the owner can export, so only the owner sees the link. */
 const OWNER_NAV = [{ to: "/export", label: "Export", icon: Download }] as const;
@@ -71,7 +79,7 @@ export function AppLayout() {
       <nav
         aria-label="Main mobile"
         className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
-          nav.length > NAV.length ? "grid-cols-5" : "grid-cols-4"
+          MOBILE_COLUMNS[nav.length] ?? "grid-cols-6"
         }`}
       >
         {nav.map(({ to, label, icon: Icon }) => (

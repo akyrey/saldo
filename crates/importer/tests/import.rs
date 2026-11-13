@@ -33,6 +33,7 @@ async fn firefly(page_one: Option<Value>, page_two: Option<Value>) -> MockServer
         ("categories", "categories.json"),
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
+        ("subscriptions", "subscriptions.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))
@@ -56,6 +57,11 @@ async fn firefly(page_one: Option<Value>, page_two: Option<Value>) -> MockServer
     Mock::given(method("GET"))
         .and(path("/api/v1/attachments/1/download"))
         .respond_with(ResponseTemplate::new(200).set_body_bytes(b"receipt: 42.50 EUR".to_vec()))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/attachments/2/download"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"%PDF".to_vec()))
         .mount(&server)
         .await;
     server
@@ -111,7 +117,10 @@ async fn snapshot(app: &App) -> Vec<String> {
         "transaction_groups",
         "splits",
         "split_tags",
+        "attachments",
         "external_refs",
+        "bills",
+        "bill_periods",
     ];
     let mut rows = Vec::new();
     for table in tables {
@@ -224,6 +233,30 @@ async fn first_import_creates_everything_and_balances_match() {
         !summary.0.contains("secret-token"),
         "the token must never be stored"
     );
+    assert_eq!(
+        counts(&report, "attachments").created,
+        2,
+        "one on a split, one on a bill"
+    );
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(*) FROM attachments WHERE attachable_type = 'bill'"
+        )
+        .await,
+        1
+    );
+    assert_eq!(counts(&report, "bills").created, 2);
+    // The two rent splits linked to the subscription paid November and January.
+    let paid: Vec<(String,)> =
+        sqlx::query_as("SELECT due_date FROM bill_periods WHERE status = 'paid' ORDER BY due_date")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        paid,
+        [("2026-11-02".to_string(),), ("2027-01-02".to_string(),)]
+    );
 }
 
 #[tokio::test]
@@ -243,7 +276,8 @@ async fn second_import_changes_nothing() {
     assert!(!second.has_changes(), "{}", second.render());
     assert_eq!(counts(&second, "transactions").unchanged, 12);
     assert_eq!(counts(&second, "accounts").unchanged, 12);
-    assert_eq!(counts(&second, "attachments").unchanged, 1);
+    assert_eq!(counts(&second, "attachments").unchanged, 2);
+    assert_eq!(counts(&second, "bills").unchanged, 2);
     assert_eq!(second.balance_mismatches(), 0);
     assert_eq!(
         snapshot(&app).await,
@@ -271,7 +305,8 @@ async fn dry_run_reports_but_saves_nothing() {
     assert_eq!(scalar(&app, "SELECT count(*) FROM splits").await, 0);
     assert_eq!(scalar(&app, "SELECT count(*) FROM external_refs").await, 0);
     assert_eq!(scalar(&app, "SELECT count(*) FROM attachments").await, 0);
-    assert_eq!(counts(&report, "attachments").created, 1);
+    assert_eq!(counts(&report, "attachments").created, 2);
+    assert_eq!(scalar(&app, "SELECT count(*) FROM bills").await, 0);
     assert_eq!(scalar(&app, "SELECT count(*) FROM import_runs").await, 1);
 }
 
@@ -331,12 +366,18 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
         .respond_with(ResponseTemplate::new(500))
         .mount(&server)
         .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/attachments/2/download"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"%PDF".to_vec()))
+        .mount(&server)
+        .await;
     for request in [
         ("currencies", "currencies.json"),
         ("accounts", "accounts.json"),
         ("categories", "categories.json"),
         ("tags", "tags.json"),
         ("attachments", "attachments.json"),
+        ("subscriptions", "subscriptions.json"),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{}", request.0)))
@@ -361,7 +402,7 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
     assert_eq!(
         counts(&report, "attachments"),
         Counts {
-            created: 0,
+            created: 1,
             updated: 0,
             unchanged: 0,
             skipped: 1
@@ -384,6 +425,7 @@ async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockSe
         ("tags", tags),
         ("currencies", fixture("currencies.json")),
         ("attachments", fixture("attachments.json")),
+        ("subscriptions", fixture("subscriptions.json")),
     ] {
         Mock::given(method("GET"))
             .and(path(format!("/api/v1/{endpoint}")))
@@ -405,6 +447,11 @@ async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockSe
     Mock::given(method("GET"))
         .and(path("/api/v1/attachments/1/download"))
         .respond_with(ResponseTemplate::new(200).set_body_bytes(b"receipt: 42.50 EUR".to_vec()))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/attachments/2/download"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"%PDF".to_vec()))
         .mount(&server)
         .await;
     server

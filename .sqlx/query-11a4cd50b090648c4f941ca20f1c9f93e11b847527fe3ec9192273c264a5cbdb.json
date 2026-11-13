@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bill_periods SET last_reminded_on = ?, reminder_count = reminder_count + 1, updated_at = ?\n             WHERE id = ? AND status = 'open' AND (last_reminded_on IS NULL OR last_reminded_on < ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "11a4cd50b090648c4f941ca20f1c9f93e11b847527fe3ec9192273c264a5cbdb"
+}

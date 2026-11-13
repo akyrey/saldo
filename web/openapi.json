@@ -905,6 +905,499 @@
         ]
       }
     },
+    "/api/v1/bill-periods/{id}/pay": {
+      "post": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Marks a period paid by a split (`bill.paid`).",
+        "operationId": "pay_period",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillPeriodView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bill-periods/{id}/reopen": {
+      "post": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Opens a paid or skipped period again (`bill.period_reopened`).",
+        "operationId": "reopen_period",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillPeriodView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bill-periods/{id}/skip": {
+      "post": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Marks an open period as not needing payment.",
+        "operationId": "skip_period",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillPeriodView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bills": {
+      "get": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Bills with their next open due date.",
+        "operationId": "list_bills",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_BillView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Creates a bill and its periods up to 60 days ahead.",
+        "operationId": "create_bill",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bills/{id}": {
+      "get": {
+        "tags": [
+          "bills"
+        ],
+        "operationId": "get_bill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Deletes a bill and its periods; splits keep no bill.",
+        "operationId": "delete_bill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "Changes a bill. Open, never-reminded periods from today on follow a new schedule.",
+        "operationId": "update_bill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bills/{id}/periods": {
+      "get": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "A bill's periods, newest first.",
+        "operationId": "bill_periods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_BillPeriodView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/categories": {
       "get": {
         "tags": [
@@ -2528,7 +3021,7 @@
           },
           "attachable_type": {
             "type": "string",
-            "description": "`split`, `account` or `tag`."
+            "description": "`split`, `account`, `tag` or `bill`."
           },
           "created_at": {
             "type": "string"
@@ -2586,6 +3079,237 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "BillPatch": {
+        "type": "object",
+        "description": "Fields to change; `null` clears `end_date` or `notes`. The currency is fixed.",
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "amount_max": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount_min": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "first_due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remind_days_before": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "remind_every_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "repeat_freq": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "skip": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "BillPeriodView": {
+        "type": "object",
+        "description": "One due date of a bill.",
+        "required": [
+          "id",
+          "bill_id",
+          "due_date",
+          "status",
+          "reminder_count",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "bill_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "due_date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_reminded_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_split_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reminder_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `paid` or `skipped`."
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "BillView": {
+        "type": "object",
+        "description": "A bill as the API returns it. Amounts are decimal strings.",
+        "required": [
+          "id",
+          "name",
+          "amount_min",
+          "amount_max",
+          "currency",
+          "first_due_date",
+          "repeat_freq",
+          "skip",
+          "remind_days_before",
+          "remind_every_days",
+          "active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "amount_max": {
+            "type": "string"
+          },
+          "amount_min": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_due_date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "next_due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The earliest open period's due date, if any."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remind_days_before": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remind_every_days": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "repeat_freq": {
+            "type": "string",
+            "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "skip": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       },
@@ -2744,6 +3468,96 @@
               "null"
             ],
             "description": "Decimal string."
+          }
+        }
+      },
+      "CreateBillRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount_min",
+          "amount_max",
+          "first_due_date",
+          "repeat_freq"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "amount_max": {
+            "type": "string"
+          },
+          "amount_min": {
+            "type": "string",
+            "description": "Decimal strings; `amount_min <= amount_max`."
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the household's primary currency."
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "first_due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remind_days_before": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Days before the due date of the first reminder (default 3).",
+            "minimum": 0
+          },
+          "remind_every_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Days between overdue reminders (default 1).",
+            "minimum": 0
+          },
+          "repeat_freq": {
+            "type": "string",
+            "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "skip": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Periods left out between due dates (1 on monthly = every 2 months).",
+            "minimum": 0
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -2986,7 +3800,7 @@
               },
               "attachable_type": {
                 "type": "string",
-                "description": "`split`, `account` or `tag`."
+                "description": "`split`, `account`, `tag` or `bill`."
               },
               "created_at": {
                 "type": "string"
@@ -3053,6 +3867,168 @@
                   "string",
                   "null"
                 ]
+              }
+            }
+          }
+        }
+      },
+      "Data_BillPeriodView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "One due date of a bill.",
+            "required": [
+              "id",
+              "bill_id",
+              "due_date",
+              "status",
+              "reminder_count",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "bill_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "due_date": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "last_reminded_on": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paid_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paid_split_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reminder_count": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "status": {
+                "type": "string",
+                "description": "`open`, `paid` or `skipped`."
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_BillView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A bill as the API returns it. Amounts are decimal strings.",
+            "required": [
+              "id",
+              "name",
+              "amount_min",
+              "amount_max",
+              "currency",
+              "first_due_date",
+              "repeat_freq",
+              "skip",
+              "remind_days_before",
+              "remind_every_days",
+              "active",
+              "sort_order",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "active": {
+                "type": "boolean"
+              },
+              "amount_max": {
+                "type": "string"
+              },
+              "amount_min": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "end_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "first_due_date": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "next_due_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The earliest open period's due date, if any."
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "remind_days_before": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "remind_every_days": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "repeat_freq": {
+                "type": "string",
+                "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+              },
+              "skip": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "sort_order": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "updated_at": {
+                "type": "string"
               }
             }
           }
@@ -3384,6 +4360,74 @@
               },
               "updated_at": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_BillPeriodView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One due date of a bill.",
+              "required": [
+                "id",
+                "bill_id",
+                "due_date",
+                "status",
+                "reminder_count",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "bill_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "due_date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "last_reminded_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "paid_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "paid_split_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reminder_count": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "`open`, `paid` or `skipped`."
+                },
+                "updated_at": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -3989,6 +5033,110 @@
           }
         }
       },
+      "List_BillView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A bill as the API returns it. Amounts are decimal strings.",
+              "required": [
+                "id",
+                "name",
+                "amount_min",
+                "amount_max",
+                "currency",
+                "first_due_date",
+                "repeat_freq",
+                "skip",
+                "remind_days_before",
+                "remind_every_days",
+                "active",
+                "sort_order",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "amount_max": {
+                  "type": "string"
+                },
+                "amount_min": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "end_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "first_due_date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "next_due_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The earliest open period's due date, if any."
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "remind_days_before": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "remind_every_days": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "repeat_freq": {
+                  "type": "string",
+                  "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+                },
+                "skip": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "sort_order": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
       "List_CategoryView": {
         "type": "object",
         "description": "A page of results.",
@@ -4299,6 +5447,19 @@
           "password": {
             "type": "string",
             "description": "The member's initial password."
+          }
+        }
+      },
+      "PayRequest": {
+        "type": "object",
+        "required": [
+          "split_id"
+        ],
+        "properties": {
+          "split_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The split that paid this period."
           }
         }
       },

@@ -136,3 +136,22 @@ pub struct Attachment {
     pub notes: Option<String>,
     pub mime: Option<String>,
 }
+
+/// A subscription (formerly "bill") from `/v1/subscriptions`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Subscription {
+    pub name: String,
+    pub amount_min: String,
+    pub amount_max: String,
+    pub currency_code: String,
+    /// The first due date, as a local date-time.
+    pub date: String,
+    pub end_date: Option<String>,
+    /// `weekly`, `monthly`, `quarterly`, `half-year` or `yearly`.
+    pub repeat_freq: String,
+    #[serde(default)]
+    pub skip: u32,
+    pub active: bool,
+    pub order: Option<i64>,
+    pub notes: Option<String>,
+}

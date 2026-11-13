@@ -213,6 +213,110 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bill-periods/{id}/pay": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marks a period paid by a split (`bill.paid`). */
+    post: operations["pay_period"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bill-periods/{id}/reopen": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Opens a paid or skipped period again (`bill.period_reopened`). */
+    post: operations["reopen_period"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bill-periods/{id}/skip": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marks an open period as not needing payment. */
+    post: operations["skip_period"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bills": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Bills with their next open due date. */
+    get: operations["list_bills"];
+    put?: never;
+    /** Creates a bill and its periods up to 60 days ahead. */
+    post: operations["create_bill"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bills/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_bill"];
+    put?: never;
+    post?: never;
+    /** Deletes a bill and its periods; splits keep no bill. */
+    delete: operations["delete_bill"];
+    options?: never;
+    head?: never;
+    /** Changes a bill. Open, never-reminded periods from today on follow a new schedule. */
+    patch: operations["update_bill"];
+    trace?: never;
+  };
+  "/api/v1/bills/{id}/periods": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A bill's periods, newest first. */
+    get: operations["bill_periods"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/categories": {
     parameters: {
       query?: never;
@@ -530,7 +634,7 @@ export interface components {
     };
     AttachmentView: {
       attachable_id: string;
-      /** @description `split`, `account` or `tag`. */
+      /** @description `split`, `account`, `tag` or `bill`. */
       attachable_type: string;
       created_at: string;
       filename: string;
@@ -548,6 +652,68 @@ export interface components {
       balance: string;
       currency: string;
       date?: string | null;
+    };
+    /** @description Fields to change; `null` clears `end_date` or `notes`. The currency is fixed. */
+    BillPatch: {
+      active?: boolean | null;
+      amount_max?: string | null;
+      amount_min?: string | null;
+      /** Format: date */
+      end_date?: string | null;
+      /** Format: date */
+      first_due_date?: string | null;
+      name?: string | null;
+      notes?: string | null;
+      /** Format: int32 */
+      remind_days_before?: number | null;
+      /** Format: int32 */
+      remind_every_days?: number | null;
+      repeat_freq?: string | null;
+      /** Format: int32 */
+      skip?: number | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+    };
+    /** @description One due date of a bill. */
+    BillPeriodView: {
+      bill_id: string;
+      created_at: string;
+      due_date: string;
+      id: string;
+      last_reminded_on?: string | null;
+      paid_at?: string | null;
+      paid_split_id?: string | null;
+      /** Format: int64 */
+      reminder_count: number;
+      /** @description `open`, `paid` or `skipped`. */
+      status: string;
+      updated_at: string;
+    };
+    /** @description A bill as the API returns it. Amounts are decimal strings. */
+    BillView: {
+      active: boolean;
+      amount_max: string;
+      amount_min: string;
+      created_at: string;
+      currency: string;
+      end_date?: string | null;
+      first_due_date: string;
+      id: string;
+      name: string;
+      /** @description The earliest open period's due date, if any. */
+      next_due_date?: string | null;
+      notes?: string | null;
+      /** Format: int64 */
+      remind_days_before: number;
+      /** Format: int64 */
+      remind_every_days: number;
+      /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      repeat_freq: string;
+      /** Format: int64 */
+      skip: number;
+      /** Format: int64 */
+      sort_order: number;
+      updated_at: string;
     };
     CategoryPatch: {
       name?: string | null;
@@ -587,6 +753,39 @@ export interface components {
       type: string;
       /** @description Decimal string. */
       virtual_balance?: string | null;
+    };
+    CreateBillRequest: {
+      active?: boolean | null;
+      amount_max: string;
+      /** @description Decimal strings; `amount_min <= amount_max`. */
+      amount_min: string;
+      /** @description Defaults to the household's primary currency. */
+      currency?: string | null;
+      /** Format: date */
+      end_date?: string | null;
+      /** Format: date */
+      first_due_date: string;
+      name: string;
+      notes?: string | null;
+      /**
+       * Format: int32
+       * @description Days before the due date of the first reminder (default 3).
+       */
+      remind_days_before?: number | null;
+      /**
+       * Format: int32
+       * @description Days between overdue reminders (default 1).
+       */
+      remind_every_days?: number | null;
+      /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      repeat_freq: string;
+      /**
+       * Format: int32
+       * @description Periods left out between due dates (1 on monthly = every 2 months).
+       */
+      skip?: number | null;
+      /** Format: int64 */
+      sort_order?: number | null;
     };
     CreateCategoryRequest: {
       name: string;
@@ -647,7 +846,7 @@ export interface components {
     Data_AttachmentView: {
       data: {
         attachable_id: string;
-        /** @description `split`, `account` or `tag`. */
+        /** @description `split`, `account`, `tag` or `bill`. */
         attachable_type: string;
         created_at: string;
         filename: string;
@@ -668,6 +867,53 @@ export interface components {
         balance: string;
         currency: string;
         date?: string | null;
+      };
+    };
+    /** @description A single result. */
+    Data_BillPeriodView: {
+      /** @description One due date of a bill. */
+      data: {
+        bill_id: string;
+        created_at: string;
+        due_date: string;
+        id: string;
+        last_reminded_on?: string | null;
+        paid_at?: string | null;
+        paid_split_id?: string | null;
+        /** Format: int64 */
+        reminder_count: number;
+        /** @description `open`, `paid` or `skipped`. */
+        status: string;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_BillView: {
+      /** @description A bill as the API returns it. Amounts are decimal strings. */
+      data: {
+        active: boolean;
+        amount_max: string;
+        amount_min: string;
+        created_at: string;
+        currency: string;
+        end_date?: string | null;
+        first_due_date: string;
+        id: string;
+        name: string;
+        /** @description The earliest open period's due date, if any. */
+        next_due_date?: string | null;
+        notes?: string | null;
+        /** Format: int64 */
+        remind_days_before: number;
+        /** Format: int64 */
+        remind_every_days: number;
+        /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+        repeat_freq: string;
+        /** Format: int64 */
+        skip: number;
+        /** Format: int64 */
+        sort_order: number;
+        updated_at: string;
       };
     };
     /** @description A single result. */
@@ -762,6 +1008,23 @@ export interface components {
         title?: string | null;
         updated_at: string;
       };
+    };
+    /** @description A single result. */
+    Data_Vec_BillPeriodView: {
+      data: {
+        bill_id: string;
+        created_at: string;
+        due_date: string;
+        id: string;
+        last_reminded_on?: string | null;
+        paid_at?: string | null;
+        paid_split_id?: string | null;
+        /** Format: int64 */
+        reminder_count: number;
+        /** @description `open`, `paid` or `skipped`. */
+        status: string;
+        updated_at: string;
+      }[];
     };
     /** @description A single result. */
     Data_Vec_CurrencyView: {
@@ -918,6 +1181,35 @@ export interface components {
       meta: components["schemas"]["ListMeta"];
     };
     /** @description A page of results. */
+    List_BillView: {
+      data: {
+        active: boolean;
+        amount_max: string;
+        amount_min: string;
+        created_at: string;
+        currency: string;
+        end_date?: string | null;
+        first_due_date: string;
+        id: string;
+        name: string;
+        /** @description The earliest open period's due date, if any. */
+        next_due_date?: string | null;
+        notes?: string | null;
+        /** Format: int64 */
+        remind_days_before: number;
+        /** Format: int64 */
+        remind_every_days: number;
+        /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+        repeat_freq: string;
+        /** Format: int64 */
+        skip: number;
+        /** Format: int64 */
+        sort_order: number;
+        updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
     List_CategoryView: {
       data: {
         created_at: string;
@@ -996,6 +1288,13 @@ export interface components {
       email: string;
       /** @description The member's initial password. */
       password: string;
+    };
+    PayRequest: {
+      /**
+       * Format: uuid
+       * @description The split that paid this period.
+       */
+      split_id: string;
     };
     /**
      * @description A member's role in their household.
@@ -1692,6 +1991,317 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  pay_period: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PayRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillPeriodView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  reopen_period: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillPeriodView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  skip_period: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillPeriodView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_bills: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_BillView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_bill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateBillRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_bill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_bill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_bill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BillPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  bill_periods: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_BillPeriodView"];
+        };
       };
       404: {
         headers: {

@@ -1,5 +1,5 @@
-//! Attachments: files linked to a split, an account or a tag (bills, budgets
-//! and piggy banks join in Phase 5).
+//! Attachments: files linked to a split, an account, a tag or a bill
+//! (budgets and piggy banks can join later).
 
 mod storage;
 
@@ -33,13 +33,13 @@ pub const ALLOWED_MIME_TYPES: [&str; 11] = [
     "application/octet-stream",
 ];
 
-/// What attachments can be linked to in this phase.
-pub const ATTACHABLE_TYPES: [&str; 3] = ["split", "account", "tag"];
+/// What attachments can be linked to (budgets and piggy banks join later).
+pub const ATTACHABLE_TYPES: [&str; 4] = ["split", "account", "tag", "bill"];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
 pub struct AttachmentView {
     pub id: String,
-    /// `split`, `account` or `tag`.
+    /// `split`, `account`, `tag` or `bill`.
     pub attachable_type: String,
     pub attachable_id: String,
     pub filename: String,
@@ -268,6 +268,15 @@ async fn check_target(
         "account" => {
             sqlx::query_scalar!(
                 "SELECT EXISTS (SELECT 1 FROM accounts WHERE household_id = ? AND id = ?)",
+                household_id,
+                id
+            )
+            .fetch_one(&mut *conn)
+            .await?
+        }
+        "bill" => {
+            sqlx::query_scalar!(
+                "SELECT EXISTS (SELECT 1 FROM bills WHERE household_id = ? AND id = ?)",
                 household_id,
                 id
             )

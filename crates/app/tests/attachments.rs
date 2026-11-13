@@ -123,7 +123,7 @@ async fn rejects_bad_uploads_without_writing() {
         (
             "attachable_type",
             NewAttachment {
-                attachable_type: "bill".into(),
+                attachable_type: "budget".into(),
                 ..file("account", &checking.id, b"x")
             },
         ),

@@ -4,6 +4,7 @@ use saldo_app::attachments::{ALLOWED_MIME_TYPES, NewAttachment};
 use saldo_app::ctx::Origin;
 use saldo_core::AttachmentId;
 
+use super::bills::REF as BILL_REF;
 use super::transactions::SPLIT_REF;
 use crate::engine::{ImportCx, ImportError};
 use crate::firefly::FireflyError;
@@ -25,21 +26,24 @@ pub async fn import_attachments(
     let state = &mut *guard;
     for item in attachments {
         let a = &item.attributes;
-        if a.attachable_type != "TransactionJournal" {
-            report.note(&format!(
-                "attachment on a Firefly {} not imported (Phase 5)",
-                a.attachable_type
-            ));
-            continue;
-        }
-        let Some(split_id) = state
+        // Firefly's owner type → Saldo's attachable type and the reference
+        // type that maps the owner's ID.
+        let (attachable_type, owner_ref) = match a.attachable_type.as_str() {
+            "TransactionJournal" => ("split", SPLIT_REF),
+            "Bill" => ("bill", BILL_REF),
+            other => {
+                report.note(&format!("attachment on a Firefly {other} not imported"));
+                continue;
+            }
+        };
+        let Some(owner_id) = state
             .refs
-            .resolve(SPLIT_REF, &a.attachable_id)
+            .resolve(owner_ref, &a.attachable_id)
             .map(str::to_string)
         else {
             report.skipped(
                 ENTITY,
-                format!("{:?}: its split was not imported", a.filename),
+                format!("{:?}: its {attachable_type} was not imported", a.filename),
             );
             continue;
         };
@@ -82,8 +86,8 @@ pub async fn import_attachments(
             Err(other) => return Err(other.into()),
         };
         let input = NewAttachment {
-            attachable_type: "split".into(),
-            attachable_id: split_id,
+            attachable_type: attachable_type.into(),
+            attachable_id: owner_id,
             filename: plain_name(&a.filename),
             title: a.title.clone().filter(|t| !t.trim().is_empty()),
             notes: a.notes.clone().filter(|n| !n.trim().is_empty()),

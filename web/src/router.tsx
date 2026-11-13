@@ -149,6 +149,30 @@ const tagsRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/tags/TagsPage"), "TagsPage"),
 });
 
+const billsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "bills",
+  component: lazyRouteComponent(() => import("@/features/bills/BillsPage"), "BillsPage"),
+});
+
+const newBillRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "bills/new",
+  component: lazyRouteComponent(() => import("@/features/bills/BillFormPage"), "NewBillPage"),
+});
+
+export const billRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "bills/$billId",
+  component: lazyRouteComponent(() => import("@/features/bills/BillDetailPage"), "BillDetailPage"),
+});
+
+export const editBillRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "bills/$billId/edit",
+  component: lazyRouteComponent(() => import("@/features/bills/BillFormPage"), "EditBillPage"),
+});
+
 const exportRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "export",
@@ -170,6 +194,10 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     tagsRoute,
     exportRoute,
+    billsRoute,
+    newBillRoute,
+    billRoute,
+    editBillRoute,
   ]),
 ]);
 

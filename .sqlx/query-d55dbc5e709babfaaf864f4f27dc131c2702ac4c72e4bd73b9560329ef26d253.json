@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT max(due_date) FROM bill_periods WHERE bill_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "max(due_date)",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "d55dbc5e709babfaaf864f4f27dc131c2702ac4c72e4bd73b9560329ef26d253"
+}

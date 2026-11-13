@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM bill_periods WHERE bill_id = ? AND status = 'open' AND reminder_count = 0 AND due_date >= ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e1e9b946124eb8326feb4830006a1390252842b63a54724038a57d93197d055a"
+}
