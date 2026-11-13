@@ -3,6 +3,9 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# The desktop app has its own lock file and target directory: building the
+# server never compiles Tauri, and Tauri never slows the server's CI.
+exclude = ["desktop/src-tauri"]
 
 # Fields every crate inherits with `field.workspace = true`.
 [workspace.package]
