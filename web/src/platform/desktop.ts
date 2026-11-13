@@ -3,15 +3,30 @@
 // way a Go client calls an RPC handler. Loaded only inside Tauri, so the
 // browser bundle never contains it.
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   isPermissionGranted,
   requestPermission,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { Platform } from "./types";
+import type { LoginCallback, Platform } from "./types";
 
 const SERVER_KEY = "saldo.serverUrl";
+
+/** Listen first, then open the port, so the answer cannot be missed. */
+async function waitForLoginCallback() {
+  let settle: (answer: LoginCallback) => void = () => {};
+  const result = new Promise<LoginCallback>((resolve) => {
+    settle = resolve;
+  });
+  const stop = await listen<LoginCallback>("oidc-callback", (event) => {
+    stop();
+    settle(event.payload);
+  });
+  const port = await invoke<number>("oidc_listen");
+  return { port, result };
+}
 
 function readServerUrl(): string {
   try {
@@ -53,5 +68,6 @@ export async function createDesktopPlatform(): Promise<Platform> {
       if (await canNotify()) sendNotification({ title, body });
     },
     openExternal: (url) => openUrl(url),
+    waitForLoginCallback,
   };
 }

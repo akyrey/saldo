@@ -12,4 +12,7 @@ export const browserPlatform: Platform = {
   openExternal: async (url) => {
     window.open(url, "_blank", "noopener,noreferrer");
   },
+  // The browser follows the provider's redirects itself.
+  waitForLoginCallback: () =>
+    Promise.reject(new Error("only the desktop app waits for a login callback")),
 };

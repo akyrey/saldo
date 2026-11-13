@@ -4,6 +4,12 @@
 
 export type PlatformKind = "browser" | "desktop";
 
+/** What the browser brought back to the desktop app after a provider login. */
+export interface LoginCallback {
+  code?: string;
+  error?: string;
+}
+
 export interface Platform {
   readonly kind: PlatformKind;
   /** The server's address; `""` means the page's own origin (the browser). */
@@ -20,4 +26,9 @@ export interface Platform {
   notify(title: string, body: string): Promise<void>;
   /** Opens a link in the person's default browser. */
   openExternal(url: string): Promise<void>;
+  /**
+   * Desktop only: listens on a local port for the browser's return from
+   * "Log in with Authentik". `result` settles when it arrives.
+   */
+  waitForLoginCallback(): Promise<{ port: number; result: Promise<LoginCallback> }>;
 }

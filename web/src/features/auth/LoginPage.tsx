@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { platform } from "@/platform";
 import { AuthCard } from "./AuthCard";
+import { loginWithProviderOnDesktop, ProviderLoginError } from "./desktop-login";
 import { authMethodsQuery, meQuery, setupStatusQuery } from "./queries";
 
 /** Why "Log in with Authentik" sent the person back here (`?error=`). */
@@ -20,6 +21,7 @@ const PROVIDER_ERRORS: Record<string, string> = {
   oidc_invalid: "The identity provider's answer could not be verified. Please try again.",
   oidc_unavailable: "The identity provider cannot be reached right now. Please try again later.",
   oidc_disabled: "Login with an identity provider is not set up on this server.",
+  oidc_bad_request: "The login request was incomplete. Please try again.",
 };
 
 export function LoginPage() {
@@ -34,9 +36,23 @@ export function LoginPage() {
   const desktop = platform().kind === "desktop";
   // Until the server answers (or if it cannot), offer the password form.
   const passwordAllowed = methods.data?.password ?? true;
-  // The desktop app cannot follow the provider's redirects yet.
-  const provider = desktop ? null : (methods.data?.oidc ?? null);
-  const providerError = error ? (PROVIDER_ERRORS[error] ?? "The login did not work.") : null;
+  const provider = methods.data?.oidc ?? null;
+  // The desktop app logs in through the system browser (desktop-login.ts).
+  const providerLogin = useMutation({
+    mutationFn: loginWithProviderOnDesktop,
+    onSuccess: async () => {
+      await queryClient.fetchQuery(meQuery);
+      await navigate({ to: redirect ?? "/accounts" });
+    },
+  });
+  const failure =
+    error ??
+    (providerLogin.error instanceof ProviderLoginError ? providerLogin.error.code : undefined);
+  const providerError = failure
+    ? (PROVIDER_ERRORS[failure] ?? "The login did not work.")
+    : providerLogin.error
+      ? errorMessage(providerLogin.error)
+      : null;
   const login = useMutation({
     mutationFn: async () => {
       // The desktop app asks for the token itself instead of a cookie.
@@ -63,7 +79,17 @@ export function LoginPage() {
         </Alert>
       ) : null}
       {providerError ? <Alert className="mb-4">{providerError}</Alert> : null}
-      {provider ? (
+      {provider && desktop ? (
+        <Button
+          type="button"
+          variant={passwordAllowed ? "outline" : "default"}
+          className="mb-4 w-full"
+          disabled={providerLogin.isPending}
+          onClick={() => providerLogin.mutate()}
+        >
+          {providerLogin.isPending ? "Continue in your browser…" : `Log in with ${provider.name}`}
+        </Button>
+      ) : provider ? (
         <Button asChild variant={passwordAllowed ? "outline" : "default"} className="mb-4 w-full">
           <a href={oidcStartUrl(redirect)}>Log in with {provider.name}</a>
         </Button>
@@ -101,11 +127,6 @@ export function LoginPage() {
             {login.isPending ? "Logging in…" : "Log in"}
           </Button>
         </form>
-      ) : desktop ? (
-        <Alert>
-          This server only allows logging in through the identity provider, which the desktop app
-          does not support yet. Use Saldo in the browser.
-        </Alert>
       ) : null}
       {desktop ? (
         <p className="mt-4 text-sm text-muted-foreground">

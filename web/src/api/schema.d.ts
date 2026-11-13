@@ -212,6 +212,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/oidc/desktop-token": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The desktop app trades its one-time code and verifier for the session
+     *     token (a code works once, for two minutes).
+     */
+    post: operations["desktop_token"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/oidc/start": {
     parameters: {
       query?: never;
@@ -2436,6 +2456,12 @@ export interface components {
       /** @description `pending`, `succeeded` or `dead`. */
       status: string;
     };
+    DesktopTokenRequest: {
+      /** @description The one-time code the app received on its loopback port. */
+      code: string;
+      /** @description The secret whose SHA-256 the app sent as `desktop_challenge`. */
+      verifier: string;
+    };
     ErrorBody: {
       /** @description Stable machine-readable code, for example `validation_failed`. */
       code: string;
@@ -3964,11 +3990,46 @@ export interface operations {
       };
     };
   };
+  desktop_token: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DesktopTokenRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_LoginResponse"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   start: {
     parameters: {
       query?: {
         /** @description Where in the app to go after login (a path such as `/accounts`). */
         redirect?: string;
+        /** @description Desktop app only: the loopback port it waits on (1024 or higher). */
+        desktop_port?: number;
+        /** @description Desktop app only: base64url SHA-256 of its secret verifier. */
+        desktop_challenge?: string;
       };
       header?: never;
       path?: never;

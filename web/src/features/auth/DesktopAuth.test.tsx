@@ -29,6 +29,10 @@ function fakeDesktop(serverUrl = "", token: string | null = null) {
     }),
     notify: vi.fn(async () => {}),
     openExternal: vi.fn(async () => {}),
+    waitForLoginCallback: async () => ({
+      port: 53682,
+      result: Promise.resolve({ code: "one-time" }),
+    }),
   };
   setPlatformForTests(fake);
   return { fake, state };
@@ -48,6 +52,10 @@ function api(loggedIn: () => boolean) {
       data: { ...ME.data, household_id: "h1", expires_at: "", token: "desktop-token" },
     },
     "POST /api/v1/auth/logout": () => new Response(null, { status: 204 }),
+    "GET /api/v1/auth/methods": { data: { password: true, oidc: { name: "Authentik" } } },
+    "POST /api/v1/auth/oidc/desktop-token": {
+      data: { ...ME.data, household_id: "h1", expires_at: "", token: "provider-token" },
+    },
     "GET /api/v1/household/members": MEMBERS,
     "GET /api/v1/currencies": CURRENCIES,
     "GET /api/v1/accounts": list([]),
@@ -88,6 +96,22 @@ describe("desktop first run", () => {
     await userEvent.click(screen.getByRole("button", { name: "Connect" }));
     expect(await screen.findByText(/does not answer like a Saldo server/)).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/connect");
+  });
+
+  it("logs in with the identity provider through the system browser", async () => {
+    const { fake, state } = fakeDesktop("https://money.example.com");
+    api(() => state.token !== null);
+    const { router } = renderApp("/login");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Log in with Authentik" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/accounts"));
+    expect(fake.openExternal).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "https://money.example.com/api/v1/auth/oidc/start?desktop_port=53682",
+      ),
+    );
+    expect(fake.saveToken).toHaveBeenCalledWith("provider-token");
   });
 
   it("forgets the token on logout", async () => {

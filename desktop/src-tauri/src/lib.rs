@@ -1,5 +1,6 @@
 //! The desktop shell. Everything the user sees is the web app from `web/`;
 //! this code only adds what a browser cannot do: the OS keychain (token.rs),
+//! "Log in with Authentik" through the system browser (loopback.rs),
 //! native notifications, opening links in the default browser, and keeping
 //! the window's size and position.
 //!
@@ -7,6 +8,7 @@
 //! on Windows) instead of bundling Chromium, like a PHP app relying on the
 //! system's web server instead of shipping one: the app stays small.
 
+mod loopback;
 mod token;
 
 pub fn run() {
@@ -17,7 +19,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             token::load_token,
             token::save_token,
-            token::delete_token
+            token::delete_token,
+            loopback::oidc_listen
         ])
         .run(tauri::generate_context!());
     if let Err(error) = result {

@@ -62,6 +62,18 @@ export type Api = ReturnType<typeof createApi>;
  * Where "Log in with Authentik" starts: a full-page navigation (the provider
  * shows its own login page), so a URL instead of an API call.
  */
+/**
+ * The desktop app's "Log in with Authentik": opened in the system browser,
+ * which comes back to the app on `port` (see desktop/src-tauri/src/loopback.rs).
+ */
+export function desktopOidcStartUrl(serverUrl: string, port: number, challenge: string): string {
+  const query = new URLSearchParams({
+    desktop_port: String(port),
+    desktop_challenge: challenge,
+  });
+  return `${serverUrl}/api/v1/auth/oidc/start?${query.toString()}`;
+}
+
 export function oidcStartUrl(redirect?: string): string {
   const start = `${import.meta.env.VITE_SALDO_API_URL ?? ""}/api/v1/auth/oidc/start`;
   return redirect ? `${start}?redirect=${encodeURIComponent(redirect)}` : start;
