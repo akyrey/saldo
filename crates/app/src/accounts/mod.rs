@@ -1,11 +1,12 @@
 //! Accounts: create, change, delete, list, and compute balances.
 
+mod balances;
 mod input;
 pub(crate) mod repo;
 mod view;
 
 use chrono::NaiveDate;
-use saldo_core::{AccountId, Money};
+use saldo_core::AccountId;
 use serde::Serialize;
 use sqlx::SqlitePool;
 
@@ -177,23 +178,8 @@ impl AccountService {
         filter: &AccountFilter,
         page: PageRequest,
     ) -> Result<Page<AccountView>, AppError> {
-        let unknown_type = |t: &String| !ALL_TYPES.contains(&t.as_str());
-        if filter.account_type.as_ref().is_some_and(unknown_type) {
-            return Err(AppError::invalid(
-                "type",
-                format!("must be one of {}", ALL_TYPES.join(", ")),
-            ));
-        }
         let mut conn = self.pool.acquire().await?;
-        let repo_filter = repo::ListFilter {
-            account_type: filter.account_type.clone(),
-            active: filter.active,
-            owner_user_id: filter.scope.owner(ctx),
-            limit: page.limit(),
-            offset: page.offset(),
-        };
-        let (rows, total) =
-            repo::list(&mut conn, &ctx.household_id.to_string(), &repo_filter).await?;
+        let (rows, total) = list_rows(&mut conn, ctx, filter, page).await?;
         let mut items = Vec::with_capacity(rows.len());
         for row in rows {
             items.push(view_of(&mut conn, row).await?);
@@ -211,15 +197,7 @@ impl AccountService {
         let mut conn = self.pool.acquire().await?;
         let row = self.find(&mut conn, ctx, id).await?;
         let date = date.map(|d| d.to_string());
-        let minor =
-            repo::balance_minor(&mut conn, &row.household_id, &row, date.as_deref()).await?;
-        let currency = currencies::find(&mut conn, &row.currency_code, "currency").await?;
-        Ok(BalanceView {
-            account_id: row.id,
-            date,
-            balance: Money::new(minor, currency.code()).to_decimal_string(&currency),
-            currency: row.currency_code,
-        })
+        balances::balance_view(&mut conn, row, date.as_deref()).await
     }
 
     async fn find(
@@ -232,4 +210,29 @@ impl AccountService {
             .await?
             .ok_or(AppError::NotFound)
     }
+}
+
+/// One page of account rows matching `filter`, plus the total. Shared by
+/// [`AccountService::list`] and [`AccountService::balances`].
+async fn list_rows(
+    conn: &mut sqlx::SqliteConnection,
+    ctx: &HouseholdCtx,
+    filter: &AccountFilter,
+    page: PageRequest,
+) -> Result<(Vec<AccountRow>, i64), AppError> {
+    let unknown_type = |t: &String| !ALL_TYPES.contains(&t.as_str());
+    if filter.account_type.as_ref().is_some_and(unknown_type) {
+        return Err(AppError::invalid(
+            "type",
+            format!("must be one of {}", ALL_TYPES.join(", ")),
+        ));
+    }
+    let repo_filter = repo::ListFilter {
+        account_type: filter.account_type.clone(),
+        active: filter.active,
+        owner_user_id: filter.scope.owner(ctx),
+        limit: page.limit(),
+        offset: page.offset(),
+    };
+    repo::list(conn, &ctx.household_id.to_string(), &repo_filter).await
 }

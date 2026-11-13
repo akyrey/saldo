@@ -3,6 +3,7 @@
 mod household;
 mod secrets;
 mod sessions;
+mod status;
 
 pub use sessions::SESSION_LIFETIME;
 

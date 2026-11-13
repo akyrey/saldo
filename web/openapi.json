@@ -149,6 +149,111 @@
         ]
       }
     },
+    "/api/v1/accounts/balances": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Balances of the accounts `GET /accounts` returns for the same filters and\npage, in the same order.",
+        "operationId": "account_balances",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "`asset`, `expense`, `revenue`, `liability` or `equity`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "`YYYY-MM-DD`; balances at the end of that day. Default: all time.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_BalanceView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/accounts/{id}": {
       "get": {
         "tags": [
@@ -1222,6 +1327,24 @@
       }
     },
     "/api/v1/setup": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Tells the web app whether to show the setup screen (no authentication).",
+        "operationId": "setup_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_SetupStatus"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "auth"
@@ -2788,6 +2911,28 @@
           }
         }
       },
+      "Data_SetupStatus": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Whether the first-run setup is still needed.",
+            "required": [
+              "needed"
+            ],
+            "properties": {
+              "needed": {
+                "type": "boolean",
+                "description": "True while no user exists."
+              }
+            }
+          }
+        }
+      },
       "Data_TagView": {
         "type": "object",
         "description": "A single result.",
@@ -3324,6 +3469,48 @@
           }
         }
       },
+      "List_BalanceView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An account's balance on a date (all time when `date` is `None`).",
+              "required": [
+                "account_id",
+                "balance",
+                "currency"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string"
+                },
+                "balance": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
       "List_CategoryView": {
         "type": "object",
         "description": "A page of results.",
@@ -3685,6 +3872,19 @@
           },
           "user": {
             "$ref": "#/components/schemas/UserView"
+          }
+        }
+      },
+      "SetupStatus": {
+        "type": "object",
+        "description": "Whether the first-run setup is still needed.",
+        "required": [
+          "needed"
+        ],
+        "properties": {
+          "needed": {
+            "type": "boolean",
+            "description": "True while no user exists."
           }
         }
       },
