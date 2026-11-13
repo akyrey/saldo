@@ -70,6 +70,10 @@ pub async fn login(
     ClientIp(ip): ClientIp,
     ApiJson(body): ApiJson<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    if !state.config.password_login {
+        // Only "Log in with Authentik" is allowed on this server.
+        return Err(saldo_app::error::AppError::Forbidden.into());
+    }
     let desktop = is_desktop(body.client.as_deref())?;
     let mut keys = vec![format!("email:{}", body.email.trim().to_lowercase())];
     if let Some(ip) = ip {

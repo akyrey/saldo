@@ -31,6 +31,11 @@ pub struct Config {
     /// Origins allowed by CORS (`SALDO_ALLOWED_ORIGINS`, comma-separated),
     /// for example the desktop app's `tauri://localhost`. Empty: CORS off.
     pub allowed_origins: Vec<String>,
+    /// "Log in with Authentik" (`SALDO_OIDC_*`), if configured.
+    pub oidc: Option<crate::oidc::OidcConfig>,
+    /// Whether email and password login is allowed (`SALDO_PASSWORD_LOGIN`,
+    /// default `true`; `false` needs OIDC, or nobody could log in).
+    pub password_login: bool,
 }
 
 /// A configuration problem: which variable, and what is wrong with it.
@@ -77,6 +82,18 @@ impl Config {
             .ok_or_else(|| error("SALDO_PUBLIC_URL", "must be an http:// or https:// URL"))?;
         let notify = crate::notify::config::from_lookup(&lookup, &public_url)?;
         let allowed_origins = allowed_origins(&get("SALDO_ALLOWED_ORIGINS", ""))?;
+        let oidc = crate::oidc::config::from_lookup(&lookup)?;
+        let password_login = match get("SALDO_PASSWORD_LOGIN", "true").as_str() {
+            "true" => true,
+            "false" if oidc.is_some() => false,
+            "false" => {
+                return Err(error(
+                    "SALDO_PASSWORD_LOGIN",
+                    "can only be false with SALDO_OIDC_*",
+                ));
+            }
+            _ => return Err(error("SALDO_PASSWORD_LOGIN", "must be true or false")),
+        };
         Ok(Self {
             notify,
             database_url,
@@ -87,6 +104,8 @@ impl Config {
             public_url,
             log: get("SALDO_LOG", DEFAULT_LOG),
             allowed_origins,
+            oidc,
+            password_login,
         })
     }
 }

@@ -25,12 +25,15 @@ pub struct AppState {
     pub shutdown: CancellationToken,
     /// One notification sender per channel kind.
     pub senders: Arc<Senders>,
+    /// Logins on their way through the identity provider.
+    pub oidc_logins: Arc<crate::oidc::PendingLogins>,
 }
 
 impl AppState {
     pub fn new(app: App, config: Config) -> Self {
         Self {
             senders: Arc::new(Senders::from_config(&config)),
+            oidc_logins: Arc::default(),
             app,
             config: Arc::new(config),
             login_limiter: Arc::new(LoginLimiter::default()),

@@ -15,6 +15,7 @@ pub mod export;
 pub mod health;
 pub mod household;
 pub mod notifications;
+pub mod oidc;
 pub mod piggy_banks;
 pub mod recurrences;
 pub mod reports;
@@ -37,6 +38,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .merge(setup::router())
         .merge(auth::router())
+        .merge(oidc::router())
         .merge(household::router())
         .merge(currencies::router())
         .merge(balances::router())

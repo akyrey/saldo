@@ -67,15 +67,20 @@ fn bearer_token(headers: &HeaderMap) -> Option<&str> {
 }
 
 fn cookie_token(headers: &HeaderMap) -> Option<&str> {
+    cookie_value(headers, SESSION_COOKIE)
+}
+
+/// The value of cookie `name`, if present and not empty.
+pub fn cookie_value<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
     headers
         .get_all(header::COOKIE)
         .iter()
         .filter_map(|value| value.to_str().ok())
         .flat_map(|value| value.split(';'))
         .filter_map(|pair| pair.trim().split_once('='))
-        .find(|(name, _)| *name == SESSION_COOKIE)
-        .map(|(_, token)| token)
-        .filter(|token| !token.is_empty())
+        .find(|(cookie, _)| *cookie == name)
+        .map(|(_, value)| value)
+        .filter(|value| !value.is_empty())
 }
 
 /// A cookie request that changes data must send `X-Saldo-Csrf: 1` and an

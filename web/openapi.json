@@ -775,6 +775,92 @@
         ]
       }
     },
+    "/api/v1/auth/methods": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "How people can log in here (public: the login page asks before login).",
+        "operationId": "methods",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_AuthMethods"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/callback": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Where the provider sends the browser back. Logs the person in.",
+        "operationId": "callback",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "description": "Set by the provider when the person cancelled or was refused.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Into the app with a session cookie, or back to /login with an error"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/start": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Starts \"Log in with Authentik\": redirects the browser to the provider.",
+        "operationId": "start",
+        "parameters": [
+          {
+            "name": "redirect",
+            "in": "query",
+            "description": "Where in the app to go after login (a path such as `/accounts`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "To the identity provider, or back to /login with an error"
+          }
+        }
+      }
+    },
     "/api/v1/auth/tokens": {
       "get": {
         "tags": [
@@ -6595,6 +6681,29 @@
           }
         }
       },
+      "AuthMethods": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "oidc": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OidcMethod",
+                "description": "The identity provider, if \"Log in with ...\" is configured."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "password": {
+            "type": "boolean",
+            "description": "Email and password login is allowed."
+          }
+        }
+      },
       "AutoBudgetRequest": {
         "type": "object",
         "description": "An automatic limit: `amount` per `period`.",
@@ -8216,6 +8325,38 @@
                   "string",
                   "null"
                 ]
+              }
+            }
+          }
+        }
+      },
+      "Data_AuthMethods": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "password"
+            ],
+            "properties": {
+              "oidc": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OidcMethod",
+                    "description": "The identity provider, if \"Log in with ...\" is configured."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "password": {
+                "type": "boolean",
+                "description": "Email and password login is allowed."
               }
             }
           }
@@ -12001,6 +12142,18 @@
           "password": {
             "type": "string",
             "description": "The member's initial password."
+          }
+        }
+      },
+      "OidcMethod": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "For the button: \"Log in with <name>\"."
           }
         }
       },
