@@ -180,3 +180,52 @@ test("the owner downloads the JSON and CSV exports", async ({ page }) => {
   ]);
   expect(csv.suggestedFilename()).toMatch(/\.zip$/);
 });
+
+test("a transaction by one member appears in the other's open tab; the owner adds a webhook", async ({
+  browser,
+}) => {
+  // Two browser contexts are two separate browsers: two sessions, two streams.
+  const ownerContext = await browser.newContext();
+  const memberContext = await browser.newContext();
+  const owner = await ownerContext.newPage();
+  const member = await memberContext.newPage();
+  await login(owner);
+  await login(member, "bo@example.com", "another long password");
+  await member.getByRole("link", { name: "Transactions" }).first().click();
+  await expect(member.getByRole("heading", { name: "Transactions" })).toBeVisible();
+  await expect(member.getByText("Live coffee")).toHaveCount(0);
+
+  const source = await createAccount(owner, "Live wallet", "asset");
+  const destination = await createAccount(owner, "Live café", "expense");
+  const created = await owner.request.post("/api/v1/transactions", {
+    headers: { "X-Saldo-Csrf": "1", Origin: new URL(owner.url()).origin },
+    data: {
+      title: "Live coffee",
+      splits: [
+        {
+          date: "2026-11-07",
+          description: "Live coffee",
+          source_id: source,
+          destination_id: destination,
+          amount: "2.40",
+        },
+      ],
+    },
+  });
+  expect(created.status(), await created.text()).toBe(201);
+
+  // No reload: the event stream invalidates the member's transaction list.
+  await expect(member.getByText("Live coffee").first()).toBeVisible({ timeout: 10_000 });
+
+  // The owner's webhook page, in the same session (logins are rate-limited).
+  await owner.getByRole("link", { name: "Webhooks" }).first().click();
+  await owner.getByLabel("Name").fill("Catcher");
+  await owner.getByLabel("URL").fill("http://127.0.0.1:9/hook");
+  await owner.getByRole("button", { name: "Add webhook" }).click();
+  await expect(owner.getByTestId("webhook-secret")).toHaveText(/^whsec_[0-9a-f]{64}$/);
+  await owner.getByRole("button", { name: "Send test" }).click();
+  await expect(owner.getByText("webhook.test")).toBeVisible({ timeout: 10_000 });
+
+  await ownerContext.close();
+  await memberContext.close();
+});
