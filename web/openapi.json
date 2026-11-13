@@ -836,6 +836,45 @@
         }
       }
     },
+    "/api/v1/auth/oidc/desktop-token": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "The desktop app trades its one-time code and verifier for the session\ntoken (a code works once, for two minutes).",
+        "operationId": "desktop_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesktopTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/oidc/start": {
       "get": {
         "tags": [
@@ -848,6 +887,26 @@
             "name": "redirect",
             "in": "query",
             "description": "Where in the app to go after login (a path such as `/accounts`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "desktop_port",
+            "in": "query",
+            "description": "Desktop app only: the loopback port it waits on (1024 or higher).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "desktop_challenge",
+            "in": "query",
+            "description": "Desktop app only: base64url SHA-256 of its secret verifier.",
             "required": false,
             "schema": {
               "type": "string"
@@ -10461,6 +10520,23 @@
           "status": {
             "type": "string",
             "description": "`pending`, `succeeded` or `dead`."
+          }
+        }
+      },
+      "DesktopTokenRequest": {
+        "type": "object",
+        "required": [
+          "code",
+          "verifier"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The one-time code the app received on its loopback port."
+          },
+          "verifier": {
+            "type": "string",
+            "description": "The secret whose SHA-256 the app sent as `desktop_challenge`."
           }
         }
       },

@@ -8,7 +8,7 @@ use axum::extract::{Query, State};
 use axum::http::{HeaderMap, header};
 use axum::response::{AppendHeaders, IntoResponse, Redirect, Response};
 use saldo_app::error::AppError;
-use saldo_app::identity::SESSION_LIFETIME;
+use saldo_app::identity::{LoginResult, SESSION_LIFETIME};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -16,7 +16,10 @@ use utoipa_axum::routes;
 
 use crate::auth::{cookie_value, session_cookie};
 use crate::envelope::Data;
-use crate::oidc::{self, OidcError};
+use crate::error::{ApiError, ErrorEnvelope};
+use crate::extract::ApiJson;
+use crate::oidc::{self, DesktopReturn, OidcError};
+use crate::routes::auth::LoginResponse;
 use crate::state::AppState;
 
 /// Ties a login to the browser that started it (defeats login CSRF).
@@ -29,6 +32,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(methods))
         .routes(routes!(start))
         .routes(routes!(callback))
+        .routes(routes!(desktop_token))
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -63,6 +67,10 @@ pub async fn methods(State(state): State<AppState>) -> Json<Data<AuthMethods>> {
 pub struct StartQuery {
     /// Where in the app to go after login (a path such as `/accounts`).
     pub redirect: Option<String>,
+    /// Desktop app only: the loopback port it waits on (1024 or higher).
+    pub desktop_port: Option<u16>,
+    /// Desktop app only: base64url SHA-256 of its secret verifier.
+    pub desktop_challenge: Option<String>,
 }
 
 /// Starts "Log in with Authentik": redirects the browser to the provider.
@@ -73,8 +81,13 @@ pub async fn start(State(state): State<AppState>, Query(query): Query<StartQuery
         return to_login("oidc_disabled");
     };
     let redirect = safe_path(query.redirect.as_deref());
+    let Ok(desktop) = DesktopReturn::parse(query.desktop_port, query.desktop_challenge.as_deref())
+    else {
+        return to_login("oidc_bad_request");
+    };
     match oidc::start(config, &callback_url(&state), redirect).await {
         Ok((url, login_state, pending)) => {
+            let pending = pending.for_desktop(desktop);
             state.oidc_logins.insert(login_state.clone(), pending);
             let cookie = state_cookie(&login_state, STATE_MAX_AGE_SECS, state.config.cookie_secure);
             (
@@ -107,40 +120,103 @@ pub async fn callback(
     let Some(config) = state.config.oidc.as_ref() else {
         return to_login("oidc_disabled");
     };
-    if let Some(error) = query.error.as_deref() {
-        return failed(&OidcError::Refused(error.to_string()));
-    }
-    let (Some(code), Some(login_state)) = (query.code, query.state) else {
-        return failed(&OidcError::UnknownState);
-    };
+    let login_state = query.state.unwrap_or_default();
     let same_browser = cookie_value(&headers, STATE_COOKIE) == Some(login_state.as_str());
-    let Some(pending) = state
+    let pending = state
         .oidc_logins
         .take(&login_state)
-        .filter(|_| same_browser)
-    else {
-        return failed(&OidcError::UnknownState);
+        .filter(|_| same_browser);
+    let desktop = pending.as_ref().and_then(|p| p.desktop.clone());
+    // Cancelled or refused at the provider: tell whoever is waiting.
+    let refused = query.error.map(OidcError::Refused);
+    let (Some(pending), Some(code), None) = (pending, query.code, &refused) else {
+        let error = refused.unwrap_or(OidcError::UnknownState);
+        return match desktop {
+            Some(app) => Redirect::to(&app.url("error", error.code())).into_response(),
+            None => failed(&error),
+        };
     };
     let redirect = pending.redirect.clone();
-    let identity = match oidc::finish(config, &callback_url(&state), pending, code).await {
-        Ok(identity) => identity,
-        Err(error) => return failed(&error),
-    };
-    match state.app.identity.login_external(identity).await {
-        Ok(login) => {
-            let secure = state.config.cookie_secure;
-            let session = session_cookie(&login.token, SESSION_LIFETIME.num_seconds(), secure);
-            let cleared = state_cookie("", 0, secure);
-            let cookies =
-                AppendHeaders([(header::SET_COOKIE, session), (header::SET_COOKIE, cleared)]);
-            (cookies, Redirect::to(&redirect)).into_response()
-        }
-        Err(AppError::Unauthorized) => to_login("oidc_no_account"),
-        Err(error) => {
-            tracing::error!(%error, "external login failed");
-            to_login("oidc_unavailable")
-        }
+    match finish_login(&state, config, pending, code).await {
+        Ok(login) => match desktop {
+            // The desktop app collects the session with its verifier.
+            Some(app) => {
+                let code = state.desktop_handoffs.insert(login, app.challenge.clone());
+                Redirect::to(&app.url("code", &code)).into_response()
+            }
+            None => with_session(&state, &login.token, &redirect),
+        },
+        Err(code) => match desktop {
+            Some(app) => Redirect::to(&app.url("error", code)).into_response(),
+            None => to_login(code),
+        },
     }
+}
+
+/// Checks the provider's answer and opens a session for the member; on
+/// failure, the error code for the login page.
+async fn finish_login(
+    state: &AppState,
+    config: &oidc::OidcConfig,
+    pending: oidc::Pending,
+    code: String,
+) -> Result<LoginResult, &'static str> {
+    let identity = oidc::finish(config, &callback_url(state), pending, code)
+        .await
+        .map_err(|error| {
+            tracing::warn!(%error, "external login failed");
+            error.code()
+        })?;
+    state
+        .app
+        .identity
+        .login_external(identity)
+        .await
+        .map_err(|error| match error {
+            AppError::Unauthorized => "oidc_no_account",
+            other => {
+                tracing::error!(error = %other, "external login failed");
+                "oidc_unavailable"
+            }
+        })
+}
+
+/// The browser's session cookie, the state cookie cleared, and on into the app.
+fn with_session(state: &AppState, token: &str, redirect: &str) -> Response {
+    let secure = state.config.cookie_secure;
+    let session = session_cookie(token, SESSION_LIFETIME.num_seconds(), secure);
+    let cleared = state_cookie("", 0, secure);
+    let cookies = AppendHeaders([(header::SET_COOKIE, session), (header::SET_COOKIE, cleared)]);
+    (cookies, Redirect::to(redirect)).into_response()
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DesktopTokenRequest {
+    /// The one-time code the app received on its loopback port.
+    pub code: String,
+    /// The secret whose SHA-256 the app sent as `desktop_challenge`.
+    pub verifier: String,
+}
+
+/// The desktop app trades its one-time code and verifier for the session
+/// token (a code works once, for two minutes).
+#[utoipa::path(post, path = "/auth/oidc/desktop-token", tag = "auth", request_body = DesktopTokenRequest,
+    responses((status = 200, body = Data<LoginResponse>), (status = 401, body = ErrorEnvelope)))]
+pub async fn desktop_token(
+    State(state): State<AppState>,
+    ApiJson(body): ApiJson<DesktopTokenRequest>,
+) -> Result<Json<Data<LoginResponse>>, ApiError> {
+    let login = state
+        .desktop_handoffs
+        .redeem(&body.code, &body.verifier)
+        .ok_or(AppError::Unauthorized)?;
+    Ok(Json(Data::new(LoginResponse {
+        household_id: login.ctx.household_id.to_string(),
+        role: login.ctx.role,
+        user: login.user,
+        expires_at: login.expires_at,
+        token: Some(login.token),
+    })))
 }
 
 fn callback_url(state: &AppState) -> String {

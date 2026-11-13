@@ -27,6 +27,8 @@ pub struct AppState {
     pub senders: Arc<Senders>,
     /// Logins on their way through the identity provider.
     pub oidc_logins: Arc<crate::oidc::PendingLogins>,
+    /// Sessions from "Log in with Authentik" waiting for the desktop app.
+    pub desktop_handoffs: Arc<crate::oidc::DesktopHandoffs>,
 }
 
 impl AppState {
@@ -34,6 +36,7 @@ impl AppState {
         Self {
             senders: Arc::new(Senders::from_config(&config)),
             oidc_logins: Arc::default(),
+            desktop_handoffs: Arc::default(),
             app,
             config: Arc::new(config),
             login_limiter: Arc::new(LoginLimiter::default()),

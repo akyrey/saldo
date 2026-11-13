@@ -444,3 +444,143 @@ mod authentik_ec {
         assert_eq!(login("another-app").await, "/login?error=oidc_invalid");
     }
 }
+
+// --- The desktop app: system browser, then back over a loopback port ---
+
+mod desktop {
+    use base64ct::{Base64UrlUnpadded, Encoding};
+    use sha2::{Digest, Sha256};
+
+    use super::*;
+
+    const VERIFIER: &str = "a-random-verifier-made-by-the-desktop-app-0123456789";
+
+    fn challenge(verifier: &str) -> String {
+        Base64UrlUnpadded::encode_string(&Sha256::digest(verifier.as_bytes()))
+    }
+
+    /// Runs a desktop login for `email` up to the redirect to the app's port.
+    async fn to_loopback(email: &str) -> (TestServer, String) {
+        let (mock, issuer) = provider().await;
+        let server = saldo_with(&issuer, &[]).await;
+        let start = get_raw(
+            &server,
+            &format!(
+                "/api/v1/auth/oidc/start?desktop_port=53682&desktop_challenge={}",
+                challenge(VERIFIER)
+            ),
+            None,
+        )
+        .await;
+        assert_eq!(start.status, StatusCode::SEE_OTHER, "{}", start.location);
+        let cookie = start.cookies[0].split(';').next().unwrap().to_string();
+        let nonce = query_param(&start.location, "nonce");
+        answer_tokens(&mock, id_token(&issuer, "ak-1", email, &nonce)).await;
+        let state = query_param(&start.location, "state");
+        let back = get_raw(
+            &server,
+            &format!("/api/v1/auth/oidc/callback?code=the-code&state={state}"),
+            Some(&cookie),
+        )
+        .await;
+        // The token never travels in a URL, and the browser gets no session.
+        assert!(
+            back.cookies
+                .iter()
+                .all(|c| !c.starts_with("saldo_session="))
+        );
+        (server, back.location)
+    }
+
+    async fn exchange(server: &TestServer, code: &str, verifier: &str) -> Response {
+        server
+            .post(
+                "/api/v1/auth/oidc/desktop-token",
+                json!({ "code": code, "verifier": verifier }),
+                &Auth::None,
+            )
+            .await
+    }
+
+    #[tokio::test]
+    async fn hands_the_token_to_the_app_for_its_verifier_once() {
+        let (server, location) = to_loopback("owner@example.com").await;
+        assert!(
+            location.starts_with("http://127.0.0.1:53682/callback?code="),
+            "{location}"
+        );
+        let code = query_param(&location, "code");
+
+        let wrong = exchange(&server, &code, "someone-elses-verifier").await;
+        assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+        // A wrong verifier used the code up: an attacker gets one guess at most.
+        let after_wrong = exchange(&server, &code, VERIFIER).await;
+        assert_eq!(after_wrong.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn the_right_verifier_gets_a_working_token() {
+        let (server, location) = to_loopback("owner@example.com").await;
+        let code = query_param(&location, "code");
+
+        let ok = exchange(&server, &code, VERIFIER).await;
+        assert_eq!(ok.status, StatusCode::OK, "{}", ok.body);
+        let token = ok.body["data"]["token"].as_str().unwrap().to_string();
+        let me = server.get("/api/v1/auth/me", &Auth::Bearer(token)).await;
+        assert_eq!(me.status, StatusCode::OK);
+        let again = exchange(&server, &code, VERIFIER).await;
+        assert_eq!(again.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn failures_go_back_to_the_app_too() {
+        let (_server, location) = to_loopback("stranger@example.com").await;
+        assert_eq!(
+            location,
+            "http://127.0.0.1:53682/callback?error=oidc_no_account"
+        );
+    }
+
+    #[tokio::test]
+    async fn bad_desktop_parameters_are_refused() {
+        let (_mock, issuer) = provider().await;
+        let server = saldo_with(&issuer, &[]).await;
+        for query in [
+            "desktop_port=80&desktop_challenge=abc",
+            "desktop_port=53682",
+            "desktop_port=53682&desktop_challenge=not%20base64url",
+        ] {
+            let start = get_raw(&server, &format!("/api/v1/auth/oidc/start?{query}"), None).await;
+            assert_eq!(start.location, "/login?error=oidc_bad_request", "{query}");
+        }
+    }
+}
+
+mod desktop_cancel {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_cancelled_desktop_login_tells_the_app() {
+        let (_mock, issuer) = provider().await;
+        let server = saldo_with(&issuer, &[]).await;
+        let challenge = "x".repeat(43);
+        let start = get_raw(
+            &server,
+            &format!("/api/v1/auth/oidc/start?desktop_port=53682&desktop_challenge={challenge}"),
+            None,
+        )
+        .await;
+        let cookie = start.cookies[0].split(';').next().unwrap().to_string();
+        let state = query_param(&start.location, "state");
+        let back = get_raw(
+            &server,
+            &format!("/api/v1/auth/oidc/callback?error=access_denied&state={state}"),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(
+            back.location,
+            "http://127.0.0.1:53682/callback?error=oidc_refused"
+        );
+    }
+}

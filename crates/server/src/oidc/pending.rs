@@ -15,6 +15,8 @@ pub struct Pending {
     pub nonce: String,
     /// Where in the app to land afterwards (a local path).
     pub redirect: String,
+    /// Set when the desktop app started this login (it waits on a port).
+    pub desktop: Option<super::DesktopReturn>,
     started: Instant,
 }
 
@@ -24,8 +26,14 @@ impl Pending {
             pkce_verifier,
             nonce,
             redirect,
+            desktop: None,
             started: Instant::now(),
         }
+    }
+
+    /// The same login, finished by handing the session to the desktop app.
+    pub fn for_desktop(self, desktop: Option<super::DesktopReturn>) -> Self {
+        Self { desktop, ..self }
     }
 }
 

@@ -8,9 +8,11 @@
 pub mod config;
 mod es256_p384;
 mod flow;
+mod handoff;
 mod http;
 mod pending;
 
 pub use config::OidcConfig;
 pub use flow::{OidcError, finish, start};
+pub use handoff::{DesktopHandoffs, DesktopReturn};
 pub use pending::{Pending, PendingLogins};

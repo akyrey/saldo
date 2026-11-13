@@ -3334,6 +3334,7 @@ dependencies = [
  "lettre",
  "openidconnect",
  "p384 0.14.0",
+ "rand 0.10.3",
  "reqwest",
  "rust-embed",
  "saldo-app",

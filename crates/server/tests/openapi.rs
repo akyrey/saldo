@@ -9,7 +9,7 @@ use serde_json::Value;
 const COMMITTED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../web/openapi.json");
 
 /// Routes that work without a session or token.
-const PUBLIC: [(&str, &str); 7] = [
+const PUBLIC: [(&str, &str); 8] = [
     ("get", "/healthz"),
     ("get", "/api/v1/setup"),
     ("post", "/api/v1/setup"),
@@ -18,6 +18,7 @@ const PUBLIC: [(&str, &str); 7] = [
     ("get", "/api/v1/auth/methods"),
     ("get", "/api/v1/auth/oidc/start"),
     ("get", "/api/v1/auth/oidc/callback"),
+    ("post", "/api/v1/auth/oidc/desktop-token"),
 ];
 
 fn document() -> Value {
