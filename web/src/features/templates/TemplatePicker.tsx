@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import { templatesQuery } from "./queries";
 
 interface TemplatePickerProps {
@@ -14,21 +14,15 @@ export function TemplatePicker({ value = "" }: TemplatePickerProps) {
   const templates = useQuery(templatesQuery);
   if (!templates.data || templates.data.length === 0) return null;
   return (
-    <NativeSelect
+    <Combobox
       aria-label="New from template"
-      className="w-auto"
+      className="w-56"
+      placeholder="New from template…"
       value={value}
-      onChange={(event) => {
-        const template = event.target.value || undefined;
-        void navigate({ to: "/transactions/new", search: { template } });
+      onChange={(id) => {
+        void navigate({ to: "/transactions/new", search: { template: id || undefined } });
       }}
-    >
-      <option value="">New from template…</option>
-      {templates.data.map((t) => (
-        <option key={t.id} value={t.id}>
-          {t.name}
-        </option>
-      ))}
-    </NativeSelect>
+      options={templates.data.map((t) => ({ value: t.id, label: t.name }))}
+    />
   );
 }

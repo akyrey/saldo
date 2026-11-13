@@ -1,44 +1,37 @@
-import type * as React from "react";
-import { NativeSelect } from "@/components/ui/native-select";
-import { ACCOUNT_TYPES, TYPE_LABELS } from "@/features/accounts/grouping";
+import { Combobox } from "@/components/Combobox";
 import type { Account } from "@/features/accounts/queries";
+import { accountOptions } from "./account-options";
 
-type AccountSelectProps = Omit<React.ComponentProps<typeof NativeSelect>, "children"> & {
+interface AccountSelectProps {
+  id?: string;
+  label?: string;
   accounts: readonly Account[];
   value: string;
-  emptyLabel?: string;
+  onChange: (accountId: string) => void;
+  /** Shown while nothing is chosen. */
+  placeholder?: string;
+  /** Optional fields (filters) can be emptied again. */
+  clearable?: boolean;
   /** Offer only these account types (the chosen account always shows). */
   types?: readonly string[];
-};
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
+}
 
-/**
- * Accounts grouped by type. Archived accounts appear only when already
- * chosen (old splits may use them; new ones may not).
- */
+/** Type an account's name (or its type) to find it. */
 export function AccountSelect({
   accounts,
   value,
-  emptyLabel = "Choose…",
-  types = ACCOUNT_TYPES,
+  types,
+  placeholder,
   ...props
 }: AccountSelectProps) {
   return (
-    <NativeSelect value={value} {...props}>
-      <option value="">{emptyLabel}</option>
-      {ACCOUNT_TYPES.map((type) => {
-        const offered = (a: Account) => a.active && types.includes(type);
-        const options = accounts.filter((a) => a.type === type && (offered(a) || a.id === value));
-        if (options.length === 0) return null;
-        return (
-          <optgroup key={type} label={TYPE_LABELS[type]}>
-            {options.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name} ({account.currency})
-              </option>
-            ))}
-          </optgroup>
-        );
-      })}
-    </NativeSelect>
+    <Combobox
+      {...props}
+      value={value}
+      placeholder={placeholder ?? "Type an account…"}
+      options={accountOptions(accounts, value, types)}
+    />
   );
 }

@@ -6,7 +6,7 @@ import { errorProps } from "@/components/field-props";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import type { Account } from "@/features/accounts/queries";
 import { todayIso } from "@/lib/dates";
 import { addPiggyBankEvent, type PiggyBank } from "./queries";
@@ -59,17 +59,17 @@ export function MoneyDialog({ piggyBank, direction, accounts, onClose }: MoneyDi
         <h2 className="font-semibold">{title}</h2>
         {linked.length > 1 ? (
           <Field id="money-account" label="Account" error={errors.account_id}>
-            <NativeSelect
+            <Combobox
               id="money-account"
+              label="Account"
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-            >
-              {linked.map((a) => (
-                <option key={a.account_id} value={a.account_id}>
-                  {nameOf(a.account_id)} ({a.saved_amount} saved)
-                </option>
-              ))}
-            </NativeSelect>
+              onChange={setAccountId}
+              options={linked.map((a) => ({
+                value: a.account_id,
+                label: nameOf(a.account_id),
+                hint: `${a.saved_amount} saved`,
+              }))}
+            />
           </Field>
         ) : null}
         <Field id="money-amount" label={`Amount (${piggyBank.currency})`} error={errors.amount}>

@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { account, CURRENCIES, fakeApi, json, list, ME, MEMBERS } from "@/test/fake-api";
+import { choose } from "@/test/combobox";
 import { renderApp } from "@/test/render-app";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -94,8 +95,8 @@ describe("RecurrenceEditor", () => {
     const split = screen.getByRole("group", { name: "Split 1" });
     expect(within(split).queryByLabelText("Date")).toBeNull();
     await user.type(within(split).getByLabelText("Description"), "Gym");
-    await user.selectOptions(within(split).getByLabelText("Source account"), "a1");
-    await user.selectOptions(within(split).getByLabelText("Destination account"), "e1");
+    await choose(within(split).getByLabelText("Source account"), "Checking (EUR)");
+    await choose(within(split).getByLabelText("Destination account"), "Landlord (EUR)");
     await user.type(within(split).getByLabelText(/^Amount/), "30");
     await user.click(screen.getByRole("button", { name: "Create recurring transaction" }));
 

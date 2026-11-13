@@ -3,6 +3,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { account, CURRENCIES, fakeApi, list, ME, MEMBERS, split } from "@/test/fake-api";
+import { choose } from "@/test/combobox";
 import { renderApp } from "@/test/render-app";
 
 afterEach(() => {
@@ -101,7 +102,7 @@ describe("bill pages", () => {
 
     await userEvent.click(within(open).getByRole("button", { name: "Mark paid" }));
     const picker = await screen.findByLabelText("Paying transaction");
-    await userEvent.selectOptions(picker, "s9");
+    await choose(picker, "2026-11-07 · split s9", "s9");
     await userEvent.click(screen.getByRole("button", { name: "Confirm payment" }));
     await waitFor(() => {
       const pay = seen.find((r) => new URL(r.url).pathname === "/api/v1/bill-periods/p2/pay");

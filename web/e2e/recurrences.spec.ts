@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createAccount, login } from "./helpers";
+import { choose, createAccount, login } from "./helpers";
 
 // Runs after flows.spec.ts (files run in name order), which did the setup.
 // One login only: the suite shares the login rate limit (10 per 15 minutes).
@@ -18,8 +18,8 @@ test("create and fire a recurring transaction, and guard a piggy bank", async ({
   ).toBeVisible();
   const split = page.getByRole("group", { name: "Split 1" });
   await split.getByLabel("Description").fill("Rent");
-  await split.getByLabel("Source account").selectOption({ label: "Rent checking (EUR)" });
-  await split.getByLabel("Destination account").selectOption({ label: "Rent landlord (EUR)" });
+  await choose(split.getByLabel("Source account"), "Rent checking (EUR)");
+  await choose(split.getByLabel("Destination account"), "Rent landlord (EUR)");
   await split.getByLabel(/^Amount/).fill("800");
   await page.getByRole("button", { name: "Create recurring transaction" }).click();
 

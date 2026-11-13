@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import { accountsQuery, currenciesQuery } from "@/features/accounts/queries";
 import { billsQuery } from "@/features/bills/queries";
 import { budgetsQuery } from "@/features/budgets/queries";
@@ -48,19 +48,7 @@ export function ValueInput({ id, label, kind, value, onChange }: ValueInputProps
   if (type === "none") return null;
   if (options) {
     return (
-      <NativeSelect
-        id={id}
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">Choose…</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </NativeSelect>
+      <Combobox id={id} aria-label={label} value={value} onChange={onChange} options={options} />
     );
   }
   return (

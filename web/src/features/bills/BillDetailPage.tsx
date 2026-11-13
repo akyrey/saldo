@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import {
   Table,
   TableBody,
@@ -57,18 +57,18 @@ function PayPicker({ period, onDone }: { period: BillPeriod; onDone: () => void 
   return (
     <div className="flex flex-col gap-2 rounded-md border p-3">
       <Label htmlFor={`pay-${period.id}`}>Paying transaction</Label>
-      <NativeSelect
+      <Combobox
         id={`pay-${period.id}`}
+        label="Paying transaction"
+        placeholder="Type a description or date…"
         value={splitId}
-        onChange={(e) => setSplitId(e.target.value)}
-      >
-        <option value="">Choose a transaction…</option>
-        {splits.map((split) => (
-          <option key={split.id} value={split.id}>
-            {split.date} · {split.description} · {split.amount} {split.currency}
-          </option>
-        ))}
-      </NativeSelect>
+        onChange={setSplitId}
+        options={splits.map((split) => ({
+          value: split.id,
+          label: `${split.date} · ${split.description}`,
+          hint: `${split.amount} ${split.currency}`,
+        }))}
+      />
       {pay.error ? <Alert>{errorMessage(pay.error)}</Alert> : null}
       <div className="flex gap-2">
         <Button size="sm" disabled={!splitId || pay.isPending} onClick={() => pay.mutate()}>

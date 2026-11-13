@@ -7,7 +7,7 @@ import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import { accountsQuery, currenciesQuery } from "@/features/accounts/queries";
 import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
@@ -188,18 +188,15 @@ export function RecurrenceEditor({ initial, submitLabel, save, onSaved }: Recurr
               id={`split-${index}-piggy`}
               label={`Piggy bank for split ${index + 1} (transfers only)`}
             >
-              <NativeSelect
+              <Combobox
                 id={`split-${index}-piggy`}
+                label="Piggy bank"
+                clearable
+                placeholder="None"
                 value={row.piggy_bank_id}
-                onChange={(e) => setSplit(index, { piggy_bank_id: e.target.value })}
-              >
-                <option value="">None</option>
-                {piggyBanks.data.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </NativeSelect>
+                onChange={(piggy_bank_id) => setSplit(index, { piggy_bank_id })}
+                options={piggyBanks.data.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </Field>
           ) : null}
         </div>

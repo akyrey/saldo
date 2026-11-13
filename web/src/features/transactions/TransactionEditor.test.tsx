@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import { choose } from "@/test/combobox";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/errors";
@@ -69,14 +70,17 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
   return { onSaved };
 }
 
+/** How the account pickers show an account: `Checking (EUR)`. */
+const accountLabel = (id: string) => `${ACCOUNTS.find((a) => a.id === id)?.name ?? id} (EUR)`;
+
 const row = (number: number) => screen.getByRole("group", { name: `Split ${number}` });
 
 async function fill(number: number, source: string, destination: string, amount: string) {
   const user = userEvent.setup();
   const fields = within(row(number));
   await user.type(fields.getByLabelText("Description"), `split ${number}`);
-  await user.selectOptions(fields.getByLabelText("Source account"), source);
-  await user.selectOptions(fields.getByLabelText("Destination account"), destination);
+  await choose(fields.getByLabelText("Source account"), accountLabel(source));
+  await choose(fields.getByLabelText("Destination account"), accountLabel(destination));
   await user.type(fields.getByLabelText(/^Amount/), amount);
 }
 
@@ -111,8 +115,9 @@ describe("TransactionEditor", () => {
     const user = userEvent.setup();
     await fill(1, "checking", "food", "5");
     const budget = within(row(1)).getByLabelText("Budget");
+    await user.type(budget, "old");
     expect(within(row(1)).queryByRole("option", { name: "Old budget" })).toBeNull();
-    await user.selectOptions(budget, "groceries");
+    await choose(budget, "Groceries");
     await user.click(screen.getByRole("button", { name: "Add split" }));
     await fill(2, "salary", "checking", "1");
     expect(within(row(2)).getByLabelText("Budget")).toBeDisabled();
@@ -126,7 +131,8 @@ describe("TransactionEditor", () => {
     renderEditor(() => Promise.resolve({}));
     await fill(1, "food", "checking", "1");
     expect(within(row(1)).getByText("Not allowed")).toBeInTheDocument();
-    expect(within(row(1)).queryByRole("option", { name: "Old (EUR)" })).toBeNull();
+    await userEvent.type(within(row(1)).getByLabelText("Source account"), "old");
+    expect(within(row(1)).queryByRole("option", { name: /Old \(EUR\)/ })).toBeNull();
   });
 
   it("puts server validation errors on the matching row and field", async () => {

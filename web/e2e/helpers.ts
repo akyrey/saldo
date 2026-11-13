@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 export const OWNER = {
   name: "Ada Owner",
@@ -48,4 +48,20 @@ export async function createAccount(page: Page, name: string, type: string): Pro
   expect(response.status(), await response.text()).toBe(201);
   const body = (await response.json()) as { data: { id: string } };
   return body.data.id;
+}
+
+/**
+ * Picks an option in an autocomplete field: types `typed` (default: the
+ * label), then clicks the option whose label is exactly `label`.
+ */
+export async function choose(field: Locator, label: string, typed = label): Promise<void> {
+  await field.fill(typed);
+  const listId = (await field.getAttribute("aria-controls")) ?? "";
+  const listbox = field.page().locator(`[id="${listId}"]`);
+  await listbox
+    .getByRole("option")
+    .filter({ has: field.page().locator("span").getByText(label, { exact: true }) })
+    .first()
+    .click();
+  await expect(field).toHaveValue(label);
 }

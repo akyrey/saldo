@@ -3,6 +3,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { account, CURRENCIES, fakeApi, list, ME, MEMBERS } from "@/test/fake-api";
+import { choose } from "@/test/combobox";
 import { renderApp } from "@/test/render-app";
 
 afterEach(() => {
@@ -106,7 +107,7 @@ describe("rule pages", () => {
     renderApp("/rules/new?group=g1");
     await userEvent.type(await screen.findByLabelText("Title"), "Groceries");
     await userEvent.type(screen.getByLabelText("Trigger 1 value"), "supermarket");
-    await userEvent.selectOptions(screen.getByLabelText("Action 1 value"), "c1");
+    await choose(screen.getByLabelText("Action 1 value"), "Housing");
     await userEvent.click(screen.getByRole("button", { name: "Create rule" }));
     await waitFor(() =>
       expect(
@@ -129,12 +130,8 @@ describe("rule pages", () => {
     renderApp("/rules/new?group=g1");
     await userEvent.type(await screen.findByLabelText("Title"), "Food");
     await userEvent.type(screen.getByLabelText("Trigger 1 value"), "market");
-    await userEvent.selectOptions(screen.getByLabelText("Action 1 kind"), "set_budget");
-    const budget = screen.getByLabelText("Action 1 value");
-    await waitFor(() =>
-      expect(within(budget).getByRole("option", { name: "Groceries" })).toBeInTheDocument(),
-    );
-    await userEvent.selectOptions(budget, "b1");
+    await choose(screen.getByLabelText("Action 1 kind"), "Set budget", "budget");
+    await choose(screen.getByLabelText("Action 1 value"), "Groceries", "groc");
     await userEvent.click(screen.getByRole("button", { name: "Create rule" }));
     await waitFor(() =>
       expect(seen.some((r) => r.method === "POST" && r.url.endsWith("/api/v1/rules"))).toBe(true),

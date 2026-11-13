@@ -10,7 +10,9 @@ import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { Combobox } from "@/components/Combobox";
 import { NativeSelect } from "@/components/ui/native-select";
+import { currencyOptions } from "@/features/shared/options";
 import { membersQuery } from "@/features/auth/queries";
 import {
   ASSET_ROLES,
@@ -85,18 +87,16 @@ function AccountFormFields(props: {
         </NativeSelect>
       </Field>
       <Field id="currency" label="Currency" error={errors.currency}>
-        <NativeSelect
+        <Combobox
           id="currency"
+          label="Currency"
           disabled={!props.isNew}
           value={form.currency}
-          onChange={(e) => set("currency", e.target.value)}
-        >
-          {(currencies.data ?? [{ code: form.currency, name: form.currency }]).map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.code} · {c.name}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={(code) => set("currency", code)}
+          options={currencyOptions(
+            currencies.data ?? [{ code: form.currency, name: form.currency }],
+          )}
+        />
       </Field>
       <Field id="owner" label="Owner" error={errors.owner_user_id}>
         <NativeSelect

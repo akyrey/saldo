@@ -4,7 +4,7 @@ import { errorProps } from "@/components/field-props";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/Combobox";
 import type { Account, Currency } from "@/features/accounts/queries";
 import type { Budget } from "@/features/budgets/queries";
 import type { Category } from "@/features/categories/queries";
@@ -119,11 +119,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
         >
           <AccountSelect
             id={id("source")}
-            required
+            label="Source account"
             accounts={accounts}
             types={sides?.source}
             value={row.source_id}
-            onChange={(e) => onChange({ source_id: e.target.value })}
+            onChange={(source_id) => onChange({ source_id })}
             {...errorProps(id("source"), errors.source_id)}
           />
         </Field>
@@ -135,11 +135,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
         >
           <AccountSelect
             id={id("destination")}
-            required
+            label="Destination account"
             accounts={accounts}
             types={sides?.destination}
             value={row.destination_id}
-            onChange={(e) => onChange({ destination_id: e.target.value })}
+            onChange={(destination_id) => onChange({ destination_id })}
             {...errorProps(id("destination"), errors.destination_id)}
           />
         </Field>
@@ -160,37 +160,31 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
           />
         </Field>
         <Field id={id("category")} label="Category" error={errors.category_id}>
-          <NativeSelect
+          <Combobox
             id={id("category")}
+            label="Category"
+            clearable
+            placeholder="None"
             value={row.category_id}
-            onChange={(e) => onChange({ category_id: e.target.value })}
-          >
-            <option value="">None</option>
-            {props.categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </NativeSelect>
+            onChange={(category_id) => onChange({ category_id })}
+            options={props.categories.map((c) => ({ value: c.id, label: c.name }))}
+          />
         </Field>
         <Field id={id("budget")} label="Budget" error={errors.budget_id}>
-          <NativeSelect
+          <Combobox
             id={id("budget")}
+            label="Budget"
+            clearable
+            placeholder={budgetAllowed ? "None" : "Withdrawals only"}
             value={row.budget_id}
             // Only withdrawals count against a budget; other kinds keep none.
             disabled={!budgetAllowed && row.budget_id === ""}
-            onChange={(e) => onChange({ budget_id: e.target.value })}
-            {...errorProps(id("budget"), errors.budget_id)}
-          >
-            <option value="">{budgetAllowed ? "None" : "Withdrawals only"}</option>
-            {props.budgets
+            onChange={(budget_id) => onChange({ budget_id })}
+            options={props.budgets
               .filter((b) => b.active || b.id === row.budget_id)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-          </NativeSelect>
+              .map((b) => ({ value: b.id, label: b.name }))}
+            {...errorProps(id("budget"), errors.budget_id)}
+          />
         </Field>
         <Field id={id("tags")} label="Tags" error={errors.tag_ids} className="sm:col-span-2">
           <TagPicker
@@ -221,19 +215,20 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
             label="Foreign currency"
             error={errors.foreign_currency}
           >
-            <NativeSelect
+            <Combobox
               id={id("foreign_currency")}
+              label="Foreign currency"
+              clearable
+              placeholder="None"
               value={row.foreign_currency}
-              onChange={(e) => onChange({ foreign_currency: e.target.value })}
+              onChange={(foreign_currency) => onChange({ foreign_currency })}
+              options={props.currencies.map((c) => ({
+                value: c.code,
+                label: c.code,
+                hint: c.name,
+              }))}
               {...errorProps(id("foreign_currency"), errors.foreign_currency)}
-            >
-              <option value="">None</option>
-              {props.currencies.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code}
-                </option>
-              ))}
-            </NativeSelect>
+            />
           </Field>
           {props.template ? null : (
             <Field id={id("notes")} label="Notes" error={errors.notes} className="sm:col-span-2">

@@ -10,6 +10,7 @@ import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/Combobox";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   Table,
@@ -111,17 +112,13 @@ function RuleFormFields(props: {
           />
         </Field>
         <Field id="group" label="Group" error={errors.rule_group_id}>
-          <NativeSelect
+          <Combobox
             id="group"
+            label="Group"
             value={form.rule_group_id}
-            onChange={(e) => set("rule_group_id", e.target.value)}
-          >
-            {(groups.data ?? []).map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.title}
-              </option>
-            ))}
-          </NativeSelect>
+            onChange={(id) => set("rule_group_id", id)}
+            options={(groups.data ?? []).map((g) => ({ value: g.id, label: g.title }))}
+          />
         </Field>
         <Field id="trigger_on" label="Runs when a transaction is" error={errors.trigger_on}>
           <NativeSelect
@@ -161,17 +158,12 @@ function RuleFormFields(props: {
         {errors.triggers ? <p className="text-xs text-destructive">{errors.triggers}</p> : null}
         {form.triggers.map((t, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-center">
-            <NativeSelect
+            <Combobox
               aria-label={`Trigger ${i + 1} kind`}
               value={t.kind}
-              onChange={(e) => setTrigger(i, { kind: e.target.value, value: "" })}
-            >
-              {kindOptions(TRIGGER_KINDS, t.kind).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </NativeSelect>
+              onChange={(kind) => setTrigger(i, { kind, value: "" })}
+              options={kindOptions(TRIGGER_KINDS, t.kind)}
+            />
             <ValueInput
               id={`trigger-${i}`}
               label={`Trigger ${i + 1} value`}
@@ -219,17 +211,12 @@ function RuleFormFields(props: {
         <legend className="mb-1 font-medium">Actions</legend>
         {form.actions.map((a, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-center">
-            <NativeSelect
+            <Combobox
               aria-label={`Action ${i + 1} kind`}
               value={a.kind}
-              onChange={(e) => setAction(i, { kind: e.target.value, value: "" })}
-            >
-              {kindOptions(ACTION_KINDS, a.kind).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </NativeSelect>
+              onChange={(kind) => setAction(i, { kind, value: "" })}
+              options={kindOptions(ACTION_KINDS, a.kind)}
+            />
             <ValueInput
               id={`action-${i}`}
               label={`Action ${i + 1} value`}

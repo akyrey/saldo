@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Combobox } from "@/components/Combobox";
 import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,38 +73,34 @@ export function TransactionFilters({
         <AccountSelect
           id="filter-account"
           accounts={accounts}
-          emptyLabel="Any account"
+          label="Account"
+          placeholder="Any account"
+          clearable
           value={value.account_id ?? ""}
-          onChange={(e) => onChange({ account_id: orUndefined(e.target.value) })}
+          onChange={(accountId) => onChange({ account_id: orUndefined(accountId) })}
         />
       </Field>
       <Field id="filter-category" label="Category">
-        <NativeSelect
+        <Combobox
           id="filter-category"
+          label="Category"
+          clearable
+          placeholder="Any category"
           value={value.category_id ?? ""}
-          onChange={(e) => onChange({ category_id: orUndefined(e.target.value) })}
-        >
-          <option value="">Any category</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={(categoryId) => onChange({ category_id: orUndefined(categoryId) })}
+          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+        />
       </Field>
       <Field id="filter-tag" label="Tag">
-        <NativeSelect
+        <Combobox
           id="filter-tag"
+          label="Tag"
+          clearable
+          placeholder="Any tag"
           value={value.tag_id ?? ""}
-          onChange={(e) => onChange({ tag_id: orUndefined(e.target.value) })}
-        >
-          <option value="">Any tag</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={(tagId) => onChange({ tag_id: orUndefined(tagId) })}
+          options={tags.map((t) => ({ value: t.id, label: t.name }))}
+        />
       </Field>
       <Field id="filter-kind" label="Kind">
         <NativeSelect

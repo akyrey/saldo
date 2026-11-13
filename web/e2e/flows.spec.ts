@@ -1,5 +1,5 @@
 import { type BrowserContext, expect, test, type Page } from "@playwright/test";
-import { createAccount, login, OWNER } from "./helpers";
+import { choose, createAccount, login, OWNER } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -17,10 +17,8 @@ async function fillSplit(
 ) {
   const row = split(page, number);
   await row.getByLabel("Description").fill(values.description);
-  await row.getByLabel("Source account").selectOption({ label: `${values.source} (EUR)` });
-  await row
-    .getByLabel("Destination account")
-    .selectOption({ label: `${values.destination} (EUR)` });
+  await choose(row.getByLabel("Source account"), `${values.source} (EUR)`);
+  await choose(row.getByLabel("Destination account"), `${values.destination} (EUR)`);
   await row.getByLabel(/^Amount/).fill(values.amount);
 }
 
@@ -217,9 +215,7 @@ test("a bill is created and a period is marked paid with a transaction", async (
 
   const row = page.getByRole("row").filter({ hasText: today });
   await row.getByRole("button", { name: "Mark paid" }).click();
-  const picker = row.getByLabel("Paying transaction");
-  const option = picker.locator("option", { hasText: "Flat rent" });
-  await picker.selectOption((await option.getAttribute("value")) ?? "");
+  await choose(row.getByLabel("Paying transaction"), `${today} · Flat rent`, "Flat rent");
   await row.getByRole("button", { name: "Confirm payment" }).click();
   await expect(row.getByText("paid", { exact: true })).toBeVisible();
 
@@ -246,7 +242,7 @@ test("a rule built in the editor categorises a new transaction", async ({ page }
   await group.getByRole("link", { name: "New rule" }).click();
   await page.getByLabel("Title", { exact: true }).fill("Bakery to bread");
   await page.getByLabel("Trigger 1 value").fill("bakery");
-  await page.getByLabel("Action 1 value").selectOption({ label: "Bread" });
+  await choose(page.getByLabel("Action 1 value"), "Bread");
   await page.getByRole("button", { name: "Create rule" }).click();
   await expect(page.getByRole("button", { name: "Test rule" })).toBeVisible();
 

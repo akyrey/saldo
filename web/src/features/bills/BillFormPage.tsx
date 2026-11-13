@@ -10,7 +10,9 @@ import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { Combobox } from "@/components/Combobox";
 import { NativeSelect } from "@/components/ui/native-select";
+import { currencyOptions } from "@/features/shared/options";
 import { currenciesQuery } from "@/features/accounts/queries";
 import { todayIso } from "@/lib/dates";
 import {
@@ -67,18 +69,16 @@ function BillFormFields(props: {
       {text("amount_min", "Minimum amount")}
       {text("amount_max", "Maximum amount")}
       <Field id="currency" label="Currency" error={errors.currency}>
-        <NativeSelect
+        <Combobox
           id="currency"
+          label="Currency"
           disabled={!props.isNew}
           value={form.currency}
-          onChange={(e) => set("currency", e.target.value)}
-        >
-          {(currencies.data ?? [{ code: form.currency, name: form.currency }]).map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.code} · {c.name}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={(code) => set("currency", code)}
+          options={currencyOptions(
+            currencies.data ?? [{ code: form.currency, name: form.currency }],
+          )}
+        />
       </Field>
       <Field id="repeat_freq" label="Repeats" error={errors.repeat_freq}>
         <NativeSelect

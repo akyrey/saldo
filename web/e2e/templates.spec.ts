@@ -34,7 +34,8 @@ test("save a transaction as a template, use it, and duplicate a transaction", as
 
   // Use it with a new amount.
   await page.goto("/transactions");
-  await page.getByLabel("New from template").selectOption({ label: "Bakery" });
+  await page.getByLabel("New from template").fill("Bakery");
+  await page.getByRole("option", { name: "Bakery" }).click();
   await expect(page.getByRole("heading", { name: "New from “Bakery”" })).toBeVisible();
   const split = page.getByRole("group", { name: "Split 1" });
   await expect(split.getByLabel("Description")).toHaveValue("Bread run");

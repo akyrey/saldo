@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { account, CURRENCIES, fakeApi, json, list, ME, MEMBERS, split } from "@/test/fake-api";
+import { choose } from "@/test/combobox";
 import { renderApp } from "@/test/render-app";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -112,8 +113,9 @@ describe("using templates in the editor", () => {
     expect(within(row).getByLabelText("Description")).toHaveValue("Coffee");
     // A withdrawal template offers only expense accounts as destination.
     const destination = within(row).getByLabelText("Destination account");
-    expect(within(destination).queryByText(/Salary/)).toBeNull();
-    await user.selectOptions(destination, "a2");
+    await user.type(destination, "sal");
+    expect(within(row).queryByRole("option", { name: /Salary/ })).toBeNull();
+    await choose(destination, "Food (EUR)");
     const amount = within(row).getByLabelText(/^Amount/);
     await user.clear(amount);
     await user.type(amount, "3");
@@ -128,8 +130,7 @@ describe("using templates in the editor", () => {
   it("switches templates with the picker", async () => {
     api();
     const { router } = renderApp("/transactions");
-    const user = userEvent.setup();
-    await user.selectOptions(await screen.findByLabelText("New from template"), T2);
+    await choose(await screen.findByLabelText("New from template"), "Rent");
     await waitFor(() => expect(router.state.location.search).toMatchObject({ template: T2 }));
     expect(await screen.findByRole("heading", { name: "New from “Rent”" })).toBeInTheDocument();
   });
