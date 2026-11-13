@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE notifications SET attempts = attempts + 1, last_error = ?,\n                    status = CASE WHEN attempts + 1 >= ? THEN 'failed' ELSE 'pending' END\n             WHERE id = ? AND status = 'pending' RETURNING status",
+  "describe": {
+    "columns": [
+      {
+        "name": "status",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notifications",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f1f2045255d588528b89090b0f0e22122818e1ef1d96db4e62a2945613d3ba40"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO consumer_cursors (consumer, last_seq, updated_at) VALUES (?, ?, ?)\n             ON CONFLICT (consumer) DO UPDATE SET last_seq = excluded.last_seq, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "b2bd94aa1eafbdf2ecb1842f13f048dc8f546498d71b201d3d55b2867fe6acd7"
+}
