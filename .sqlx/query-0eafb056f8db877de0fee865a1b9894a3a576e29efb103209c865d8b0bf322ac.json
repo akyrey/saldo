@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO recurrence_splits (id, household_id, recurrence_id, position, description,\n                source_account_id, destination_account_id, amount_minor, currency_code,\n                foreign_amount_minor, foreign_currency_code, category_id, budget_id, bill_id,\n                piggy_bank_id, tags)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 16
+    },
+    "nullable": []
+  },
+  "hash": "0eafb056f8db877de0fee865a1b9894a3a576e29efb103209c865d8b0bf322ac"
+}

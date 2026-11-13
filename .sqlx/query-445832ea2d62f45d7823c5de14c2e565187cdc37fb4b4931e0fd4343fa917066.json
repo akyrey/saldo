@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT max(recurrence_date) FROM transaction_groups\n         WHERE household_id = ? AND recurrence_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "max(recurrence_date)",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "445832ea2d62f45d7823c5de14c2e565187cdc37fb4b4931e0fd4343fa917066"
+}

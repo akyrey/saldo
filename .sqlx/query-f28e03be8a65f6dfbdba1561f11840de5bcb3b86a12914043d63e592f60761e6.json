@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO recurrences (id, household_id, title, description, first_date, repeat_until,\n            max_occurrences, apply_rules, active, notes, fired_through, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "f28e03be8a65f6dfbdba1561f11840de5bcb3b86a12914043d63e592f60761e6"
+}

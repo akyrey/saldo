@@ -284,3 +284,19 @@ pub(crate) async fn split_sides(
     .await?;
     Ok(row.map(|r| (r.kind, r.source_account_id, r.destination_account_id)))
 }
+
+/// Whether the piggy bank exists in the household (for template splits).
+pub(crate) async fn exists(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    id: &str,
+) -> Result<bool, AppError> {
+    let found = sqlx::query_scalar!(
+        "SELECT EXISTS (SELECT 1 FROM piggy_banks WHERE household_id = ? AND id = ?)",
+        household_id,
+        id,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(found != 0)
+}

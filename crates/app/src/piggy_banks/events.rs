@@ -3,7 +3,7 @@
 use chrono::NaiveDate;
 use saldo_core::{
     AccountId, Currency, EventOutcome, Money, PiggyBankId, PiggyBankState, PiggyEventError,
-    SplitId, check_event, check_imported_event,
+    SplitId, check_event, check_imported_event, room_to_add,
 };
 use serde::Serialize;
 use sqlx::SqliteConnection;
@@ -18,6 +18,7 @@ use crate::currencies;
 use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
 use crate::page::{Page, PageRequest};
+use crate::transactions::SplitView;
 
 /// Money added (positive) or removed (negative), optionally tied to the
 /// transfer split that moved it.
@@ -118,6 +119,56 @@ impl PiggyBankService {
         let items = rows.into_iter().map(|e| event_view(e, &currency)).collect();
         Ok(Page::new(items, page, total))
     }
+}
+
+/// Books the transfer `split` (just created from a recurrence template) on
+/// the piggy bank: money into a linked account is added, money out of one
+/// removed. The amount is capped to what the rules allow; a split that
+/// touches no linked account, is no transfer, or is in another currency adds
+/// nothing (`Ok(None)`).
+pub(crate) async fn add_for_split_in(
+    conn: &mut SqliteConnection,
+    clock: &dyn Clock,
+    ctx: &HouseholdCtx,
+    origin: Origin,
+    id: PiggyBankId,
+    split: &SplitView,
+) -> Result<Option<PiggyBankEventView>, AppError> {
+    let row = find(&mut *conn, ctx, id).await?;
+    if split.kind != "transfer" || split.currency != row.currency_code {
+        return Ok(None);
+    }
+    let currency = currencies::find(&mut *conn, &row.currency_code, "currency").await?;
+    let linked = repo::accounts(&mut *conn, &row.household_id, &row.id).await?;
+    let is_linked = |id: &str| linked.iter().any(|(linked, _)| linked == id);
+    let minor = Money::parse_decimal(&split.amount, &currency)
+        .map_err(|e| AppError::Internal(format!("stored split amount: {e}")))?
+        .minor();
+    let (account_id, wanted) = if is_linked(&split.destination_account_id) {
+        (split.destination_account_id.clone(), minor)
+    } else if is_linked(&split.source_account_id) {
+        (split.source_account_id.clone(), -minor)
+    } else {
+        return Ok(None);
+    };
+    let state = load_state(&mut *conn, &row, &account_id).await?;
+    let amount = if wanted > 0 {
+        wanted.min(room_to_add(state))
+    } else {
+        wanted.max(-state.saved_in_account.max(0))
+    };
+    if amount == 0 {
+        return Ok(None);
+    }
+    let entry = Entry {
+        account_id,
+        amount,
+        split_id: Some(split.id.clone()),
+        date: split.date.clone(),
+    };
+    record(conn, clock, ctx, origin, row, &currency, entry)
+        .await
+        .map(Some)
 }
 
 /// A checked-to-be-linked event about to be written.

@@ -19,6 +19,7 @@ pub mod identity;
 pub mod import_runs;
 pub mod page;
 pub mod piggy_banks;
+pub mod recurrences;
 pub mod scope;
 pub mod tags;
 pub mod transactions;
@@ -36,6 +37,7 @@ use crate::events::EventService;
 use crate::export::ExportService;
 use crate::identity::IdentityService;
 use crate::piggy_banks::PiggyBankService;
+use crate::recurrences::RecurrenceService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
 
@@ -56,11 +58,13 @@ pub struct App {
     pub tags: TagService,
     pub transactions: TransactionService,
     pub piggy_banks: PiggyBankService,
+    pub recurrences: RecurrenceService,
 }
 
 impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
         let accounts = AccountService::new(pool.clone(), clock.clone());
+        let transactions = TransactionService::new(pool.clone(), clock.clone());
         let attachments =
             AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
@@ -77,8 +81,9 @@ impl App {
             events: EventService::new(pool.clone()),
             identity: IdentityService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
-            transactions: TransactionService::new(pool.clone(), clock.clone()),
             piggy_banks: PiggyBankService::new(pool.clone(), clock.clone()),
+            recurrences: RecurrenceService::new(pool.clone(), clock.clone(), transactions.clone()),
+            transactions,
             pool,
             clock,
         }

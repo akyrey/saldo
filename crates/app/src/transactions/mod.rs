@@ -1,6 +1,7 @@
 //! Transaction groups: always written as a whole (create, replace, delete).
 
 mod prepare;
+pub(crate) mod recurring;
 mod repo;
 mod view;
 

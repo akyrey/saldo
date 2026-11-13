@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM recurrence_splits WHERE household_id = ? AND recurrence_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "96cf756d1fa6a3fd02c957131c8e4be83b529f3333bb9b8193f41adb51108a81"
+}
