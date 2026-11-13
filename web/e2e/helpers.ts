@@ -20,15 +20,15 @@ export async function login(page: Page, email = OWNER.email, password = OWNER.pa
   const cookies = sessions.get(email);
   if (cookies) {
     await page.context().addCookies(cookies);
-    await page.goto("/accounts");
-    const accounts = page.getByRole("heading", { name: "Accounts", exact: true });
     // A flow may have logged this session out: then log in again.
-    const reused = await accounts.waitFor({ timeout: 5_000 }).then(
-      () => true,
-      () => false,
-    );
-    if (reused) return;
+    const me = await page.request.get("/api/v1/auth/me");
+    if (me.ok()) {
+      await page.goto("/accounts");
+      await expect(page.getByRole("heading", { name: "Accounts", exact: true })).toBeVisible();
+      return;
+    }
     sessions.delete(email);
+    await page.context().clearCookies();
   }
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
