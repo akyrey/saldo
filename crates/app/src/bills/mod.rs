@@ -21,6 +21,7 @@ use input::{
     DEFAULT_REMIND_DAYS_BEFORE, DEFAULT_REMIND_EVERY_DAYS, check_dates, check_every, parse_amounts,
     parse_frequency,
 };
+pub(crate) use periods::all_periods_in;
 pub use periods::{OpenPeriod, existing, link_splits_in, release_group_in};
 pub use view::{BillPeriodView, BillView};
 use view::{BillRow, view_of};
@@ -242,8 +243,33 @@ impl BillService {
         page: PageRequest,
     ) -> Result<Page<BillView>, AppError> {
         let household_id = ctx.household_id.to_string();
-        let (limit, offset) = (page.limit(), page.offset());
-        let rows = sqlx::query_as!(
+        let items = bill_views(conn, &household_id, page.limit(), page.offset()).await?;
+        let total = sqlx::query_scalar!(
+            "SELECT count(*) FROM bills WHERE household_id = ?",
+            household_id
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+        Ok(Page::new(items, page, total))
+    }
+}
+
+/// Every bill of the household, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<BillView>, AppError> {
+    // SQLite reads `LIMIT -1` as "no limit".
+    bill_views(conn, &ctx.household_id.to_string(), -1, 0).await
+}
+
+async fn bill_views(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<BillView>, AppError> {
+    let rows = sqlx::query_as!(
             BillRow,
             r#"SELECT id, household_id, name, amount_min_minor, amount_max_minor, currency_code, first_due_date,
                       end_date, repeat_freq, skip, remind_days_before, remind_every_days,
@@ -253,20 +279,13 @@ impl BillService {
             limit,
             offset,
         )
-        .fetch_all(&mut *conn)
-        .await?;
-        let total = sqlx::query_scalar!(
-            "SELECT count(*) FROM bills WHERE household_id = ?",
-            household_id
-        )
-        .fetch_one(&mut *conn)
-        .await?;
-        let mut items = Vec::with_capacity(rows.len());
-        for row in rows {
-            items.push(view_of(&mut *conn, row).await?);
-        }
-        Ok(Page::new(items, page, total))
+    .fetch_all(&mut *conn)
+    .await?;
+    let mut items = Vec::with_capacity(rows.len());
+    for row in rows {
+        items.push(view_of(&mut *conn, row).await?);
     }
+    Ok(items)
 }
 
 /// An amount in minor units back as a decimal string in its currency.

@@ -25,7 +25,7 @@ fn row(fields: &[&str]) -> String {
     quoted.join(",") + "\r\n"
 }
 
-fn table(header: &[&str], rows: Vec<Vec<String>>) -> String {
+pub(super) fn table(header: &[&str], rows: Vec<Vec<String>>) -> String {
     let mut out = row(header);
     for fields in rows {
         let borrowed: Vec<&str> = fields.iter().map(String::as_str).collect();
@@ -34,7 +34,7 @@ fn table(header: &[&str], rows: Vec<Vec<String>>) -> String {
     out
 }
 
-fn opt(value: &Option<String>) -> String {
+pub(super) fn opt(value: &Option<String>) -> String {
     value.clone().unwrap_or_default()
 }
 
@@ -49,6 +49,11 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         .categories
         .iter()
         .map(|c| (c.id.as_str(), c.name.as_str()))
+        .collect();
+    let bill_names: HashMap<&str, &str> = doc
+        .bills
+        .iter()
+        .map(|b| (b.id.as_str(), b.name.as_str()))
         .collect();
     let tag_names: HashMap<&str, &str> = doc
         .tags
@@ -106,6 +111,7 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
             "foreign_amount",
             "foreign_currency",
             "category",
+            "bill",
             "tags",
             "reconciled",
             "notes",
@@ -131,6 +137,10 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
                     s.category_id
                         .as_deref()
                         .map(|c| name(&category_names, c))
+                        .unwrap_or_default(),
+                    s.bill_id
+                        .as_deref()
+                        .map(|b| name(&bill_names, b))
                         .unwrap_or_default(),
                     tags.join("; "),
                     s.reconciled.to_string(),
@@ -208,7 +218,7 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
             })
             .collect(),
     );
-    vec![
+    let mut files = vec![
         ("accounts.csv", accounts),
         ("transactions.csv", transactions),
         ("categories.csv", categories),
@@ -216,7 +226,9 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         ("attachments.csv", attachments),
         ("members.csv", members),
         ("currencies.csv", currencies),
-    ]
+    ];
+    files.extend(super::planning_csv::files(doc));
+    files
 }
 
 /// The CSV files packed into one zip archive.

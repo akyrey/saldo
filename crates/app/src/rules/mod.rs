@@ -21,6 +21,17 @@ pub use names::{RuleNames, names_in};
 pub use saldo_core::rules::{ACTION_KINDS, TRIGGER_KINDS};
 pub use store::{ActionView, RuleGroupView, RuleView, TriggerView};
 
+/// Every rule group and rule of the household, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<(Vec<RuleGroupView>, Vec<RuleView>), AppError> {
+    let household_id = ctx.household_id.to_string();
+    let groups = store::groups(&mut *conn, &household_id).await?;
+    let rules = store::rules(&mut *conn, &household_id, None).await?;
+    Ok((groups, rules))
+}
+
 /// Matches returned by a dry run, at most this many.
 pub const TEST_LIMIT: usize = 100;
 
