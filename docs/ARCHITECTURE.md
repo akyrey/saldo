@@ -733,10 +733,10 @@ Conventions:
 
 | Area | Endpoints | Phase |
 |---|---|---|
-| Setup, auth | `POST /setup` (only while no user exists), `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
+| Setup, auth | `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
 | Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}` | 2 |
 | Currencies | `GET /currencies` | 2 |
-| Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=` | 2 |
+| Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
 | Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q` | 2 |
 | Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags` | 2 |
 | Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE) | 2 list, 6 stream |

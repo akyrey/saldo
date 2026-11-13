@@ -10,7 +10,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 1 Core | done | main / b2e1f5e | saldo-core: 75 unit/property tests + 1 doc test, 99.93% line coverage |
 | 2 Server | done | main / 4d431a6 | 186 tests workspace-wide, 96.83% line coverage; manual curl flow passed |
 | 3 Importer + export | done | main / 2f4c6ba | Live import of the owner's Firefly passed twice (second run: no changes); 26/26 balances match; Docker image builds and runs |
-| 4 Web | in progress | branch phase-4-web (worktree) | Built in parallel by a delegated agent, minus the export page and the Docker web stage |
+| 4 Web | done | main / 4bd407b | React SPA embedded in the server; 69 Vitest + 6 Playwright flows pass; initial route 130 kB gzipped; PWA install on a phone not yet checked |
 | 5 Planning features | not started | | |
 | 6 Events | not started | | |
 | 7 Clients | not started | | |
@@ -21,6 +21,8 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
+- 2026-11-13 Phase 4: TypeScript 5.9 instead of the newest 7.0, because `openapi-typescript` and `typescript-eslint` do not support 7 yet. Not an ARCHITECTURE.md change (it names no version).
+- 2026-11-13 Phase 4: two API additions for the web app: `GET /setup` (public, `{ "needed": bool }`) and `GET /accounts/balances` (a page of balances with `GET /accounts`'s filters). ARCHITECTURE.md 6 updated.
 - 2026-11-13 Phase 3: `append_event` takes `&mut SqliteConnection` instead of `&mut Transaction<'_, Sqlite>`, so the `<method>_in` service variants can share the importer's transaction. Callers still pass `&mut tx` (a transaction dereferences to its connection). ARCHITECTURE.md unchanged (it did not spell the signature out).
 - 2026-11-13 Phase 3: imports (`Origin::Import`) may book splits on inactive accounts (rule 8 protects new entries; history may sit on accounts archived since). Not yet approved by the owner.
 - 2026-11-13 Phase 3: the export leaves out the event log, sessions/tokens and `import_runs` (audit trail, secrets, bookkeeping; not needed to rebuild the household); attachment files are referenced by SHA-256, not embedded. Not yet approved by the owner.
@@ -38,6 +40,12 @@ Record every place where the code differs from the architecture document, why, a
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
+- 2026-11-13 Phase 4: built by a delegated agent in a git worktree (branch `phase-4-web`, merged in 749348d) while Phase 3 ran in the main checkout; the export page and the Docker web stage were added after the merge.
+- 2026-11-13 Phase 4: stack (owner-confirmed): React 19.3, TypeScript 5.9 (strict + `noUncheckedIndexedAccess`), Vite 8.3, TanStack Query 5.107 and Router 1.170 (code-based routes, every page lazy-loaded), shadcn/ui (new-york, files in `web/src/components/ui/`) on Tailwind 4.3, `lucide-react`, `openapi-typescript` 7.13 + `openapi-fetch` 0.17, `vite-plugin-pwa` 2.0 (Workbox `generateSW`), Vitest 5.1 (jsdom, Testing Library), Playwright 1.65, ESLint 10 + typescript-eslint 8, Prettier 3. Rust: `rust-embed` 8.14 behind the `embed-web` feature of `saldo-server`.
+- 2026-11-13 Phase 4: folder convention: `web/src/api/` is the only code that knows URLs (`client.ts`, generated `schema.d.ts` via `npm run gen:api`, `download.ts`, `money.ts` with `bigint` minor units; ESLint forbids `parseFloat`); `web/src/features/<feature>/` holds `queries.ts`, pure logic in `.ts` files with tests beside them, and pages; shared UI in `web/src/components/`; routes registered in `web/src/router.tsx`; whole-app tests use `fakeApi` and `renderApp(path)` from `web/src/test/`; Playwright flows in `web/e2e/` run against `target/debug/saldo` built with `embed-web`. Query keys: `["me"]`, `["accounts", ...]`, `["balances", ...]`, `["transactions", ...]`, `["categories"]`, `["tags"]`, `["members"]`, `["currencies"]`; writes invalidate by prefix (Phase 6's SSE listener can do the same).
+- 2026-11-13 Phase 4: the scope switch and all transaction filters live in the URL (`?scope=mine|user:<id>`, `from`, `to`, `account_id`, `category_id`, `tag_id`, `kind`, `q`, `page`). Pickers are native `<select>` (light, phone-friendly); amount input accepts one comma as decimal separator; kind badges use the same table as `SplitKind::derive`; server field errors (`splits[i].field`) appear on the matching field.
+- 2026-11-13 Phase 4: the server serves `web/dist` for every non-API GET/HEAD path (`index.html` for extensionless app routes, 404 for missing files with an extension; `/api/*` and `/healthz` keep the JSON 404). Hashed `assets/*` are cached immutably for a year, `index.html`, `sw.js` and the manifest are `no-cache`; all get `nosniff`. The service worker caches the app shell only, never `/api`; an offline banner shows when the browser is offline.
+- 2026-11-13 Phase 4: npm 10 (bundled with Node 23) crashes resolving vitest 5's optional peers on `npm install`; `npm ci` from the lock file works. Add or upgrade packages with `npx npm@11 install ...`. CI and the Docker image use Node 24.
 - 2026-11-13 Phase 3: entity importer signature for Phase 5: `pub async fn import_<entity>(cx: &ImportCx, report: &mut ImportReport) -> Result<(), ImportError>` in `crates/importer/src/entities/<entity>.rs`, registered in `engine::ENTITIES` and the `match` in `engine::run_entities`. `ImportCx` holds `firefly: FireflyClient` (GET only), `app: App`, `ctx: HouseholdCtx`, `state: tokio::sync::Mutex<State { tx, refs: ExternalRefs }>`, `dry_run`, `since`. Lock `cx.state`, then call services' `*_in(&mut state.tx, ...)` with `Origin::Import`; resolve earlier entities with `state.refs.resolve(entity_type, firefly_id)` (types: `account`, `account.cash_expense`, `account.cash_revenue`, `category`, `tag`, `transaction_group`, `split`, `attachment`) and record new ones with `state.refs.upsert`. Report with `report.created/updated/unchanged/skipped/note`. Item-level problems: `entities::skippable(error)?` turns invalid/conflict/validation errors into a skip and lets database errors abort.
 - 2026-11-13 Phase 3: idempotency is by comparison: each importer builds the input it would write and compares it with the stored view (`same(...)`); only differences are written, and `ExternalRefs::upsert` skips unchanged mappings, so a second run leaves the database byte-for-byte identical (tested). Each real run appends one `import.completed` event.
 - 2026-11-13 Phase 3: every write service has a `<method>_in(&self, conn: &mut SqliteConnection, ...)` variant (also `get_in`, `list_in`, `balance_in`) that runs inside the caller's transaction; the public method is `begin`, `<method>_in`, `commit`.
@@ -82,6 +90,17 @@ echo 'a long password' | SALDO_DATABASE_URL=sqlite://$PWD/data/saldo.db \
 Defaults: `SALDO_DATABASE_URL=sqlite:///data/saldo.db`, `SALDO_BIND=0.0.0.0:8080`, `SALDO_PUBLIC_URL=http://localhost:8080`, `SALDO_LOG=info`. Migrations run at startup; the database folder is created if missing. With curl, a cookie session needs `-H 'X-Saldo-Csrf: 1' -H 'Origin: <SALDO_PUBLIC_URL origin>'` on writes; a bearer token from `POST /api/v1/auth/tokens` needs neither.
 
 Manual check (2026-11-13): fresh database, `saldo serve`, then setup, login, add member, three accounts, one group with two splits from different sources, balances (-42.50, -17.25, 59.75 EUR), nine events listed; a cookie write without the CSRF header got 403 and an unauthenticated list got 401; no token or password appeared in the log; SIGTERM logged `saldo stopped`.
+
+## Web app development
+
+```sh
+SALDO_DATABASE_URL=sqlite://$PWD/data/dev.db SALDO_DATA_DIR=$PWD/data SALDO_BIND=127.0.0.1:8080 SALDO_PUBLIC_URL=http://localhost:5173 cargo run -p saldo-server -- serve
+cd web && npm ci && npm run dev    # http://localhost:5173, /api proxied to 127.0.0.1:8080
+```
+
+`SALDO_PUBLIC_URL` must be the Vite origin in development (the CSRF check compares it with the browser's `Origin`). Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run size`; Playwright: `npm run build && cargo build -p saldo-server --features embed-web && npx playwright test`. The Docker image builds `web/` in a Node stage and embeds it.
+
+Known gaps: PWA installability was not checked on a real phone (needs a device and https; Lighthouse 12 dropped its PWA category). The manifest (name, `display: standalone`, `start_url`, 192/512 px and maskable icons) and the service worker meet Chrome's install requirements. `npm audit` lists 15 advisories in dev-only build tooling; `npm audit --omit=dev` finds none.
 
 ## Importing from Firefly III
 
