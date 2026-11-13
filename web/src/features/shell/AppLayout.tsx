@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ArrowLeftRight, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
+import { ArrowLeftRight, Download, FolderTree, LogOut, Tags, Wallet } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { ScopeSwitch } from "./ScopeSwitch";
@@ -12,8 +12,12 @@ const NAV = [
   { to: "/tags", label: "Tags", icon: Tags },
 ] as const;
 
+/** Only the owner can export, so only the owner sees the link. */
+const OWNER_NAV = [{ to: "/export", label: "Export", icon: Download }] as const;
+
 export function AppLayout() {
   const { me } = useRouteContext({ from: "/app" });
+  const nav = me.role === "owner" ? [...NAV, ...OWNER_NAV] : NAV;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const logout = useMutation({
@@ -32,7 +36,7 @@ export function AppLayout() {
             Saldo
           </Link>
           <nav aria-label="Main" className="hidden gap-1 md:flex">
-            {NAV.map(({ to, label }) => (
+            {nav.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
@@ -66,9 +70,11 @@ export function AppLayout() {
       {/* Bottom tab bar on phones. */}
       <nav
         aria-label="Main mobile"
-        className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className={`fixed inset-x-0 bottom-0 z-10 grid border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden ${
+          nav.length > NAV.length ? "grid-cols-5" : "grid-cols-4"
+        }`}
       >
-        {NAV.map(({ to, label, icon: Icon }) => (
+        {nav.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}

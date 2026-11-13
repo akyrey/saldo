@@ -149,6 +149,12 @@ const tagsRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/tags/TagsPage"), "TagsPage"),
 });
 
+const exportRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "export",
+  component: lazyRouteComponent(() => import("@/features/export/ExportPage"), "ExportPage"),
+});
+
 const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -163,6 +169,7 @@ const routeTree = rootRoute.addChildren([
     editTransactionRoute,
     categoriesRoute,
     tagsRoute,
+    exportRoute,
   ]),
 ]);
 

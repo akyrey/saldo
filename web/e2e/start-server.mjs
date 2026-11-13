@@ -17,6 +17,7 @@ const child = spawn(binary, ["serve"], {
   env: {
     ...process.env,
     SALDO_DATABASE_URL: `sqlite://${folder}/saldo.db`,
+    SALDO_DATA_DIR: folder,
     SALDO_BIND: `127.0.0.1:${port}`,
     SALDO_PUBLIC_URL: `http://127.0.0.1:${port}`,
     SALDO_LOG: "warn",

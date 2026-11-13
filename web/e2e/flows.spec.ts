@@ -154,3 +154,29 @@ test("the PWA manifest and service worker are served", async ({ request }) => {
   const index = await (await request.get("/")).text();
   expect(index).toContain("manifest.webmanifest");
 });
+
+test("the owner downloads the JSON and CSV exports", async ({ page }) => {
+  await login(page);
+  await page.getByRole("link", { name: "Export" }).first().click();
+  await expect(page.getByRole("heading", { name: "Export" })).toBeVisible();
+
+  const [json] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download JSON" }).click(),
+  ]);
+  expect(json.suggestedFilename()).toMatch(/^saldo-export-\d{4}-\d{2}-\d{2}\.json$/);
+  const path = await json.path();
+  const { readFile } = await import("node:fs/promises");
+  const document = JSON.parse(await readFile(path, "utf8")) as {
+    format: string;
+    accounts: unknown[];
+  };
+  expect(document.format).toBe("saldo-export");
+  expect(document.accounts.length).toBeGreaterThan(0);
+
+  const [csv] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download CSV" }).click(),
+  ]);
+  expect(csv.suggestedFilename()).toMatch(/\.zip$/);
+});
