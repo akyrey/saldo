@@ -1,0 +1,69 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.date AS \"date!\", s.currency_code AS \"currency!\", b.id AS \"key?\", b.name AS \"name?\",\n                  SUM(s.amount_minor) AS \"spent!: i64\"\n           FROM splits s LEFT JOIN budgets b ON b.id = s.budget_id AND b.household_id = s.household_id\n           WHERE s.household_id = ?1 AND s.date >= ?2 AND s.date <= ?3 AND s.kind = 'withdrawal'\n             AND (?4 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = s.household_id\n                   AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?4))\n           GROUP BY s.date, s.currency_code, b.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "currency!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "key?",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name?",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "spent!: i64",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "da745496562fb43956f2ea4b88d2341d4f5b34a3c48f64e12740f35703cabb65"
+}

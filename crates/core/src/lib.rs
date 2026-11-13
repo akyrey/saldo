@@ -73,12 +73,14 @@
 pub mod account;
 pub mod balance;
 pub mod bills;
+pub mod budget;
 pub mod currency;
 pub mod error;
 pub mod ids;
 pub mod kind;
 pub mod lookup;
 pub mod money;
+pub mod period;
 pub mod rules;
 pub mod transaction;
 pub mod validation;
@@ -94,6 +96,7 @@ pub use balance::{apply_deltas, balance_deltas};
 pub use bills::{
     Bill, BillFrequency, BillPeriod, BillSchedule, PeriodStatus, ReminderKind, reminder_due,
 };
+pub use budget::{AutoBudget, AutoBudgetType, Limit, Spend, auto_limits, available, spent};
 pub use currency::{Currency, CurrencyCode, MAX_DECIMAL_PLACES};
 pub use error::{
     CurrencyError, IdError, InvalidAccountPair, MoneyError, Reference, ValidationError,
@@ -105,6 +108,7 @@ pub use ids::{
 pub use kind::SplitKind;
 pub use lookup::AccountLookup;
 pub use money::Money;
+pub use period::{DateRange, PERIODS, Period};
 pub use rules::{
     Action, Rule, RuleAction, RuleAmount, RuleError, RuleTrigger, SplitView as RuleSplit, Trigger,
 };

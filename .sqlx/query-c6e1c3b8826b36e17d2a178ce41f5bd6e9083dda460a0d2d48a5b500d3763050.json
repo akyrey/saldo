@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS (SELECT 1 FROM budget_limits\n           WHERE household_id = ? AND budget_id = ? AND currency_code = ? AND id <> ?\n             AND start_date <= ? AND end_date >= ?)",
+  "describe": {
+    "columns": [
+      {
+        "name": "EXISTS (SELECT 1 FROM budget_limits\n           WHERE household_id = ? AND budget_id = ? AND currency_code = ? AND id <> ?\n             AND start_date <= ? AND end_date >= ?)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c6e1c3b8826b36e17d2a178ce41f5bd6e9083dda460a0d2d48a5b500d3763050"
+}

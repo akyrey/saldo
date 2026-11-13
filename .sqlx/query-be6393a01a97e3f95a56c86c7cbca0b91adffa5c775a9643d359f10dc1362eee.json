@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE budget_limits SET start_date = ?, end_date = ?, amount_minor = ?, currency_code = ?,\n                notes = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "be6393a01a97e3f95a56c86c7cbca0b91adffa5c775a9643d359f10dc1362eee"
+}

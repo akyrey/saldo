@@ -10,6 +10,7 @@
 //! Every task keeps its progress in the database, so killing the process at
 //! any point and starting again is safe.
 
+mod budgets;
 mod signal;
 mod webhooks;
 
@@ -122,6 +123,10 @@ async fn changed(wake: &mut Option<tokio::sync::watch::Receiver<u64>>) {
 pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     let mut workers = Workers::new(cancel);
     webhooks::register(&mut workers, state);
+    let app = state.app.clone();
+    workers.spawn(budgets::NAME, budgets::INTERVAL, None, move || {
+        budgets::run(app.clone())
+    });
     workers
 }
 

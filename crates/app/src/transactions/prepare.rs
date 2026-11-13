@@ -4,8 +4,8 @@
 use std::collections::BTreeSet;
 
 use saldo_core::{
-    Account, AccountLookup, Money, NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup,
-    validate_group,
+    Account, AccountLookup, Money, NewSplit, NewTransactionGroup, SplitKind, SplitMeta,
+    ValidatedGroup, validate_group,
 };
 use sqlx::SqliteConnection;
 
@@ -14,7 +14,7 @@ use crate::accounts::{core_account, repo as account_repo};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::db::json_list;
 use crate::error::{AppError, parse_stored};
-use crate::{bills, categories, currencies, identity, tags};
+use crate::{bills, budgets, categories, currencies, identity, tags};
 
 /// Validates `input` against the ledger rules for the caller's household.
 pub(crate) async fn validate(
@@ -55,7 +55,25 @@ pub(crate) async fn validate(
         .title
         .map(|t| t.trim().to_string())
         .filter(|t| !t.is_empty());
-    validate_group(NewTransactionGroup { title, splits }, &lookup).map_err(AppError::Validation)
+    let group = validate_group(NewTransactionGroup { title, splits }, &lookup)
+        .map_err(AppError::Validation)?;
+    budgets_on_withdrawals_only(&group)?;
+    Ok(group)
+}
+
+/// Only money spent (a withdrawal) counts against a budget.
+fn budgets_on_withdrawals_only(group: &ValidatedGroup) -> Result<(), AppError> {
+    let misplaced = group
+        .splits()
+        .iter()
+        .position(|s| s.split().budget.is_some() && s.kind() != SplitKind::Withdrawal);
+    match misplaced {
+        Some(index) => Err(AppError::invalid(
+            format!("splits[{index}].budget_id"),
+            "only withdrawals can have a budget",
+        )),
+        None => Ok(()),
+    }
 }
 
 /// One split, with amounts parsed in their currencies. Errors name the field,
@@ -128,9 +146,8 @@ fn default_currency(input: &SplitInput, accounts: &[Account]) -> Option<String> 
     home.map(|account| account.currency.to_string())
 }
 
-/// The accounts, categories and tags of the household that the splits use.
-/// Budgets and bills do not exist before Phase 5, so any reference to one
-/// fails validation as unknown.
+/// The accounts, categories, budgets and tags of the household that the
+/// splits use. Anything not loaded fails validation as unknown.
 async fn build_lookup(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
@@ -165,6 +182,14 @@ async fn build_lookup(
         .collect();
     for id in bills::existing(conn, ctx, &json_list(&bill_ids)?).await? {
         lookup = lookup.with_bill(parse_stored(&id)?);
+    }
+    let budget_ids: Vec<String> = splits
+        .iter()
+        .filter_map(|s| s.budget)
+        .map(|b| b.to_string())
+        .collect();
+    for id in budgets::existing(conn, ctx, &json_list(&budget_ids)?).await? {
+        lookup = lookup.with_budget(parse_stored(&id)?);
     }
     Ok(lookup)
 }

@@ -45,7 +45,7 @@ struct FireflyArgs {
     /// Run everything, print the report, then roll back.
     #[arg(long)]
     dry_run: bool,
-    /// Comma-separated entities: currencies,accounts,categories,tags,transactions,attachments
+    /// Comma-separated entities: currencies,accounts,categories,tags,budgets,transactions,attachments
     #[arg(long, value_delimiter = ',')]
     only: Option<Vec<String>>,
     /// Only transactions on or after this date (YYYY-MM-DD).

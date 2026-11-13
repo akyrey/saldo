@@ -17,6 +17,8 @@ export interface SplitRow {
   foreign_amount: string;
   foreign_currency: string;
   category_id: string;
+  /** Only withdrawals may have a budget. */
+  budget_id: string;
   tag_ids: string[];
   notes: string;
 }
@@ -49,6 +51,7 @@ export function emptySplit(date: string): SplitRow {
     foreign_amount: "",
     foreign_currency: "",
     category_id: "",
+    budget_id: "",
     tag_ids: [],
     notes: "",
   };
@@ -90,6 +93,7 @@ export function fromGroup(group: TransactionGroup): EditorState {
       foreign_amount: split.foreign_amount ?? "",
       foreign_currency: split.foreign_currency ?? "",
       category_id: split.category_id ?? "",
+      budget_id: split.budget_id ?? "",
       tag_ids: [...split.tag_ids],
       notes: split.notes ?? "",
     })),
@@ -116,6 +120,7 @@ export function toRequest(state: EditorState): TransactionRequest {
         foreign_amount: foreignAmount === null ? null : normalizeAmountInput(foreignAmount),
         foreign_currency: orNull(row.foreign_currency),
         category_id: orNull(row.category_id),
+        budget_id: orNull(row.budget_id),
         tag_ids: row.tag_ids,
         notes: orNull(row.notes),
       };

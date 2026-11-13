@@ -5,6 +5,9 @@
 /* shadcn/ui design tokens (neutral palette, teal primary). */
 :root {
   --radius: 0.5rem;
+  /* Chart series (validated pair: blue, orange; see the reports feature). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -25,6 +28,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);

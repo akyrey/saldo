@@ -4,6 +4,7 @@
 pub mod accounts;
 pub mod attachments;
 pub mod bills;
+pub mod budgets;
 pub mod categories;
 pub mod currencies;
 pub mod rules;

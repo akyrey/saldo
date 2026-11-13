@@ -66,7 +66,27 @@ async fn firefly(page_one: Option<Value>, page_two: Option<Value>) -> MockServer
         .respond_with(ResponseTemplate::new(200).set_body_bytes(b"%PDF".to_vec()))
         .mount(&server)
         .await;
+    mount_budgets(&server, fixture("budgets.json")).await;
     server
+}
+
+/// `/v1/budgets` with `budgets`, and the limit fixtures of budgets 1 and 2.
+async fn mount_budgets(server: &MockServer, budgets: Value) {
+    Mock::given(method("GET"))
+        .and(path("/api/v1/budgets"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(budgets))
+        .mount(server)
+        .await;
+    for id in ["1", "2"] {
+        Mock::given(method("GET"))
+            .and(path(format!("/api/v1/budgets/{id}/limits")))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(fixture(&format!("budget-limits-{id}.json"))),
+            )
+            .mount(server)
+            .await;
+    }
 }
 
 async fn household() -> (App, HouseholdCtx) {
@@ -116,6 +136,8 @@ async fn snapshot(app: &App) -> Vec<String> {
         "accounts",
         "categories",
         "tags",
+        "budgets",
+        "budget_limits",
         "transaction_groups",
         "splits",
         "split_tags",
@@ -445,6 +467,7 @@ async fn an_attachment_firefly_cannot_serve_is_skipped() {
             .mount(&server)
             .await;
     }
+    mount_budgets(&server, fixture("budgets.json")).await;
 
     let report = import(&app, ctx, &server, false).await;
 
@@ -505,6 +528,7 @@ async fn firefly_with(accounts: Value, categories: Value, tags: Value) -> MockSe
         .respond_with(ResponseTemplate::new(200).set_body_bytes(b"%PDF".to_vec()))
         .mount(&server)
         .await;
+    mount_budgets(&server, fixture("budgets.json")).await;
     server
 }
 
@@ -586,5 +610,126 @@ async fn renamed_objects_are_updated_and_bad_ones_skipped() {
             .any(|m| m.starts_with("categories:") && m.contains("exists")),
         "{:?}",
         report.messages
+    );
+}
+
+#[tokio::test]
+async fn budgets_limits_and_budget_links_import_once() {
+    let (app, ctx) = household().await;
+    // Firefly links: groceries (a withdrawal) to budget 1, the loan payment
+    // (a transfer in Saldo) to budget 2, coffee to a budget it did not list.
+    let mut page_one = fixture("transactions-1.json");
+    let mut page_two = fixture("transactions-2.json");
+    page_one["data"][3]["attributes"]["transactions"][0]["budget_id"] = "1".into();
+    let groups = page_two["data"].as_array_mut().unwrap();
+    let split = |groups: &mut Vec<Value>, id: &str| {
+        let group = groups.iter_mut().find(|g| g["id"] == id).unwrap();
+        group["attributes"]["transactions"][0].clone()
+    };
+    assert_eq!(split(groups, "8")["description"], "Loan payment");
+    for (id, budget) in [("8", "2"), ("6", "99")] {
+        let group = groups.iter_mut().find(|g| g["id"] == id).unwrap();
+        group["attributes"]["transactions"][0]["budget_id"] = budget.into();
+    }
+    let server = firefly(Some(page_one), Some(page_two)).await;
+
+    let first = import(&app, ctx, &server, false).await;
+
+    assert_eq!(counts(&first, "budgets").created, 2);
+    assert_eq!(counts(&first, "budget_limits").created, 2);
+    assert_eq!(
+        first.notes["budget on a split that is not a withdrawal in Saldo dropped"],
+        1
+    );
+    assert_eq!(first.notes["budget not imported, split kept without it"], 1);
+    let groceries = scalar(&app, "SELECT count(*) FROM splits s JOIN budgets b ON b.id = s.budget_id WHERE b.name = 'Groceries' AND s.description = 'Groceries'").await;
+    assert_eq!(groceries, 1);
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(*) FROM splits WHERE budget_id IS NOT NULL"
+        )
+        .await,
+        1
+    );
+    let auto: (Option<String>, Option<String>, Option<i64>) = sqlx::query_as(
+        "SELECT auto_type, auto_period, auto_amount_minor FROM budgets WHERE name = 'Groceries'",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        auto,
+        (Some("reset".into()), Some("monthly".into()), Some(30_000))
+    );
+    let october: (String, String, i64, Option<String>) = sqlx::query_as(
+        "SELECT start_date, end_date, amount_minor, notes FROM budget_limits ORDER BY start_date LIMIT 1",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        october,
+        (
+            "2026-10-01".into(),
+            "2026-10-31".into(),
+            25_000,
+            Some("October".into())
+        )
+    );
+    // The import itself never creates automatic limits.
+    assert_eq!(scalar(&app, "SELECT count(*) FROM budget_limits").await, 2);
+
+    let before = snapshot(&app).await;
+    let second = import(&app, ctx, &server, false).await;
+    assert!(!second.has_changes(), "{}", second.render());
+    assert_eq!(counts(&second, "budgets").unchanged, 2);
+    assert_eq!(counts(&second, "budget_limits").unchanged, 2);
+    assert_eq!(
+        snapshot(&app).await,
+        before,
+        "the database must be identical"
+    );
+}
+
+#[tokio::test]
+async fn changed_budgets_are_updated() {
+    let (app, ctx) = household().await;
+    import(&app, ctx, &firefly(None, None).await, false).await;
+
+    let mut budgets = fixture("budgets.json");
+    budgets["data"][0]["attributes"]["auto_budget_type"] = "adjusted".into();
+    budgets["data"][1]["attributes"]["name"] = "Leisure".into();
+    let server = firefly(None, None).await;
+    // Priority 1 wins over the fixture mounted by `firefly()` (default 5).
+    Mock::given(method("GET"))
+        .and(path("/api/v1/budgets"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(budgets))
+        .with_priority(1)
+        .mount(&server)
+        .await;
+    let options = Options {
+        only: Some(vec!["budgets".to_string()]),
+        ..Options::default()
+    };
+    let client = FireflyClient::new(&server.uri(), "secret-token".into()).unwrap();
+    let report = run(app.clone(), client, ctx, options).await.unwrap();
+
+    assert_eq!(counts(&report, "budgets").updated, 2);
+    assert_eq!(
+        report.notes["auto-budget type adjusted not supported, imported without it"],
+        1
+    );
+    assert_eq!(
+        scalar(&app, "SELECT count(*) FROM budgets WHERE name = 'Leisure'").await,
+        1
+    );
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(*) FROM budgets WHERE auto_type IS NOT NULL"
+        )
+        .await,
+        0
     );
 }

@@ -2,9 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
+  ChartColumn,
   Download,
   FolderTree,
   LogOut,
+  PiggyBank,
   Receipt,
   Tags,
   Wallet,
@@ -23,6 +25,8 @@ const NAV = [
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/bills", label: "Bills", icon: Receipt },
   { to: "/rules", label: "Rules", icon: Wand2 },
+  { to: "/budgets", label: "Budgets", icon: PiggyBank },
+  { to: "/reports", label: "Reports", icon: ChartColumn },
 ] as const;
 
 /** Only the owner can export, so only the owner sees the link. */
@@ -94,11 +98,11 @@ export function AppLayout() {
           <Link
             key={to}
             to={to}
-            className="flex flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground"
+            className="flex min-w-0 flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground"
             activeProps={{ className: "text-primary" }}
           >
             <Icon className="size-5" aria-hidden />
-            {label}
+            <span className="max-w-full truncate">{label}</span>
           </Link>
         ))}
       </nav>

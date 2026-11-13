@@ -7,6 +7,7 @@
 pub mod accounts;
 pub mod attachments;
 pub mod bills;
+pub mod budgets;
 pub mod categories;
 pub mod clock;
 pub mod ctx;
@@ -19,6 +20,7 @@ pub mod external_refs;
 pub mod identity;
 pub mod import_runs;
 pub mod page;
+pub mod reports;
 pub mod rules;
 pub mod scope;
 pub mod tags;
@@ -32,12 +34,14 @@ use sqlx::SqlitePool;
 use crate::accounts::AccountService;
 use crate::attachments::AttachmentService;
 use crate::bills::BillService;
+use crate::budgets::BudgetService;
 use crate::categories::CategoryService;
 use crate::clock::SharedClock;
 use crate::currencies::CurrencyService;
 use crate::events::EventService;
 use crate::export::ExportService;
 use crate::identity::IdentityService;
+use crate::reports::ReportService;
 use crate::rules::RuleService;
 use crate::tags::TagService;
 use crate::transactions::TransactionService;
@@ -62,6 +66,8 @@ pub struct App {
     pub tags: TagService,
     pub transactions: TransactionService,
     pub webhooks: WebhookService,
+    pub budgets: BudgetService,
+    pub reports: ReportService,
 }
 
 impl App {
@@ -91,6 +97,8 @@ impl App {
             ),
             transactions: TransactionService::new(pool.clone(), clock.clone()),
             webhooks: WebhookService::new(pool.clone(), clock.clone()),
+            budgets: BudgetService::new(pool.clone(), clock.clone()),
+            reports: ReportService::new(pool.clone()),
             pool,
             clock,
         }

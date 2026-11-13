@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/errors";
 import { accountsQuery, currenciesQuery, type Account } from "@/features/accounts/queries";
+import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
 import { emptySplit } from "./editor-model";
@@ -37,6 +38,17 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
   queryClient.setQueryData(accountsQuery().queryKey, ACCOUNTS);
   queryClient.setQueryData(categoriesQuery.queryKey, []);
+  queryClient.setQueryData(budgetsQuery.queryKey, [
+    {
+      id: "groceries",
+      name: "Groceries",
+      active: true,
+      sort_order: 0,
+      created_at: "",
+      updated_at: "",
+    },
+    { id: "old", name: "Old budget", active: false, sort_order: 1, created_at: "", updated_at: "" },
+  ]);
   queryClient.setQueryData(tagsQuery.queryKey, [
     { id: "tag", name: "weekend", created_at: "", updated_at: "" },
   ]);
@@ -90,6 +102,23 @@ describe("TransactionEditor", () => {
       ["checking", "food", "0.10", []],
       ["salary", "card", "0.20", ["tag"]],
     ]);
+  });
+
+  it("offers active budgets on withdrawals only", async () => {
+    const save = vi.fn((_body: TransactionRequest) => Promise.resolve({}));
+    renderEditor(save);
+    const user = userEvent.setup();
+    await fill(1, "checking", "food", "5");
+    const budget = within(row(1)).getByLabelText("Budget");
+    expect(within(row(1)).queryByRole("option", { name: "Old budget" })).toBeNull();
+    await user.selectOptions(budget, "groceries");
+    await user.click(screen.getByRole("button", { name: "Add split" }));
+    await fill(2, "salary", "checking", "1");
+    expect(within(row(2)).getByLabelText("Budget")).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Create transaction" }));
+
+    expect(save.mock.calls[0]?.[0].splits.map((s) => s.budget_id)).toEqual(["groceries", null]);
   });
 
   it("flags a pair the server would reject and hides archived accounts", async () => {
