@@ -207,7 +207,7 @@ async fn recurrences_map_firefly_repetitions_and_never_backfill() {
 
     assert_eq!(counts(&report, "recurrences").created, 3);
     assert_eq!(
-        report.notes["recurrence: subscription link waits for the bill import"],
+        report.notes["recurrence: subscription not imported, link dropped"],
         1
     );
     let page = app
@@ -244,6 +244,49 @@ async fn recurrences_map_firefly_repetitions_and_never_backfill() {
     // Firefly created the past transactions already: nothing is due.
     let due = app.recurrences.fire_due(&ctx).await.unwrap();
     assert!(due.fired.is_empty() && due.failures.is_empty());
+}
+
+#[tokio::test]
+async fn a_template_in_a_foreign_currency_is_booked_in_the_account_currency() {
+    // Firefly allows a template whose amount is in another currency than its
+    // asset account, with the account's currency as the foreign amount.
+    let mut recurrences = fixture("recurrences.json");
+    let mut sponsor = recurrences["data"][0].clone();
+    sponsor["id"] = "99".into();
+    sponsor["attributes"]["title"] = "Sponsor".into();
+    let split = &mut sponsor["attributes"]["transactions"][0];
+    split["currency_code"] = "USD".into();
+    split["amount"] = "1.000000000000".into();
+    split["foreign_currency_code"] = "EUR".into();
+    split["foreign_amount"] = "0.940000000000".into();
+    split["destination_id"] = "5".into();
+    recurrences["data"].as_array_mut().unwrap().push(sponsor);
+    let (app, ctx) = household().await;
+    let server = firefly_with(fixture("piggy-banks-spec.json"), recurrences).await;
+
+    let report = import(&app, ctx, &server).await;
+
+    assert_eq!(counts(&report, "recurrences").created, 4);
+    assert_eq!(
+        report.notes["recurrence: amount and foreign amount swapped to the account's currency"],
+        1
+    );
+    let page = app
+        .recurrences
+        .list(&ctx, None, PageRequest::default())
+        .await
+        .unwrap();
+    let sponsor = page.items.iter().find(|r| r.title == "Sponsor").unwrap();
+    let split = &sponsor.splits[0];
+    assert_eq!(
+        (split.amount.as_str(), split.currency.as_str()),
+        ("0.94", "EUR")
+    );
+    assert_eq!(split.foreign_amount.as_deref(), Some("1.00"));
+    assert_eq!(split.foreign_currency.as_deref(), Some("USD"));
+    // A second run sees the same, swapped template: nothing changes.
+    let again = import(&app, ctx, &server).await;
+    assert_eq!(counts(&again, "recurrences").unchanged, 4);
 }
 
 #[tokio::test]

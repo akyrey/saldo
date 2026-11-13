@@ -39,9 +39,29 @@ pub async fn import_bills(cx: &ImportCx, report: &mut ImportReport) -> Result<()
                 continue;
             }
         };
+        let (wanted, dropped) = without_impossible_end(wanted);
+        if dropped {
+            report.note("bill: end date before the first due date dropped");
+        }
         upsert(cx, state, report, item, wanted).await?;
     }
     Ok(())
+}
+
+/// Firefly accepts an end date before the first due date (a typo that is
+/// harmless there); Saldo refuses it, so such an end date is dropped.
+/// Returns the bill and whether the end date was dropped.
+fn without_impossible_end(bill: NewBill) -> (NewBill, bool) {
+    match bill.end_date {
+        Some(end) if end < bill.first_due_date => (
+            NewBill {
+                end_date: None,
+                ..bill
+            },
+            true,
+        ),
+        _ => (bill, false),
+    }
 }
 
 /// Firefly's `half-year` is Saldo's `half_year`; the rest match.
@@ -194,5 +214,35 @@ mod tests {
             "2026-01-02"
         );
         assert!(date_of("soon").is_err());
+    }
+
+    #[test]
+    fn drops_an_end_date_before_the_first_due_date() {
+        let day = |d: &str| date_of(d).unwrap();
+        let bill = |end: &str| NewBill {
+            name: "Heating".into(),
+            amount_min: "50".into(),
+            amount_max: "50".into(),
+            currency: None,
+            first_due_date: day("2025-11-28"),
+            end_date: Some(day(end)),
+            repeat_freq: "monthly".into(),
+            skip: None,
+            remind_days_before: None,
+            remind_every_days: None,
+            active: Some(false),
+            sort_order: None,
+            notes: None,
+        };
+
+        let (kept, dropped) = without_impossible_end(bill("2026-03-31"));
+        assert_eq!((kept.end_date, dropped), (Some(day("2026-03-31")), false));
+        let (fixed, dropped) = without_impossible_end(bill("2025-03-31"));
+        assert_eq!((fixed.end_date, dropped), (None, true));
+        let (same_day, dropped) = without_impossible_end(bill("2025-11-28"));
+        assert_eq!(
+            (same_day.end_date, dropped),
+            (Some(day("2025-11-28")), false)
+        );
     }
 }

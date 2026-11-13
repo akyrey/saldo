@@ -59,6 +59,7 @@ pub async fn import_recurrences(
                 continue;
             }
         };
+        let input = in_account_currency(cx, state, input, report).await?;
         let existing = state
             .refs
             .resolve(REF, &item.id)
@@ -179,6 +180,59 @@ fn repetition(r: &RecurrenceRepetition) -> Result<RepetitionInput, String> {
     })
 }
 
+/// Firefly lets a template's amount be in another currency than its asset
+/// or liability account, with the account's currency as the foreign amount.
+/// Saldo books a split in its account's currency, so such splits are swapped.
+async fn in_account_currency(
+    cx: &ImportCx,
+    state: &mut State,
+    input: RecurrenceInput,
+    report: &mut ImportReport,
+) -> Result<RecurrenceInput, ImportError> {
+    let mut splits = Vec::with_capacity(input.splits.len());
+    for split in input.splits.clone() {
+        splits.push(swapped_if_needed(cx, state, split, report).await?);
+    }
+    Ok(RecurrenceInput { splits, ..input })
+}
+
+async fn swapped_if_needed(
+    cx: &ImportCx,
+    state: &mut State,
+    split: TemplateSplitInput,
+    report: &mut ImportReport,
+) -> Result<TemplateSplitInput, ImportError> {
+    let (Some(foreign_amount), Some(foreign_currency)) =
+        (split.foreign_amount.clone(), split.foreign_currency.clone())
+    else {
+        return Ok(split);
+    };
+    let accounts = &cx.app.accounts;
+    let source = accounts
+        .get_in(&mut state.tx, &cx.ctx, split.source_id)
+        .await?;
+    let home = if matches!(source.account_type.as_str(), "asset" | "liability") {
+        source
+    } else {
+        accounts
+            .get_in(&mut state.tx, &cx.ctx, split.destination_id)
+            .await?
+    };
+    if split.currency.as_deref() == Some(home.currency.as_str())
+        || home.currency != foreign_currency
+    {
+        return Ok(split);
+    }
+    report.note("recurrence: amount and foreign amount swapped to the account's currency");
+    Ok(TemplateSplitInput {
+        foreign_amount: Some(split.amount.clone()),
+        foreign_currency: split.currency.clone(),
+        amount: foreign_amount,
+        currency: Some(foreign_currency),
+        ..split
+    })
+}
+
 fn split(
     state: &State,
     lookups: &Lookups,
@@ -224,13 +278,13 @@ fn split(
     let budget = optional(
         BUDGET_REF,
         &t.budget_id,
-        "recurrence: budget link waits for the budget import",
+        "recurrence: budget not imported, link dropped",
     );
     let bill_firefly = t.subscription_id.clone().or_else(|| t.bill_id.clone());
     let bill = optional(
         BILL_REF,
         &bill_firefly,
-        "recurrence: subscription link waits for the bill import",
+        "recurrence: subscription not imported, link dropped",
     );
     let piggy = optional(
         PIGGY_REF,
