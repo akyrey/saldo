@@ -932,6 +932,7 @@ Chosen: React + TypeScript + Vite, TanStack Query (server state) and TanStack Ro
 - The server serves the built SPA from the binary (`rust-embed`) for every path outside `/api`.
 - Live updates: the SPA listens to `/api/v1/events/stream` and invalidates the matching queries, so a change made by one household member appears for the other.
 - Desktop (Phase 7): a Tauri 2 shell loading the same build, with a first-run screen asking for the server URL, bearer-token auth stored in the OS keychain, and native notifications.
+- Desktop updates (after Phase 8): `tauri-plugin-updater` reads `https://github.com/akyrey/saldo/releases/latest/download/latest.json` once at start and on "More > Check for updates", offers a newer version in a banner, downloads and installs it after checking its minisign signature against the public key in `tauri.conf.json`, then restarts (`tauri-plugin-process`). Release tags build signed updater bundles (key in GitHub secrets) and one job writes `latest.json`; drafts are invisible to the updater until published. The web app reaches it through `Platform.checkForUpdate` (`null` in the browser). The repository must be public for the feed to be readable.
 
 ## 11. Deployment
 

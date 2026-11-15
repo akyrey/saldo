@@ -68,6 +68,8 @@ Push a tag `vX.Y.Z` to release a version:
 
 Running "Desktop release" by hand builds the same installers as workflow artifacts, without a release. The installers are unsigned.
 
+Installed desktop apps check for a newer published release at start (and from **More > Check for updates**) and install it after you confirm. That needs a public repository and two repository secrets made once with `cd desktop && npx tauri signer generate -w ~/.tauri/saldo-updater.key`: `TAURI_SIGNING_PRIVATE_KEY` (the contents of the key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Its public half is `plugins.updater.pubkey` in `desktop/src-tauri/tauri.conf.json`. Keep the private key safe: without it, installed apps cannot be updated.
+
 ## Images
 
 `.github/workflows/docker.yml` publishes the image to Docker Hub for amd64 and arm64 on every push to `main` (tags `main`, `sha-…`) and on `vX.Y.Z` tags (`X.Y.Z`, `X.Y`, `latest`). Set the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (and optionally the variable `DOCKERHUB_IMAGE`, default `<username>/saldo`).
