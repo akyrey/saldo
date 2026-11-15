@@ -337,3 +337,15 @@ describe("shell", () => {
     expect(seen.some((r) => r.url.endsWith("/auth/logout"))).toBe(true);
   });
 });
+
+describe("home", () => {
+  it("opens on the transaction list, which leads the navigation", async () => {
+    loggedIn();
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/transactions"));
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(within(nav).getAllByRole("link")[0]).toHaveTextContent("Transactions");
+    expect(screen.getByRole("link", { name: "Saldo" })).toHaveAttribute("href", "/transactions");
+  });
+});

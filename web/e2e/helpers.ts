@@ -34,8 +34,12 @@ export async function login(page: Page, email = OWNER.email, password = OWNER.pa
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page.getByRole("heading", { name: "Accounts", exact: true })).toBeVisible();
+  // Logging in opens the home page (transactions)...
+  await expect(page.getByRole("heading", { name: "Transactions", exact: true })).toBeVisible();
   sessions.set(email, await page.context().cookies());
+  // ...but flows start on the accounts page, as with a reused session above.
+  await page.goto("/accounts");
+  await expect(page.getByRole("heading", { name: "Accounts", exact: true })).toBeVisible();
 }
 
 /** Creates an account through the API with the page's session cookie. */

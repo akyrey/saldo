@@ -33,7 +33,7 @@ describe("main navigation", () => {
     const visible = within(nav)
       .getAllByRole("link")
       .map((l) => l.textContent);
-    expect(visible).toEqual(["Accounts", "Transactions", "Budgets", "Reports"]);
+    expect(visible).toEqual(["Transactions", "Accounts", "Budgets", "Reports"]);
     expect(within(nav).queryByRole("link", { name: "Categories" })).toBeNull();
 
     const more = within(nav).getByRole("button", { name: "More" });

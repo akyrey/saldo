@@ -23,10 +23,13 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
+/** Where the app opens, and where the "Saldo" name in the header leads. */
+export const HOME_PATH = "/transactions";
+
 /** Always visible, on phones and desktops. */
 export const PRIMARY_NAV: readonly NavItem[] = [
-  { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/budgets", label: "Budgets", icon: Target },
   { to: "/reports", label: "Reports", icon: ChartColumn },
 ];

@@ -19,6 +19,7 @@ import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
 import { parseNewTransactionSearch, parseTransactionSearch } from "@/features/transactions/search";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { HOME_PATH } from "@/features/shell/nav";
 import { platform } from "@/platform";
 
 export interface RouterContext {
@@ -85,7 +86,7 @@ const indexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/",
   beforeLoad: () => {
-    throw redirect({ to: "/accounts" });
+    throw redirect({ to: HOME_PATH });
   },
 });
 

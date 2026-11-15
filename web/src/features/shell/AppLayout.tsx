@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
 import { platform } from "@/platform";
 import { MoreMenu } from "./MoreMenu";
-import { MORE_NAV, OWNER_NAV, PRIMARY_NAV } from "./nav";
+import { HOME_PATH, MORE_NAV, OWNER_NAV, PRIMARY_NAV } from "./nav";
 import { InstallBanner } from "./InstallBanner";
 import { ScopeSwitch } from "./ScopeSwitch";
 import { useAppBadge } from "./useAppBadge";
@@ -32,7 +32,7 @@ export function AppLayout() {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2">
-          <Link to="/accounts" className="mr-2 font-semibold text-primary">
+          <Link to={HOME_PATH} className="mr-2 font-semibold text-primary">
             Saldo
           </Link>
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">

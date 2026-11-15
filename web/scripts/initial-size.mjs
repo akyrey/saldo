@@ -1,5 +1,5 @@
 // Prints the gzipped size of what the browser downloads for the first screen
-// (index.html's entry plus the accounts or login page chunk) and fails above
+// (index.html's entry plus the transactions or login page chunk) and fails above
 // the Phase 4 budget of 300 kB. Run after `npm run build`.
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -25,7 +25,10 @@ async function gzippedSize(files) {
 }
 
 let failed = false;
-for (const page of ["src/features/accounts/AccountsPage.tsx", "src/features/auth/LoginPage.tsx"]) {
+for (const page of [
+  "src/features/transactions/TransactionsPage.tsx",
+  "src/features/auth/LoginPage.tsx",
+]) {
   const files = closure(page, closure("index.html"));
   const bytes = await gzippedSize(files);
   const kb = (bytes / 1024).toFixed(1);

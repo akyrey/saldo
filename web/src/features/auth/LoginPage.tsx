@@ -7,6 +7,7 @@ import { Field } from "@/components/Field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { HOME_PATH } from "@/features/shell/nav";
 import { platform } from "@/platform";
 import { AuthCard } from "./AuthCard";
 import { loginWithProviderOnDesktop, ProviderLoginError } from "./desktop-login";
@@ -42,7 +43,7 @@ export function LoginPage() {
     mutationFn: loginWithProviderOnDesktop,
     onSuccess: async () => {
       await queryClient.fetchQuery(meQuery);
-      await navigate({ to: redirect ?? "/accounts" });
+      await navigate({ to: redirect ?? HOME_PATH });
     },
   });
   const failure =
@@ -64,7 +65,7 @@ export function LoginPage() {
     },
     onSuccess: async () => {
       await queryClient.fetchQuery(meQuery);
-      await navigate({ to: redirect ?? "/accounts" });
+      await navigate({ to: redirect ?? HOME_PATH });
     },
   });
 

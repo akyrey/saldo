@@ -79,7 +79,7 @@ describe("desktop first run", () => {
     await userEvent.type(screen.getByLabelText("Password"), "a long password");
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/accounts"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/transactions"));
     expect(fake.saveToken).toHaveBeenCalledWith("desktop-token");
     const login = seen.find((r) => r.url.endsWith("/api/v1/auth/login"));
     expect(login?.url).toBe("https://money.example.com/api/v1/auth/login");
@@ -105,7 +105,7 @@ describe("desktop first run", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Log in with Authentik" }));
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/accounts"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/transactions"));
     expect(fake.openExternal).toHaveBeenCalledWith(
       expect.stringContaining(
         "https://money.example.com/api/v1/auth/oidc/start?desktop_port=53682",
