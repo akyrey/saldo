@@ -1,5 +1,6 @@
 // The dashboard and report pages against a fake API.
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CURRENCIES, fakeApi, ME, MEMBERS } from "@/test/fake-api";
 import { renderApp } from "@/test/render-app";
@@ -63,7 +64,11 @@ const BY_CATEGORY = {
     currencies: [
       {
         currency: "EUR",
-        items: [{ id: "c1", name: "Food", income: "0.00", expenses: "59.75", intervals: [] }],
+        items: [
+          { id: "c1", name: "Food", income: "0.00", expenses: "59.75", intervals: [] },
+          { id: "c2", name: "Rent", income: "0.00", expenses: "900.00", intervals: [] },
+          { id: "c3", name: "Bars", income: "0.00", expenses: "8.50", intervals: [] },
+        ],
       },
     ],
   },
@@ -102,5 +107,31 @@ describe("reports", () => {
       interval: "week",
       scope: "mine",
     });
+  });
+
+  it("sorts the table by a column, then reverses it, then restores the server's order", async () => {
+    api();
+    const user = userEvent.setup();
+    renderApp("/reports/by-category?from=2026-11-01&to=2026-11-30");
+    const table = await screen.findByRole("table");
+    const names = () =>
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[0]?.textContent);
+    const expenses = within(table).getByRole("columnheader", { name: /Expenses/ });
+    expect(names()).toEqual(["Food", "Rent", "Bars"]);
+    expect(expenses).toHaveAttribute("aria-sort", "none");
+
+    await user.click(within(expenses).getByRole("button"));
+    expect(names()).toEqual(["Bars", "Food", "Rent"]);
+    expect(expenses).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(within(expenses).getByRole("button"));
+    expect(names()).toEqual(["Rent", "Food", "Bars"]);
+    expect(expenses).toHaveAttribute("aria-sort", "descending");
+
+    await user.click(within(expenses).getByRole("button"));
+    expect(names()).toEqual(["Food", "Rent", "Bars"]);
   });
 });
