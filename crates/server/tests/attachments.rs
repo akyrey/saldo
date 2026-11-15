@@ -64,6 +64,23 @@ async fn upload_read_download_delete_over_http() {
     assert_eq!(created.body["data"]["size_bytes"], 6);
     let id = created.body["data"]["id"].as_str().unwrap().to_string();
 
+    let listed = server
+        .get(
+            &format!("/api/v1/attachments?attachable_type=account&attachable_id={account_id}"),
+            &owner,
+        )
+        .await;
+    assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
+    assert_eq!(listed.body["data"][0]["id"], id.as_str());
+    assert_eq!(listed.body["data"].as_array().unwrap().len(), 1);
+    let unknown_type = server
+        .get(
+            &format!("/api/v1/attachments?attachable_type=budget&attachable_id={account_id}"),
+            &owner,
+        )
+        .await;
+    assert_eq!(unknown_type.status, StatusCode::UNPROCESSABLE_ENTITY);
+
     let meta = server
         .get(&format!("/api/v1/attachments/{id}"), &owner)
         .await;

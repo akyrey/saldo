@@ -1,4 +1,4 @@
-//! `/attachments`: upload (multipart), metadata, download, delete.
+//! `/attachments`: list one target's, upload (multipart), metadata, download, delete.
 
 use axum::Json;
 use axum::body::Body;
@@ -9,7 +9,8 @@ use saldo_app::attachments::{AttachmentView, MAX_SIZE, NewAttachment};
 use saldo_app::ctx::Origin;
 use saldo_app::error::AppError;
 use saldo_core::AttachmentId;
-use utoipa::ToSchema;
+use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
@@ -17,7 +18,7 @@ use uuid::Uuid;
 use crate::auth::Auth;
 use crate::envelope::Data;
 use crate::error::{ApiError, ErrorEnvelope};
-use crate::extract::ApiPath;
+use crate::extract::{ApiPath, ApiQuery};
 use crate::state::AppState;
 
 /// Room for the form fields around the largest accepted file.
@@ -25,18 +26,48 @@ const BODY_LIMIT: usize = MAX_SIZE + 64 * 1024;
 
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .routes(routes!(upload_attachment))
+        .routes(routes!(list_attachments, upload_attachment))
         .routes(routes!(get_attachment, delete_attachment))
         .routes(routes!(download_attachment))
         // Axum's default body limit is 2 MB; attachments may be larger.
         .layer(DefaultBodyLimit::max(BODY_LIMIT))
 }
 
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct AttachmentQuery {
+    /// `split`, `account`, `tag` or `bill`.
+    pub attachable_type: String,
+    pub attachable_id: Uuid,
+}
+
+/// The attachments of one split, account, tag or bill, oldest first
+/// (unpaginated: an item has only a few).
+#[utoipa::path(get, path = "/attachments", tag = "attachments", params(AttachmentQuery),
+    responses((status = 200, body = Data<Vec<AttachmentView>>), (status = 422, body = ErrorEnvelope)),
+    security(("bearer" = []), ("cookie" = [])))]
+pub async fn list_attachments(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+    ApiQuery(query): ApiQuery<AttachmentQuery>,
+) -> Result<Json<Data<Vec<AttachmentView>>>, ApiError> {
+    let views = state
+        .app
+        .attachments
+        .list_for(
+            &auth.ctx,
+            &query.attachable_type,
+            &query.attachable_id.to_string(),
+        )
+        .await?;
+    Ok(Json(Data::new(views)))
+}
+
 /// The multipart form (documentation only; the handler reads the parts).
 #[derive(ToSchema)]
 #[allow(dead_code)]
 pub struct UploadForm {
-    /// `split`, `account` or `tag`.
+    /// `split`, `account`, `tag` or `bill`.
     attachable_type: String,
     attachable_id: Uuid,
     title: Option<String>,

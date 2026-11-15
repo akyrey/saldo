@@ -22,6 +22,8 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
+- 2026-11-15 After Phase 8 (owner's request): new endpoint `GET /attachments?attachable_type=&attachable_id=` (one split's, account's, tag's or bill's files; unpaginated), because the web app had no way to find an item's attachments and so offered none. ARCHITECTURE.md 6 updated.
+
 - 2026-11-15 After Phase 8 (owner's request): categories have an optional `color` (migration `20261115183605_category_color.sql`), a name from a fixed palette (`saldo_app::categories::CATEGORY_COLORS`, mirrored in `web/src/features/categories/colors.ts`) rather than free hex, so each colour has a light and a dark shade; unknown names are a 422 on `color`. `categories.csv` gained a `color` column. The importer leaves colours alone (Firefly has none). Approved by the owner on 2026-11-15. ARCHITECTURE.md 5 and 6 updated.
 
 - 2026-11-13 Phase 8: a template's amounts must be positive, two given accounts must form the template's kind, and budgets are allowed on withdrawal templates only (the ledger rules applied to what the template contains). Approved by the owner on 2026-11-13.
@@ -56,6 +58,8 @@ Record every place where the code differs from the architecture document, why, a
 ## Decisions made during implementation
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
+
+- 2026-11-15 Attachments in the web app (owner's request): `features/attachments/AttachmentsPanel` lists, uploads (file plus optional title, 20 MB checked before sending), downloads (through the API client as a blob, so the desktop app's bearer token applies; saved under the uploaded name) and deletes (second click confirms). It sits on a bill's page and on the edit-transaction page, one panel per split (files belong to splits, as in Firefly). A new transaction gets a hint to save first, since unsaved splits have no ID. `saveFile` moved to `lib/save-file.ts`. Accounts and tags take attachments in the API but have no panel yet.
 
 - 2026-11-15 Transaction list (owner's request): grouped by day (a group is filed under its latest split date, the server's sort key) with a calendar tile, "Today"/"Yesterday" or the weekday, and the net total per currency of the page's withdrawals and deposits (transfers, opening balances and reconciliations count as neither; on an account's page the direction is relative to the account). Days after today fold into a closed "Upcoming" section with faded rows. Amounts are signed and coloured (in green with "+", out red); kinds have their own colour tokens (`--kind-*` in `index.css`; Tailwind's `dark:` variant is not used because dark mode follows `prefers-color-scheme`).
 - 2026-11-15 Date fields use `DatePicker` (typed `YYYY-MM-DD` plus a react-day-picker 10 calendar in a Radix popover, weeks starting on Monday, Today/Yesterday/Clear); the calendar chunk loads on first open.

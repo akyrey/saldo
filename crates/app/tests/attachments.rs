@@ -235,3 +235,63 @@ async fn other_households_cannot_read_or_delete() {
     let _ = checking;
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[tokio::test]
+async fn lists_the_attachments_of_one_target() {
+    let dir = data_dir("list");
+    let (mut test, setup) = with_household().await;
+    test.app = test.app.with_data_dir(dir.clone());
+    let checking = account(&test, &setup.ctx, "Checking", "asset", None).await;
+    let savings = account(&test, &setup.ctx, "Savings", "asset", None).await;
+    let mut uploaded = Vec::new();
+    for (id, bytes) in [
+        (&checking.id, b"one"),
+        (&checking.id, b"two"),
+        (&savings.id, b"thr"),
+    ] {
+        let view = test
+            .app
+            .attachments
+            .upload(&setup.ctx, Origin::Api, file("account", id, bytes))
+            .await
+            .unwrap();
+        uploaded.push(view);
+    }
+
+    let listed = test
+        .app
+        .attachments
+        .list_for(&setup.ctx, "account", &checking.id)
+        .await
+        .unwrap();
+    // The test clock stands still, so equal timestamps fall back to ID order.
+    let mut expected = uploaded[..2].to_vec();
+    expected.sort_by(|a, b| a.id.cmp(&b.id));
+    assert_eq!(listed, expected, "only this account, oldest first");
+    assert!(
+        test.app
+            .attachments
+            .list_for(&setup.ctx, "split", &checking.id)
+            .await
+            .unwrap()
+            .is_empty(),
+        "the type is part of the target"
+    );
+    let other = other_household(&test).await;
+    assert!(
+        test.app
+            .attachments
+            .list_for(&other, "account", &checking.id)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(matches!(
+        test.app
+            .attachments
+            .list_for(&setup.ctx, "budget", &checking.id)
+            .await,
+        Err(AppError::Invalid { .. })
+    ));
+    let _ = std::fs::remove_dir_all(dir);
+}

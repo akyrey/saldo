@@ -211,6 +211,30 @@ impl AttachmentService {
         Ok(rows)
     }
 
+    /// The attachments of one split, account, tag or bill, oldest first.
+    /// An unknown ID simply has none.
+    pub async fn list_for(
+        &self,
+        ctx: &HouseholdCtx,
+        attachable_type: &str,
+        attachable_id: &str,
+    ) -> Result<Vec<AttachmentView>, AppError> {
+        check_type(attachable_type)?;
+        let household_id = ctx.household_id.to_string();
+        let rows = sqlx::query_as!(
+            AttachmentView,
+            "SELECT id, attachable_type, attachable_id, filename, title, mime_type, size_bytes, sha256, notes, created_at
+             FROM attachments WHERE household_id = ? AND attachable_type = ? AND attachable_id = ?
+             ORDER BY created_at, id",
+            household_id,
+            attachable_type,
+            attachable_id,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
     /// Like [`Self::get`], inside the caller's transaction.
     pub async fn get_in(
         &self,
@@ -222,13 +246,18 @@ impl AttachmentService {
     }
 }
 
-fn check(input: &NewAttachment) -> Result<(), AppError> {
-    if !ATTACHABLE_TYPES.contains(&input.attachable_type.as_str()) {
+fn check_type(attachable_type: &str) -> Result<(), AppError> {
+    if !ATTACHABLE_TYPES.contains(&attachable_type) {
         return Err(AppError::invalid(
             "attachable_type",
             format!("must be one of {}", ATTACHABLE_TYPES.join(", ")),
         ));
     }
+    Ok(())
+}
+
+fn check(input: &NewAttachment) -> Result<(), AppError> {
+    check_type(&input.attachable_type)?;
     if input.filename.trim().is_empty() || input.filename.contains(['/', '\\']) {
         return Err(AppError::invalid("filename", "must be a plain file name"));
     }

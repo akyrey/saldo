@@ -780,7 +780,7 @@ Conventions:
 | Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags`. A category has an optional `color` from a fixed palette (422 otherwise; `PATCH` with `null` clears it) | 2 |
 | Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE; resumes from `Last-Event-ID` or `?after_seq=`, otherwise starts at the newest event; keep-alive every 15 s) | 2 list, 6 stream |
 | Export | `GET /export/json`, `GET /export/csv` (zip) | 3 |
-| Attachments | `POST /attachments` (multipart), `GET /attachments/{id}`, `GET /attachments/{id}/download`, `DELETE /attachments/{id}` | 3 |
+| Attachments | `GET /attachments?attachable_type=&attachable_id=` (one target's files, oldest first, unpaginated; both parameters required), `POST /attachments` (multipart), `GET /attachments/{id}`, `GET /attachments/{id}/download`, `DELETE /attachments/{id}` | 3 |
 | Budgets | `GET/POST /budgets` (`?active=`), `GET/PATCH/DELETE /budgets/{id}`, `GET/POST /budgets/{id}/limits` (`?from=&to=`, newest first), `PATCH/DELETE /budget-limits/{id}`. Limits of one budget in one currency may not overlap (409) | 5 |
 | Bills | `GET/POST /bills`, `GET/PATCH/DELETE /bills/{id}`, `GET /bills/{id}/periods`, `POST /bill-periods/{id}/pay` (link a split), `POST /bill-periods/{id}/skip`, `POST /bill-periods/{id}/reopen` | 5 |
 | Piggy banks | `GET/POST /piggy-banks`, `GET/PATCH/DELETE /piggy-banks/{id}`, `GET/POST /piggy-banks/{id}/events` | 5 |
