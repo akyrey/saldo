@@ -6,6 +6,11 @@
 # - Run it by hand (Actions > Desktop release > Run workflow): the same builds,
 #   kept as workflow artifacts, no release.
 #
+# In-app updates: tag builds also make signed updater bundles (the key is in
+# the secrets TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD;
+# the public half is in tauri.conf.json), and a last job writes `latest.json`,
+# which installed apps read once the release is published.
+#
 # No Apple or Windows certificate: the macOS app is signed ad-hoc (tauri.conf.json
 # signingIdentity "-"), which Apple Silicon requires for downloaded apps; without
 # it macOS calls the app "damaged". macOS still asks once to allow it in
@@ -95,7 +100,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config
-      - name: App version from the tag
+      - name: App version from the tag, with updater bundles
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
@@ -104,6 +109,8 @@ jobs:
             const file = "desktop/src-tauri/tauri.conf.json";
             const config = JSON.parse(fs.readFileSync(file, "utf8"));
             config.version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+            // Needs the signing key, so only releases make them, not CI or local builds.
+            config.bundle.createUpdaterArtifacts = true;
             fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
             console.log("version", config.version);
           '
@@ -114,10 +121,83 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop
           args: ${{ matrix.args }}
           releaseId: ${{ needs.create-release.outputs.id }}
+          # Each job would read, extend and rewrite latest.json at the same
+          # time and lose platforms; the updater-json job writes it once.
+          includeUpdaterJson: false
           # Manual runs: keep the installers as workflow artifacts instead.
           uploadWorkflowArtifacts: ${{ needs.create-release.result == 'skipped' }}
           workflowArtifactNamePattern: saldo-desktop-${{ matrix.name }}-[bundle]
+
+  # Writes latest.json from the signatures the builds uploaded. The app asks
+  # .../releases/latest/download/latest.json, which skips drafts, so updates
+  # reach people only after the release is published.
+  updater-json:
+    needs: [create-release, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        env:
+          RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release_id = Number(process.env.RELEASE_ID);
+            const tag = context.ref.replace("refs/tags/", "");
+            // Signature file suffix -> updater targets ({os}-{arch}[-{installer}]).
+            // The first target of a rule is also the plain {os}-{arch} entry.
+            const rules = [
+              { suffix: ".app.tar.gz.sig", os: "darwin", installer: "app", primary: true },
+              { suffix: "-setup.exe.sig", os: "windows", installer: "nsis", primary: true },
+              { suffix: ".msi.sig", os: "windows", installer: "msi" },
+              { suffix: ".AppImage.sig", os: "linux", installer: "appimage", primary: true },
+              { suffix: ".deb.sig", os: "linux", installer: "deb" },
+              { suffix: ".rpm.sig", os: "linux", installer: "rpm" },
+            ];
+            const required = ["darwin-aarch64", "darwin-x86_64", "windows-x86_64", "linux-x86_64"];
+
+            const assets = await github.paginate(github.rest.repos.listReleaseAssets, {
+              owner, repo, release_id, per_page: 100,
+            });
+            const names = new Set(assets.map((a) => a.name));
+            const platforms = {};
+            for (const asset of assets) {
+              const rule = rules.find((r) => asset.name.endsWith(r.suffix));
+              if (!rule) continue;
+              const bundle = asset.name.slice(0, -".sig".length);
+              if (!names.has(bundle)) throw new Error(`${asset.name} has no ${bundle}`);
+              const { data } = await github.request("GET /repos/{owner}/{repo}/releases/assets/{asset_id}", {
+                owner, repo, asset_id: asset.id, headers: { accept: "application/octet-stream" },
+              });
+              const entry = {
+                signature: Buffer.from(data).toString("utf8"),
+                url: `https://github.com/${owner}/${repo}/releases/download/${tag}/${encodeURIComponent(bundle)}`,
+              };
+              // Only macOS has two architectures; the other builds are x86_64.
+              const arch = rule.os === "darwin" && asset.name.includes("aarch64") ? "aarch64" : "x86_64";
+              platforms[`${rule.os}-${arch}-${rule.installer}`] = entry;
+              if (rule.primary) platforms[`${rule.os}-${arch}`] = entry;
+            }
+            const missing = required.filter((target) => !platforms[target]);
+            if (missing.length > 0) throw new Error(`no updater bundle for ${missing.join(", ")}`);
+
+            const manifest = {
+              version: tag.replace(/^v/, ""),
+              notes: `https://github.com/${owner}/${repo}/releases/tag/${tag}`,
+              pub_date: new Date().toISOString(),
+              platforms,
+            };
+            const old = assets.find((a) => a.name === "latest.json");
+            if (old) await github.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: old.id });
+            await github.rest.repos.uploadReleaseAsset({
+              owner, repo, release_id, name: "latest.json",
+              data: JSON.stringify(manifest, null, 2),
+              headers: { "content-type": "application/json" },
+            });
+            core.info(`latest.json: ${Object.keys(platforms).sort().join(", ")}`);
