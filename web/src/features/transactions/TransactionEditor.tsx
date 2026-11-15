@@ -68,6 +68,10 @@ export function TransactionEditor(props: TransactionEditorProps) {
         // Spent amounts and reports change too; refetched when next shown.
         queryClient.invalidateQueries({ queryKey: ["budgets"], refetchType: "none" }),
         queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "none" }),
+        queryClient.invalidateQueries({
+          queryKey: ["description-suggestions"],
+          refetchType: "none",
+        }),
       ]);
       onSaved();
     },

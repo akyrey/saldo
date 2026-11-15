@@ -9,7 +9,8 @@ import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
 import { emptySplit } from "./editor-model";
-import type { TransactionRequest } from "./queries";
+import { descriptionSearchQuery, type TransactionRequest } from "./queries";
+import { split } from "@/test/fake-api";
 import { TransactionEditor } from "./TransactionEditor";
 
 function account(id: string, name: string, type: string): Account {
@@ -53,6 +54,18 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
   queryClient.setQueryData(tagsQuery.queryKey, [
     { id: "tag", name: "weekend", created_at: "", updated_at: "" },
   ]);
+  queryClient.setQueryData(descriptionSearchQuery("Gro").queryKey, {
+    data: [
+      {
+        id: "past",
+        title: null,
+        created_at: "",
+        updated_at: "",
+        splits: [{ ...split("s1", "checking", "food", "3.00"), description: "Groceries" }],
+      },
+    ],
+    meta: { total: 1, page: 1, per_page: 50 },
+  });
   queryClient.setQueryData(currenciesQuery.queryKey, [
     { code: "EUR", name: "Euro", symbol: "€", decimal_places: 2 },
   ]);
@@ -161,6 +174,15 @@ describe("TransactionEditor", () => {
     await fill(1, "checking", "food", "5");
     await userEvent.setup().click(screen.getByRole("button", { name: "Create transaction" }));
     expect(await screen.findByText(/Cannot reach the server/)).toBeInTheDocument();
+  });
+
+  it("suggests descriptions used before", async () => {
+    const user = userEvent.setup();
+    renderEditor(vi.fn());
+    const field = screen.getByLabelText("Description");
+    await user.type(field, "Gro");
+    await user.click(await screen.findByRole("option", { name: "Groceries" }));
+    expect(field).toHaveValue("Groceries");
   });
 
   it("removes a row but never the last one", async () => {

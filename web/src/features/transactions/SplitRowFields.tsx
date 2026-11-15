@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/Combobox";
+import { DescriptionInput } from "./DescriptionInput";
 import type { Account, Currency } from "@/features/accounts/queries";
 import type { Budget } from "@/features/budgets/queries";
 import type { Category } from "@/features/categories/queries";
@@ -103,11 +104,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
           error={errors.description}
           className={props.template ? "sm:col-span-2 lg:col-span-4" : "lg:col-span-3"}
         >
-          <Input
+          <DescriptionInput
             id={id("description")}
             required
             value={row.description}
-            onChange={(e) => onChange({ description: e.target.value })}
+            onChange={(description) => onChange({ description })}
             {...errorProps(id("description"), errors.description)}
           />
         </Field>

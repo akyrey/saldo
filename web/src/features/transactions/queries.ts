@@ -25,6 +25,21 @@ export function transactionsQuery(filters: TransactionSearch, scope?: Scope) {
   });
 }
 
+/** How many recent matches the description suggestions are picked from. */
+const SUGGESTION_SOURCE_SIZE = 50;
+
+/** Recent transactions whose description or title contains `q`, for suggestions. */
+export function descriptionSearchQuery(q: string) {
+  const query = { q, page: 1, per_page: SUGGESTION_SOURCE_SIZE };
+  return queryOptions({
+    // Not under "transactions": the editor awaits those refetches after a save.
+    queryKey: ["description-suggestions", q],
+    queryFn: () => call(api.GET("/api/v1/transactions", { params: { query } })),
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function transactionQuery(id: string) {
   return queryOptions({
     queryKey: ["transactions", "one", id],

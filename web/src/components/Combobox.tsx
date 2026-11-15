@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { type KeyboardEvent, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { type ComboboxOption, filterOptions } from "./combobox-filter";
-import { fieldClass } from "./ui/input";
+import { fieldClass, noCorrection } from "./ui/input";
 
 export type { ComboboxOption } from "./combobox-filter";
 
@@ -84,6 +84,7 @@ export function Combobox(props: ComboboxProps) {
         aria-autocomplete="list"
         aria-activedescendant={activeId}
         autoComplete="off"
+        {...noCorrection}
         disabled={props.disabled}
         placeholder={props.placeholder ?? "Type to search…"}
         value={text ?? chosen?.label ?? ""}
