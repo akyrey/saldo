@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, notes, created_at, updated_at FROM categories WHERE household_id = ? ORDER BY name",
+  "query": "SELECT id, name, notes, color, created_at, updated_at FROM categories WHERE household_id = ? ORDER BY name",
   "describe": {
     "columns": [
       {
@@ -37,8 +37,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "color",
         "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categories",
+            "name": "color"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -49,7 +60,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -66,9 +77,10 @@
       false,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "1f4ab96c7c23b43b17fb544dbc0b20b0c6adca5e456d5ae729707b603735200e"
+  "hash": "b89c6ee9675168631152e6eaf3c16fb964b7252a6a78fb303006339086e90d63"
 }

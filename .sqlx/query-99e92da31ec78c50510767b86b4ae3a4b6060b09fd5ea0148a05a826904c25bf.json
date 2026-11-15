@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE categories SET name = ?, notes = ?, color = ?, updated_at = ?\n             WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "99e92da31ec78c50510767b86b4ae3a4b6060b09fd5ea0148a05a826904c25bf"
+}

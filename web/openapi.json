@@ -7492,6 +7492,13 @@
       "CategoryPatch": {
         "type": "object",
         "properties": {
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A palette colour name (see `POST /categories`); `null` clears it."
+          },
           "name": {
             "type": [
               "string",
@@ -7516,6 +7523,13 @@
           "updated_at"
         ],
         "properties": {
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of [`CATEGORY_COLORS`], or `None` for no colour."
+          },
           "created_at": {
             "type": "string"
           },
@@ -7895,6 +7909,13 @@
           "name"
         ],
         "properties": {
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "red, orange, amber, lime, green, teal, sky, blue, violet, pink or gray."
+          },
           "name": {
             "type": "string"
           },
@@ -8840,6 +8861,13 @@
               "updated_at"
             ],
             "properties": {
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "One of [`CATEGORY_COLORS`], or `None` for no colour."
+              },
               "created_at": {
                 "type": "string"
               },
@@ -11439,6 +11467,13 @@
                 "updated_at"
               ],
               "properties": {
+                "color": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "One of [`CATEGORY_COLORS`], or `None` for no colour."
+                },
                 "created_at": {
                   "type": "string"
                 },

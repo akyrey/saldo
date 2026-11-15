@@ -96,6 +96,7 @@ async fn ledger(test: &TestApp, ctx: &HouseholdCtx) -> Ledger {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

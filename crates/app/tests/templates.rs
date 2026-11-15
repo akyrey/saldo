@@ -296,6 +296,7 @@ async fn deleted_references_are_dropped_when_a_template_is_read() {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

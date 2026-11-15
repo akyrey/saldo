@@ -230,6 +230,7 @@ async fn categories_and_tags_must_exist_in_the_household() {
             NewCategory {
                 name: "Groceries".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

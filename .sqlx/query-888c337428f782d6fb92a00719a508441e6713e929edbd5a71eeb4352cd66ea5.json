@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, notes, created_at, updated_at FROM categories\n             WHERE household_id = ? ORDER BY name LIMIT ? OFFSET ?",
+  "query": "SELECT id, name, notes, color, created_at, updated_at FROM categories WHERE household_id = ? AND id = ?",
   "describe": {
     "columns": [
       {
@@ -37,8 +37,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "color",
         "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categories",
+            "name": "color"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -49,7 +60,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,15 +71,16 @@
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 2
     },
     "nullable": [
       false,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "ccc5494e4de3d9616698bc59b05c469899ae7ba1f75e311d113ef26db1f1922c"
+  "hash": "888c337428f782d6fb92a00719a508441e6713e929edbd5a71eeb4352cd66ea5"
 }

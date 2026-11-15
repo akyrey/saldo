@@ -35,6 +35,7 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
             NewCategory {
                 name: "Home".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

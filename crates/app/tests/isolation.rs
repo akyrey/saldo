@@ -32,6 +32,7 @@ async fn another_household_cannot_read_or_write() {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

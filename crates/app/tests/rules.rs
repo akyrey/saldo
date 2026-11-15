@@ -96,6 +96,7 @@ async fn a_link_to_bill_rule_pays_the_period_when_a_transaction_is_created() {
             NewCategory {
                 name: "Housing".into(),
                 notes: None,
+                color: None,
             },
         )
         .await
@@ -185,6 +186,7 @@ async fn rules_only_run_when_they_should() {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await
@@ -263,6 +265,7 @@ async fn a_broken_rule_never_blocks_a_transaction() {
             NewCategory {
                 name: "Doomed".into(),
                 notes: None,
+                color: None,
             },
         )
         .await
@@ -512,6 +515,7 @@ async fn test_previews_and_apply_changes_existing_transactions() {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await

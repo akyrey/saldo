@@ -19,6 +19,7 @@ async fn category_lifecycle_with_events() {
             NewCategory {
                 name: " Food ".into(),
                 notes: Some("n".into()),
+                color: None,
             },
         )
         .await
@@ -43,6 +44,7 @@ async fn category_lifecycle_with_events() {
             CategoryUpdate {
                 name: Some("Groceries".into()),
                 notes: Some(None),
+                color: None,
             },
         )
         .await
@@ -82,6 +84,7 @@ async fn category_names_are_unique_and_required() {
     let new = |name: &str| NewCategory {
         name: name.into(),
         notes: None,
+        color: None,
     };
     let first = test
         .app
@@ -112,6 +115,7 @@ async fn category_names_are_unique_and_required() {
     let rename = CategoryUpdate {
         name: Some("Food".into()),
         notes: None,
+        color: None,
     };
     let clash = test
         .app
@@ -145,6 +149,7 @@ async fn deleting_a_category_clears_it_from_splits() {
             NewCategory {
                 name: "Food".into(),
                 notes: None,
+                color: None,
             },
         )
         .await
@@ -259,4 +264,74 @@ async fn currencies_are_listed_by_code() {
     assert_eq!(currencies.first().map(|c| c.code.as_str()), Some("AUD"));
     let jpy = currencies.iter().find(|c| c.code == "JPY").unwrap();
     assert_eq!(jpy.decimal_places, 0);
+}
+
+#[tokio::test]
+async fn category_colours_come_from_the_palette() {
+    let (test, setup) = with_household().await;
+    let created = test
+        .app
+        .categories
+        .create(
+            &setup.ctx,
+            Origin::Api,
+            NewCategory {
+                name: "Food".into(),
+                notes: None,
+                color: Some("green".into()),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(created.color.as_deref(), Some("green"));
+    let event = last_event(&test, &setup.ctx).await;
+    assert_eq!(event.payload["data"]["color"], serde_json::json!("green"));
+    let id = created.id.parse().unwrap();
+
+    // Renaming keeps the colour; `Some(None)` clears it.
+    let renamed = test
+        .app
+        .categories
+        .update(
+            &setup.ctx,
+            Origin::Api,
+            id,
+            CategoryUpdate {
+                name: Some("Groceries".into()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(renamed.color.as_deref(), Some("green"));
+    let cleared = test
+        .app
+        .categories
+        .update(
+            &setup.ctx,
+            Origin::Api,
+            id,
+            CategoryUpdate {
+                color: Some(None),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(cleared.color, None);
+
+    let unknown = test
+        .app
+        .categories
+        .update(
+            &setup.ctx,
+            Origin::Api,
+            id,
+            CategoryUpdate {
+                color: Some(Some("#ff0000".into())),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(matches!(unknown, Err(AppError::Invalid { field, .. }) if field == "color"));
 }

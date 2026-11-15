@@ -22,6 +22,8 @@ States: not started, in progress, blocked (say on what), done.
 
 Record every place where the code differs from the architecture document, why, and whether the owner approved it. Update `ARCHITECTURE.md` in the same commit.
 
+- 2026-11-15 After Phase 8 (owner's request): categories have an optional `color` (migration `20261115183605_category_color.sql`), a name from a fixed palette (`saldo_app::categories::CATEGORY_COLORS`, mirrored in `web/src/features/categories/colors.ts`) rather than free hex, so each colour has a light and a dark shade; unknown names are a 422 on `color`. `categories.csv` gained a `color` column. The importer leaves colours alone (Firefly has none). Approved by the owner on 2026-11-15. ARCHITECTURE.md 5 and 6 updated.
+
 - 2026-11-13 Phase 8: a template's amounts must be positive, two given accounts must form the template's kind, and budgets are allowed on withdrawal templates only (the ledger rules applied to what the template contains). Approved by the owner on 2026-11-13.
 - 2026-11-13 Phase 8: a template may have no splits; `PATCH` also changes `kind`, `title` and `splits`; the new-transaction editor has "Save as template" for a partly filled form (the only way to create a template with empty parts); a template's kind narrows the editor's account pickers. Approved by the owner on 2026-11-13.
 - 2026-11-13 Phase 8: `TemplateId` lives in `saldo-app`; the schemas are named `TransactionTemplate…` because `TemplateSplitView` was already the recurrence schema (utoipa kept only one). The editor does not show a template's currency; the server uses the account's on save, foreign amounts carry over.

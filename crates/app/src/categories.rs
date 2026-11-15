@@ -1,4 +1,4 @@
-//! Categories: a name per household, optionally with notes.
+//! Categories: a name per household, optionally with notes and a colour.
 
 use saldo_core::CategoryId;
 use serde::Serialize;
@@ -16,6 +16,8 @@ pub struct CategoryView {
     pub id: String,
     pub name: String,
     pub notes: Option<String>,
+    /// One of [`CATEGORY_COLORS`], or `None` for no colour.
+    pub color: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -24,16 +26,35 @@ pub struct CategoryView {
 pub struct NewCategory {
     pub name: String,
     pub notes: Option<String>,
+    pub color: Option<String>,
 }
 
-/// `None` keeps a value; `notes: Some(None)` clears the notes.
+/// `None` keeps a value; `Some(None)` clears the notes or the colour.
 #[derive(Debug, Clone, Default)]
 pub struct CategoryUpdate {
     pub name: Option<String>,
     pub notes: Option<Option<String>>,
+    pub color: Option<Option<String>>,
 }
 
 const DUPLICATE: &str = "a category with this name exists";
+
+/// The colours a category may have. Names, not hex codes: the web app maps
+/// each to a light and a dark shade, so every colour stays readable in both themes.
+pub const CATEGORY_COLORS: &[&str] = &[
+    "red", "orange", "amber", "lime", "green", "teal", "sky", "blue", "violet", "pink", "gray",
+];
+
+/// Checks an optional colour against [`CATEGORY_COLORS`].
+fn check_color(color: Option<String>) -> Result<Option<String>, AppError> {
+    match color {
+        Some(name) if !CATEGORY_COLORS.contains(&name.as_str()) => Err(AppError::invalid(
+            "color",
+            format!("must be one of {}", CATEGORY_COLORS.join(", ")),
+        )),
+        other => Ok(other),
+    }
+}
 
 #[derive(Clone)]
 pub struct CategoryService {
@@ -67,18 +88,20 @@ impl CategoryService {
         input: NewCategory,
     ) -> Result<CategoryView, AppError> {
         let name = required("name", &input.name)?;
+        let color = check_color(input.color)?;
         let (id, household_id) = (
             new_id(&*self.clock).to_string(),
             ctx.household_id.to_string(),
         );
         let now = format_timestamp(self.clock.now());
         sqlx::query!(
-            "INSERT INTO categories (id, household_id, name, notes, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO categories (id, household_id, name, notes, color, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
             id,
             household_id,
             name,
             input.notes,
+            color,
             now,
             now,
         )
@@ -125,13 +148,23 @@ impl CategoryService {
             None => current.name,
         };
         let notes = update.notes.unwrap_or(current.notes);
+        let color = match update.color {
+            Some(color) => check_color(color)?,
+            None => current.color,
+        };
         let (household_id, now) = (
             ctx.household_id.to_string(),
             format_timestamp(self.clock.now()),
         );
         sqlx::query!(
-            "UPDATE categories SET name = ?, notes = ?, updated_at = ? WHERE household_id = ? AND id = ?",
-            name, notes, now, household_id, id,
+            "UPDATE categories SET name = ?, notes = ?, color = ?, updated_at = ?
+             WHERE household_id = ? AND id = ?",
+            name,
+            notes,
+            color,
+            now,
+            household_id,
+            id,
         )
         .execute(&mut *conn)
         .await
@@ -213,7 +246,7 @@ impl CategoryService {
         let (limit, offset) = (page.limit(), page.offset());
         let items = sqlx::query_as!(
             CategoryView,
-            "SELECT id, name, notes, created_at, updated_at FROM categories
+            "SELECT id, name, notes, color, created_at, updated_at FROM categories
              WHERE household_id = ? ORDER BY name LIMIT ? OFFSET ?",
             household_id,
             limit,
@@ -239,7 +272,7 @@ async fn find(
     let household_id = ctx.household_id.to_string();
     sqlx::query_as!(
         CategoryView,
-        "SELECT id, name, notes, created_at, updated_at FROM categories WHERE household_id = ? AND id = ?",
+        "SELECT id, name, notes, color, created_at, updated_at FROM categories WHERE household_id = ? AND id = ?",
         household_id, id,
     )
     .fetch_optional(&mut *conn)
@@ -271,10 +304,28 @@ pub async fn all_in(
     let household_id = ctx.household_id.to_string();
     let rows = sqlx::query_as!(
         CategoryView,
-        "SELECT id, name, notes, created_at, updated_at FROM categories WHERE household_id = ? ORDER BY name",
+        "SELECT id, name, notes, color, created_at, updated_at FROM categories WHERE household_id = ? ORDER BY name",
         household_id,
     )
     .fetch_all(&mut *conn)
     .await?;
     Ok(rows)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn colours_must_be_in_the_palette() {
+        assert_eq!(check_color(None).unwrap(), None);
+        assert_eq!(
+            check_color(Some("teal".into())).unwrap().as_deref(),
+            Some("teal")
+        );
+        assert!(matches!(
+            check_color(Some("Teal".into())),
+            Err(AppError::Invalid { field, .. }) if field == "color"
+        ));
+    }
 }

@@ -40,6 +40,7 @@ pub async fn import_categories(
                 let update = CategoryUpdate {
                     name: Some(name.clone()),
                     notes: Some(notes),
+                    color: None,
                 };
                 let id = view
                     .id
@@ -58,6 +59,7 @@ pub async fn import_categories(
                     NewCategory {
                         name: name.clone(),
                         notes,
+                        color: None,
                     },
                 )
                 .await

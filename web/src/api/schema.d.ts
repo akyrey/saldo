@@ -1568,11 +1568,15 @@ export interface components {
       range: components["schemas"]["ReportRange"];
     };
     CategoryPatch: {
+      /** @description A palette colour name (see `POST /categories`); `null` clears it. */
+      color?: string | null;
       name?: string | null;
       /** @description `null` clears the notes. */
       notes?: string | null;
     };
     CategoryView: {
+      /** @description One of [`CATEGORY_COLORS`], or `None` for no colour. */
+      color?: string | null;
       created_at: string;
       id: string;
       name: string;
@@ -1688,6 +1692,8 @@ export interface components {
       sort_order?: number | null;
     };
     CreateCategoryRequest: {
+      /** @description red, orange, amber, lime, green, teal, sky, blue, violet, pink or gray. */
+      color?: string | null;
       name: string;
       notes?: string | null;
     };
@@ -1967,6 +1973,8 @@ export interface components {
     /** @description A single result. */
     Data_CategoryView: {
       data: {
+        /** @description One of [`CATEGORY_COLORS`], or `None` for no colour. */
+        color?: string | null;
         created_at: string;
         id: string;
         name: string;
@@ -2696,6 +2704,8 @@ export interface components {
     /** @description A page of results. */
     List_CategoryView: {
       data: {
+        /** @description One of [`CATEGORY_COLORS`], or `None` for no colour. */
+        color?: string | null;
         created_at: string;
         id: string;
         name: string;

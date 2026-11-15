@@ -52,6 +52,8 @@ pub async fn list_categories(
 pub struct CreateCategoryRequest {
     pub name: String,
     pub notes: Option<String>,
+    /// red, orange, amber, lime, green, teal, sky, blue, violet, pink or gray.
+    pub color: Option<String>,
 }
 
 #[utoipa::path(post, path = "/categories", tag = "categories", request_body = CreateCategoryRequest,
@@ -65,6 +67,7 @@ pub async fn create_category(
     let input = NewCategory {
         name: body.name,
         notes: body.notes,
+        color: body.color,
     };
     let view = state
         .app
@@ -93,6 +96,10 @@ pub struct CategoryPatch {
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<String>)]
     pub notes: Option<Option<String>>,
+    /// A palette colour name (see `POST /categories`); `null` clears it.
+    #[serde(default, deserialize_with = "double_option")]
+    #[schema(value_type = Option<String>)]
+    pub color: Option<Option<String>>,
 }
 
 #[utoipa::path(patch, path = "/categories/{id}", tag = "categories", params(("id" = Uuid, Path)), request_body = CategoryPatch,
@@ -107,6 +114,7 @@ pub async fn update_category(
     let update = CategoryUpdate {
         name: body.name,
         notes: body.notes,
+        color: body.color,
     };
     Ok(Json(Data::new(
         state

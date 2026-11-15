@@ -160,10 +160,10 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
             .collect(),
     );
     let categories = table(
-        &["id", "name", "notes"],
+        &["id", "name", "notes", "color"],
         doc.categories
             .iter()
-            .map(|c| vec![c.id.clone(), c.name.clone(), opt(&c.notes)])
+            .map(|c| vec![c.id.clone(), c.name.clone(), opt(&c.notes), opt(&c.color)])
             .collect(),
     );
     let tags = table(

@@ -296,6 +296,7 @@ CREATE TABLE categories (
     household_id  TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
     name          TEXT NOT NULL,
     notes         TEXT,
+    color         TEXT,                -- palette name (red, orange, amber, lime, green, teal, sky, blue, violet, pink, gray), checked by the service
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL,
     UNIQUE (household_id, name)
@@ -776,7 +777,7 @@ Conventions:
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts`, `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
 | Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q` | 2 |
-| Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags` | 2 |
+| Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags`. A category has an optional `color` from a fixed palette (422 otherwise; `PATCH` with `null` clears it) | 2 |
 | Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE; resumes from `Last-Event-ID` or `?after_seq=`, otherwise starts at the newest event; keep-alive every 15 s) | 2 list, 6 stream |
 | Export | `GET /export/json`, `GET /export/csv` (zip) | 3 |
 | Attachments | `POST /attachments` (multipart), `GET /attachments/{id}`, `GET /attachments/{id}/download`, `DELETE /attachments/{id}` | 3 |
