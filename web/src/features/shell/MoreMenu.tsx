@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, RefreshCw } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { NavItem } from "./nav";
 
@@ -7,10 +7,12 @@ interface MoreMenuProps {
   items: readonly NavItem[];
   /** `bar`: a tab in the phone's bottom bar, opening upwards. */
   variant: "header" | "bar";
+  /** Desktop app only: adds "Check for updates" below the pages. */
+  onCheckForUpdates?: (() => void) | null;
 }
 
 /** A "More" button that shows the remaining pages; closes on choice, Escape or outside click. */
-export function MoreMenu({ items, variant }: MoreMenuProps) {
+export function MoreMenu({ items, variant, onCheckForUpdates }: MoreMenuProps) {
   const [open, setOpen] = useState(false);
   const listId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -69,6 +71,21 @@ export function MoreMenu({ items, variant }: MoreMenuProps) {
               </Link>
             </li>
           ))}
+          {onCheckForUpdates ? (
+            <li className={bar ? "col-span-2 border-t pt-0.5" : "border-t pt-0.5"}>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onCheckForUpdates();
+                }}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                <RefreshCw className="size-4" aria-hidden />
+                Check for updates
+              </button>
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </div>

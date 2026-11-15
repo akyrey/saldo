@@ -10,7 +10,10 @@ import {
   sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { LoginCallback, Platform } from "./types";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { check } from "@tauri-apps/plugin-updater";
+import type { AppUpdate, LoginCallback, Platform } from "./types";
+import { trackDownload } from "./update-progress";
 
 const SERVER_KEY = "saldo.serverUrl";
 
@@ -41,6 +44,25 @@ async function canNotify(): Promise<boolean> {
   return (await requestPermission()) === "granted";
 }
 
+/**
+ * Reads `latest.json` from the newest GitHub release (tauri.conf.json,
+ * plugins.updater). The Rust side checks the download's signature against
+ * the public key in the config before installing it.
+ */
+async function checkForUpdate(): Promise<AppUpdate | null> {
+  const update = await check();
+  if (!update) return null;
+  return {
+    version: update.version,
+    currentVersion: update.currentVersion,
+    install: async (onProgress) => {
+      await update.downloadAndInstall(trackDownload(onProgress));
+      // Windows: the installer has already closed the app by now.
+      await relaunch();
+    },
+  };
+}
+
 export async function createDesktopPlatform(): Promise<Platform> {
   let serverUrl = readServerUrl();
   let token: string | null = await invoke<string | null>("load_token");
@@ -69,5 +91,6 @@ export async function createDesktopPlatform(): Promise<Platform> {
     },
     openExternal: (url) => openUrl(url),
     waitForLoginCallback,
+    checkForUpdate,
   };
 }

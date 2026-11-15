@@ -1,7 +1,7 @@
 import { browserPlatform } from "./browser";
 import type { Platform } from "./types";
 
-export type { Platform, PlatformKind } from "./types";
+export type { AppUpdate, Platform, PlatformKind } from "./types";
 
 let current: Platform = browserPlatform;
 

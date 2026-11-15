@@ -15,4 +15,6 @@ export const browserPlatform: Platform = {
   // The browser follows the provider's redirects itself.
   waitForLoginCallback: () =>
     Promise.reject(new Error("only the desktop app waits for a login callback")),
+  // The server updates the web app; a reload picks it up.
+  checkForUpdate: async () => null,
 };

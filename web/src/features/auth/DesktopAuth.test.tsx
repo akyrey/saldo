@@ -33,6 +33,7 @@ function fakeDesktop(serverUrl = "", token: string | null = null) {
       port: 53682,
       result: Promise.resolve({ code: "one-time" }),
     }),
+    checkForUpdate: async () => null,
   };
   setPlatformForTests(fake);
   return { fake, state };

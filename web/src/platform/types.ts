@@ -10,6 +10,17 @@ export interface LoginCallback {
   error?: string;
 }
 
+/** A newer desktop version, found by `Platform.checkForUpdate`. */
+export interface AppUpdate {
+  readonly version: string;
+  readonly currentVersion: string;
+  /**
+   * Downloads and installs the update, then restarts the app. `onProgress`
+   * gets the share downloaded (0 to 1), or `null` while the size is unknown.
+   */
+  install(onProgress: (fraction: number | null) => void): Promise<void>;
+}
+
 export interface Platform {
   readonly kind: PlatformKind;
   /** The server's address; `""` means the page's own origin (the browser). */
@@ -31,4 +42,6 @@ export interface Platform {
    * "Log in with Authentik". `result` settles when it arrives.
    */
   waitForLoginCallback(): Promise<{ port: number; result: Promise<LoginCallback> }>;
+  /** Desktop: asks the release feed for a newer version. Browser: always `null`. */
+  checkForUpdate(): Promise<AppUpdate | null>;
 }

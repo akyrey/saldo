@@ -4,6 +4,8 @@ import { Bell, LogOut } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
+import { UpdateBanner } from "@/features/updates/UpdateBanner";
+import { useAppUpdate } from "@/features/updates/useAppUpdate";
 import { platform } from "@/platform";
 import { MoreMenu } from "./MoreMenu";
 import { HOME_PATH, MORE_NAV, OWNER_NAV, PRIMARY_NAV } from "./nav";
@@ -17,6 +19,7 @@ export function AppLayout() {
   const queryClient = useQueryClient();
   useLiveEvents();
   useAppBadge();
+  const appUpdate = useAppUpdate();
   const navigate = useNavigate();
   const logout = useMutation({
     mutationFn: () => call(api.POST("/api/v1/auth/logout")),
@@ -46,7 +49,7 @@ export function AppLayout() {
                 {label}
               </Link>
             ))}
-            <MoreMenu items={more} variant="header" />
+            <MoreMenu items={more} variant="header" onCheckForUpdates={appUpdate.checkNow} />
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -71,6 +74,7 @@ export function AppLayout() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 pb-24 md:pb-8">
+        <UpdateBanner {...appUpdate} />
         <InstallBanner />
         <Outlet />
       </main>
@@ -92,7 +96,7 @@ export function AppLayout() {
             <span className="max-w-full truncate">{label}</span>
           </Link>
         ))}
-        <MoreMenu items={more} variant="bar" />
+        <MoreMenu items={more} variant="bar" onCheckForUpdates={appUpdate.checkNow} />
       </nav>
     </div>
   );
