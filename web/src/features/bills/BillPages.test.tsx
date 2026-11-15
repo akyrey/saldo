@@ -75,6 +75,7 @@ function api() {
         splits: [split("s9", "a1", "a2", "800.00")],
       },
     ]),
+    "GET /api/v1/attachments": { data: [] },
     "POST /api/v1/bill-periods/p2/skip": { data: period("p2", "2026-11-02", "skipped") },
     "POST /api/v1/bill-periods/p2/pay": { data: period("p2", "2026-11-02", "paid") },
   });
@@ -121,5 +122,15 @@ describe("bill pages", () => {
     const paid = rowOf(await screen.findByText("2026-10-02"), "tr");
     expect(within(paid).getByText("paid")).toBeInTheDocument();
     expect(within(paid).getByRole("button", { name: "Reopen" })).toBeInTheDocument();
+  });
+
+  it("offers the bill's attachments", async () => {
+    const seen = api();
+    renderApp("/bills/b1");
+    expect(await screen.findByText("Attachments")).toBeInTheDocument();
+    await screen.findByText("No files yet.");
+    const query = seen.find((r) => new URL(r.url).pathname === "/api/v1/attachments");
+    const params = new URL(query?.url ?? "http://x").searchParams;
+    expect([params.get("attachable_type"), params.get("attachable_id")]).toEqual(["bill", "b1"]);
   });
 });

@@ -470,6 +470,61 @@
       }
     },
     "/api/v1/attachments": {
+      "get": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "The attachments of one split, account, tag or bill, oldest first\n(unpaginated: an item has only a few).",
+        "operationId": "list_attachments",
+        "parameters": [
+          {
+            "name": "attachable_type",
+            "in": "query",
+            "description": "`split`, `account`, `tag` or `bill`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachable_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_AttachmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "attachments"
@@ -9928,6 +9983,71 @@
           }
         }
       },
+      "Data_Vec_AttachmentView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "attachable_type",
+                "attachable_id",
+                "filename",
+                "mime_type",
+                "size_bytes",
+                "sha256",
+                "created_at"
+              ],
+              "properties": {
+                "attachable_id": {
+                  "type": "string"
+                },
+                "attachable_type": {
+                  "type": "string",
+                  "description": "`split`, `account`, `tag` or `bill`."
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "mime_type": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_BillPeriodView": {
         "type": "object",
         "description": "A single result.",
@@ -13976,7 +14096,7 @@
           },
           "attachable_type": {
             "type": "string",
-            "description": "`split`, `account` or `tag`."
+            "description": "`split`, `account`, `tag` or `bill`."
           },
           "file": {
             "type": "string",

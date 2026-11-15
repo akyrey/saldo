@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiError, fakeApi } from "@/test/fake-api";
-import { downloadExport, filenameFrom } from "./download";
+import { downloadAttachment, downloadExport, filenameFrom } from "./download";
 import { ApiError } from "./errors";
 
 afterEach(() => {
@@ -46,5 +46,25 @@ describe("downloadExport", () => {
     await expect(downloadExport("json")).rejects.toEqual(
       new ApiError(403, "forbidden", "owners only"),
     );
+  });
+});
+
+describe("downloadAttachment", () => {
+  it("returns the file under its stored name", async () => {
+    fakeApi({
+      "GET /api/v1/attachments/f1/download": () =>
+        new Response("%PDF", {
+          status: 200,
+          headers: { "Content-Disposition": 'attachment; filename="receipt_1.pdf"' },
+        }),
+    });
+    const file = await downloadAttachment("f1", "receipt#1.pdf");
+    expect(file.filename).toBe("receipt#1.pdf");
+    expect(await file.blob.text()).toBe("%PDF");
+  });
+
+  it("turns a missing attachment into an ApiError", async () => {
+    fakeApi({});
+    await expect(downloadAttachment("gone", "x.pdf")).rejects.toBeInstanceOf(ApiError);
   });
 });

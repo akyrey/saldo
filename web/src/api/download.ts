@@ -1,4 +1,4 @@
-// File downloads from the API (exports). Like every request, they go through
+// File downloads from the API (exports, attachments). Like every request, they go through
 // the shared client, so the base URL and the CSRF header apply here too.
 import { api } from "./client";
 import { ApiError, apiErrorFrom } from "./errors";
@@ -25,14 +25,20 @@ export function filenameFrom(disposition: string | null, fallback: string): stri
   return name ? name : fallback;
 }
 
-/** Downloads the household export (owner only) as a file in memory. */
-export async function downloadExport(format: ExportFormat): Promise<DownloadedFile> {
-  let result;
+/** What openapi-fetch resolves a blob download to. */
+interface BlobResult {
+  data?: unknown;
+  error?: unknown;
+  response: Response;
+}
+
+/** The body of a blob download, or an `ApiError` (`network` when offline). */
+async function blobOf(
+  request: () => Promise<BlobResult>,
+): Promise<{ blob: Blob; response: Response }> {
+  let result: BlobResult;
   try {
-    result =
-      format === "json"
-        ? await api.GET("/api/v1/export/json", { parseAs: "blob" })
-        : await api.GET("/api/v1/export/csv", { parseAs: "blob" });
+    result = await request();
   } catch (cause) {
     throw new ApiError(0, "network", cause instanceof Error ? cause.message : "network error");
   }
@@ -40,9 +46,33 @@ export async function downloadExport(format: ExportFormat): Promise<DownloadedFi
   if (!response.ok || result.data === undefined) {
     throw apiErrorFrom(response.status, result.error);
   }
+  return { blob: result.data as Blob, response };
+}
+
+/** Downloads the household export (owner only) as a file in memory. */
+export async function downloadExport(format: ExportFormat): Promise<DownloadedFile> {
+  const { blob, response } = await blobOf(() =>
+    format === "json"
+      ? api.GET("/api/v1/export/json", { parseAs: "blob" })
+      : api.GET("/api/v1/export/csv", { parseAs: "blob" }),
+  );
   const filename = filenameFrom(
     response.headers.get("Content-Disposition"),
     FALLBACK_NAMES[format],
   );
-  return { blob: result.data as Blob, filename };
+  return { blob, filename };
+}
+
+/**
+ * Downloads an attachment. It keeps the name it was uploaded with: the
+ * server's header replaces unusual characters for safety.
+ */
+export async function downloadAttachment(id: string, filename: string): Promise<DownloadedFile> {
+  const { blob } = await blobOf(() =>
+    api.GET("/api/v1/attachments/{id}/download", {
+      params: { path: { id } },
+      parseAs: "blob",
+    }),
+  );
+  return { blob, filename };
 }

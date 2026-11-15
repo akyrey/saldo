@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AttachmentsPanel } from "@/features/attachments/AttachmentsPanel";
 import { amountRange, shiftDate, type BillPeriod } from "./bill-form";
 import { billQuery, periodsQuery } from "./queries";
 
@@ -177,6 +178,9 @@ export function BillDetailPage() {
           </Table>
         </CardContent>
       </Card>
+      <div className="mt-4">
+        <AttachmentsPanel target={{ type: "bill", id: billId }} />
+      </div>
     </div>
   );
 }

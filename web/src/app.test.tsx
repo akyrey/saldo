@@ -267,6 +267,22 @@ describe("transactions", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/transactions"));
     expect(seen.some((r) => r.method === "DELETE")).toBe(true);
   });
+
+  it("shows one attachments panel per saved split", async () => {
+    const seen = loggedIn({
+      "GET /api/v1/transactions/g1": { data: GROUP },
+      "GET /api/v1/attachments": { data: [] },
+    });
+    renderApp("/transactions/g1/edit");
+
+    expect(await screen.findByText("Attachments · split 1: split s1")).toBeInTheDocument();
+    expect(screen.getByText("Attachments · split 2: split s2")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("No files yet.")).toHaveLength(2));
+    const targets = seen
+      .filter((r) => new URL(r.url).pathname === "/api/v1/attachments")
+      .map((r) => new URL(r.url).searchParams.get("attachable_id"));
+    expect(targets.sort()).toEqual(["s1", "s2"]);
+  });
 });
 
 describe("categories and tags", () => {

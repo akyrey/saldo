@@ -81,7 +81,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * The attachments of one split, account, tag or bill, oldest first
+     *     (unpaginated: an item has only a few).
+     */
+    get: operations["list_attachments"];
     put?: never;
     /** Uploads a file (at most 20 MiB; PDF, images, text, CSV, XML). */
     post: operations["upload_attachment"];
@@ -2289,6 +2293,23 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_Vec_AttachmentView: {
+      data: {
+        attachable_id: string;
+        /** @description `split`, `account`, `tag` or `bill`. */
+        attachable_type: string;
+        created_at: string;
+        filename: string;
+        id: string;
+        mime_type: string;
+        notes?: string | null;
+        sha256: string;
+        /** Format: int64 */
+        size_bytes: number;
+        title?: string | null;
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_BillPeriodView: {
       data: {
         bill_id: string;
@@ -3414,7 +3435,7 @@ export interface components {
     UploadForm: {
       /** Format: uuid */
       attachable_id: string;
-      /** @description `split`, `account` or `tag`. */
+      /** @description `split`, `account`, `tag` or `bill`. */
       attachable_type: string;
       /**
        * Format: binary
@@ -3732,6 +3753,37 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_attachments: {
+    parameters: {
+      query: {
+        /** @description `split`, `account`, `tag` or `bill`. */
+        attachable_type: string;
+        attachable_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_AttachmentView"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };

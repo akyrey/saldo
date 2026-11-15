@@ -9,6 +9,7 @@ import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { todayIso } from "@/lib/dates";
+import { AttachmentsPanel } from "@/features/attachments/AttachmentsPanel";
 import { templateQuery } from "@/features/templates/queries";
 import { SaveAsTemplate } from "@/features/templates/SaveAsTemplate";
 import { TemplatePicker } from "@/features/templates/TemplatePicker";
@@ -66,6 +67,9 @@ export function NewTransactionPage() {
           onSaved={() => void navigate({ to: "/transactions" })}
         />
       ) : null}
+      <p className="mt-4 text-sm text-muted-foreground">
+        To attach receipts or other files, save the transaction, then open it from the list.
+      </p>
     </div>
   );
 }
@@ -131,6 +135,34 @@ export function EditTransactionPage() {
           onSaved={() => router.history.back()}
         />
       ) : null}
+      {group.data ? <SplitAttachments splits={group.data.splits} /> : null}
+    </div>
+  );
+}
+
+interface SavedSplit {
+  id: string;
+  description: string;
+}
+
+/**
+ * Files belong to a split (as in Firefly), so a group with several splits
+ * shows one panel per split. Only saved splits have an ID to attach to.
+ */
+function SplitAttachments({ splits }: { splits: readonly SavedSplit[] }) {
+  return (
+    <div className="mt-6 flex flex-col gap-4">
+      {splits.map((split, index) => (
+        <AttachmentsPanel
+          key={split.id}
+          target={{ type: "split", id: split.id }}
+          title={
+            splits.length > 1
+              ? `Attachments · split ${index + 1}: ${split.description}`
+              : "Attachments"
+          }
+        />
+      ))}
     </div>
   );
 }
