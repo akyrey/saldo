@@ -768,7 +768,7 @@ Conventions:
 - Amounts in JSON are decimal strings plus a currency code: `{ "amount": "12.50", "currency": "EUR" }`. Never JSON numbers.
 - Lists take `page`, `per_page` (max 200) and resource filters. Sorting is fixed per resource.
 - Every list and report takes `scope=household` (default), `scope=mine`, or `scope=user:<id>`, filtering by account owner.
-- A transaction group is always written as a whole: `POST` creates the group with its splits, `PUT` replaces it, `DELETE` removes it. There are no per-split write endpoints.
+- A transaction group is always written as a whole: `POST` creates the group with its splits, `PUT` replaces it, `DELETE` removes it. There are no per-split write endpoints. In a `PUT`, a split may carry the `id` of one of the group's splits: that split is updated in place and keeps its ID and attachments; a split without `id` is new; the group's splits that no entry names are deleted with their attachments. An `id` from another group, the same `id` twice, or any `id` in a `POST` is a 422 on `splits[n].id`. Deleting a group or a bill deletes its attachments too (each with `attachment.deleted`).
 
 | Area | Endpoints | Phase |
 |---|---|---|
@@ -870,7 +870,7 @@ Failed sends are retried three times (four attempts in all), one attempt per not
 
 ### 8.5 Background tasks
 
-All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `recurrence-runner`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database.
+All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `recurrence-runner`, `attachment-sweep`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database. `attachment-sweep` (at start and hourly) removes stored files that no attachment row uses and that are at least an hour old; deletes only remove rows, inside their database transaction, so a rollback (an importer dry run) never loses a file.
 
 ## 9. Importer and export
 

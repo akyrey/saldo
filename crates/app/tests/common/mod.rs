@@ -157,6 +157,7 @@ pub fn split(
     amount: &str,
 ) -> SplitInput {
     SplitInput {
+        id: None,
         date: date(day),
         description: format!("{} to {}", source.name, destination.name),
         source_id: account_id(source),

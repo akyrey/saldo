@@ -1,6 +1,6 @@
 //! SQL for `transaction_groups`, `splits` and `split_tags`.
 
-use saldo_core::{SplitKind, ValidatedGroup};
+use saldo_core::{SplitId, SplitKind, ValidatedGroup};
 use sqlx::SqliteConnection;
 
 use crate::clock::{Clock, new_id};
@@ -84,13 +84,48 @@ pub(crate) async fn delete_group(
     Ok(())
 }
 
-pub(crate) async fn delete_splits(
+/// The IDs of the group's splits, in position order.
+pub(crate) async fn split_ids(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    group_id: &str,
+) -> Result<Vec<String>, AppError> {
+    let ids = sqlx::query_scalar!(
+        "SELECT id FROM splits WHERE household_id = ? AND group_id = ? ORDER BY position",
+        household_id,
+        group_id
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(ids)
+}
+
+/// Deletes one split of a group (its tags go with it).
+pub(crate) async fn delete_split(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    id: &str,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "DELETE FROM splits WHERE household_id = ? AND id = ?",
+        household_id,
+        id
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+/// Moves the group's splits to negative positions, so [`write_splits`] can
+/// give them their new positions without `UNIQUE (group_id, position)`
+/// tripping over a split that has not moved yet.
+pub(crate) async fn park_positions(
     conn: &mut SqliteConnection,
     household_id: &str,
     group_id: &str,
 ) -> Result<(), AppError> {
     sqlx::query!(
-        "DELETE FROM splits WHERE household_id = ? AND group_id = ?",
+        "UPDATE splits SET position = -1 - position WHERE household_id = ? AND group_id = ?",
         household_id,
         group_id
     )
@@ -99,18 +134,24 @@ pub(crate) async fn delete_splits(
     Ok(())
 }
 
-/// Writes every split of `group` (with new IDs) and its tags.
-pub(crate) async fn insert_splits(
+/// Writes every split of `group` and its tags. `ids[n]` is the existing
+/// split that split `n` continues: it is updated in place (an upsert, so
+/// rows pointing at it keep pointing at it); a missing ID makes a new split.
+pub(crate) async fn write_splits(
     conn: &mut SqliteConnection,
     clock: &dyn Clock,
     household_id: &str,
     group_id: &str,
     group: &ValidatedGroup,
+    ids: &[Option<SplitId>],
     now: &str,
 ) -> Result<(), AppError> {
     for (position, validated) in group.splits().iter().enumerate() {
         let split = validated.split();
-        let id = new_id(clock).to_string();
+        let id = match ids.get(position).copied().flatten() {
+            Some(existing) => existing.to_string(),
+            None => new_id(clock).to_string(),
+        };
         let position = i64::try_from(position)
             .map_err(|_| AppError::Internal("too many splits".to_string()))?;
         let kind = kind_name(validated.kind());
@@ -129,7 +170,17 @@ pub(crate) async fn insert_splits(
                 source_account_id, destination_account_id, amount_minor, currency_code,
                 foreign_amount_minor, foreign_currency_code, category_id, budget_id, bill_id,
                 reconciled, notes, meta, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET position = excluded.position, kind = excluded.kind,
+                date = excluded.date, description = excluded.description,
+                source_account_id = excluded.source_account_id,
+                destination_account_id = excluded.destination_account_id,
+                amount_minor = excluded.amount_minor, currency_code = excluded.currency_code,
+                foreign_amount_minor = excluded.foreign_amount_minor,
+                foreign_currency_code = excluded.foreign_currency_code,
+                category_id = excluded.category_id, budget_id = excluded.budget_id,
+                bill_id = excluded.bill_id, reconciled = excluded.reconciled,
+                notes = excluded.notes, meta = excluded.meta, updated_at = excluded.updated_at",
             id,
             household_id,
             group_id,
@@ -154,6 +205,9 @@ pub(crate) async fn insert_splits(
         )
         .execute(&mut *conn)
         .await?;
+        sqlx::query!("DELETE FROM split_tags WHERE split_id = ?", id)
+            .execute(&mut *conn)
+            .await?;
         for tag in &split.tags {
             let tag = tag.to_string();
             sqlx::query!(

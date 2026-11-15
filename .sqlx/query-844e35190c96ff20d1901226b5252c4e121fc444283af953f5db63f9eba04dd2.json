@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO splits (id, household_id, group_id, position, kind, date, description,\n                source_account_id, destination_account_id, amount_minor, currency_code,\n                foreign_amount_minor, foreign_currency_code, category_id, budget_id, bill_id,\n                reconciled, notes, meta, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n             ON CONFLICT (id) DO UPDATE SET position = excluded.position, kind = excluded.kind,\n                date = excluded.date, description = excluded.description,\n                source_account_id = excluded.source_account_id,\n                destination_account_id = excluded.destination_account_id,\n                amount_minor = excluded.amount_minor, currency_code = excluded.currency_code,\n                foreign_amount_minor = excluded.foreign_amount_minor,\n                foreign_currency_code = excluded.foreign_currency_code,\n                category_id = excluded.category_id, budget_id = excluded.budget_id,\n                bill_id = excluded.bill_id, reconciled = excluded.reconciled,\n                notes = excluded.notes, meta = excluded.meta, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 21
+    },
+    "nullable": []
+  },
+  "hash": "844e35190c96ff20d1901226b5252c4e121fc444283af953f5db63f9eba04dd2"
+}

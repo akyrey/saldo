@@ -212,6 +212,7 @@ async fn import_group(
         .iter()
         .flat_map(|v| v.splits.iter().map(|s| s.id.clone()))
         .collect();
+    let input = keep_split_ids(input, &state.refs, &group.attributes, &old_split_ids);
     let result = match (existing, current) {
         (_, Some(view)) if same(&input, &view) => {
             note_kinds(report, &group.attributes, &view);
@@ -270,6 +271,24 @@ async fn import_group(
         report.updated(ENTITY)
     }
     Ok(())
+}
+
+/// Each split continues the local split its Firefly journal was imported
+/// as before (if that split is still in the group), so it keeps its ID and
+/// attachments; other journals become new splits.
+fn keep_split_ids(
+    mut input: TransactionInput,
+    refs: &ExternalRefs,
+    group: &TransactionGroup,
+    old_split_ids: &HashSet<String>,
+) -> TransactionInput {
+    for (split, journal) in input.splits.iter_mut().zip(&group.transactions) {
+        split.id = refs
+            .resolve(SPLIT_REF, &journal.transaction_journal_id)
+            .filter(|local| old_split_ids.contains(*local))
+            .and_then(|local| local.parse().ok());
+    }
+    input
 }
 
 /// Firefly's group as Saldo input. `Err` explains why it cannot be imported.
@@ -339,6 +358,7 @@ fn to_split(
     let budget_id = budget(refs, lookups, s, destination_id, report);
     let bill_id = linked_bill(refs, s, report);
     Ok(SplitInput {
+        id: None,
         date,
         description: s.description.trim().to_string(),
         // Cash is the expense side when money leaves, the revenue side when it arrives.

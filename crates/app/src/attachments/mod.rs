@@ -4,12 +4,13 @@
 mod storage;
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use saldo_core::AttachmentId;
 use serde::Serialize;
 use sqlx::{SqliteConnection, SqlitePool};
 
-use crate::clock::{SharedClock, format_timestamp, new_id};
+use crate::clock::{Clock, SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
@@ -235,6 +236,34 @@ impl AttachmentService {
         Ok(rows)
     }
 
+    /// Removes stored files that no attachment (in any household) uses any
+    /// more and that are at least `min_age` old; returns how many went.
+    /// Deleting a transaction or bill only deletes rows, inside its database
+    /// transaction (which may still roll back); this sweep removes the files
+    /// afterwards. The age keeps it away from an upload whose row is not
+    /// committed yet.
+    pub async fn remove_unused_files(&self, min_age: Duration) -> Result<usize, AppError> {
+        let mut removed = 0;
+        for (sha256, age) in storage::stored_files(&self.data_dir).await? {
+            if age < min_age {
+                continue;
+            }
+            // A system task across households, like the export of files:
+            // only the content hash is compared, nothing is read.
+            let used = sqlx::query_scalar!(
+                "SELECT EXISTS (SELECT 1 FROM attachments WHERE sha256 = ?)",
+                sha256
+            )
+            .fetch_one(&self.pool)
+            .await?;
+            if used == 0 {
+                storage::remove(&self.data_dir, &sha256).await?;
+                removed += 1;
+            }
+        }
+        Ok(removed)
+    }
+
     /// Like [`Self::get`], inside the caller's transaction.
     pub async fn get_in(
         &self,
@@ -244,6 +273,46 @@ impl AttachmentService {
     ) -> Result<AttachmentView, AppError> {
         find(conn, ctx, &id.to_string()).await
     }
+}
+
+/// Deletes every attachment of the given splits or bills, each with an
+/// `attachment.deleted` event, inside the caller's transaction. Files stay
+/// until [`AttachmentService::remove_unused_files`] runs, so a rollback loses
+/// nothing.
+pub(crate) async fn delete_all_of_in(
+    conn: &mut SqliteConnection,
+    clock: &dyn Clock,
+    ctx: &HouseholdCtx,
+    origin: Origin,
+    attachable_type: &str,
+    attachable_ids: &[String],
+) -> Result<(), AppError> {
+    let household_id = ctx.household_id.to_string();
+    for attachable_id in attachable_ids {
+        let views = sqlx::query_as!(
+            AttachmentView,
+            "SELECT id, attachable_type, attachable_id, filename, title, mime_type, size_bytes, sha256, notes, created_at
+             FROM attachments WHERE household_id = ? AND attachable_type = ? AND attachable_id = ?
+             ORDER BY created_at, id",
+            household_id,
+            attachable_type,
+            attachable_id,
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+        for view in views {
+            sqlx::query!(
+                "DELETE FROM attachments WHERE household_id = ? AND id = ?",
+                household_id,
+                view.id
+            )
+            .execute(&mut *conn)
+            .await?;
+            let event = NewEvent::new(clock, "attachment", "deleted", view.id.clone(), &view)?;
+            append_event(&mut *conn, ctx, origin, event).await?;
+        }
+    }
+    Ok(())
 }
 
 fn check_type(attachable_type: &str) -> Result<(), AppError> {

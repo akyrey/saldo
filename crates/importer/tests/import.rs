@@ -428,6 +428,50 @@ async fn changed_groups_are_replaced_and_removed_splits_forgotten() {
 }
 
 #[tokio::test]
+async fn a_changed_group_keeps_its_splits_and_their_attachments() {
+    let (app, ctx) = household().await;
+    import(&app, ctx, &firefly(None, None).await, false).await;
+    let split_of_receipt = "SELECT attachable_id FROM attachments WHERE filename = 'receipt.txt'";
+    let before: String = sqlx::query_scalar(split_of_receipt)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+
+    // In Firefly the split with the receipt (journal 104) now costs more.
+    let mut page_one = fixture("transactions-1.json");
+    let journal = page_one["data"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .flat_map(|g| {
+            g["attributes"]["transactions"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+        })
+        .find(|s| s["transaction_journal_id"] == "104")
+        .unwrap();
+    journal["amount"] = "99.000000000000".into();
+    let report = import(&app, ctx, &firefly(Some(page_one), None).await, false).await;
+
+    assert_eq!(counts(&report, "transactions").updated, 1);
+    let after: String = sqlx::query_scalar(split_of_receipt)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        after, before,
+        "the attachment still points at the same split"
+    );
+    let amount = scalar(
+        &app,
+        &format!("SELECT amount_minor FROM splits WHERE id = '{after}'"),
+    )
+    .await;
+    assert_eq!(amount, 9900);
+}
+
+#[tokio::test]
 async fn an_attachment_firefly_cannot_serve_is_skipped() {
     let (app, ctx) = household().await;
     let server = MockServer::start().await;

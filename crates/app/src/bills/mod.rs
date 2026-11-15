@@ -9,6 +9,7 @@ mod view;
 use saldo_core::BillId;
 use sqlx::{SqliteConnection, SqlitePool};
 
+use crate::attachments::delete_all_of_in;
 use crate::clock::{SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
@@ -183,7 +184,8 @@ impl BillService {
         Ok(view)
     }
 
-    /// Deletes the bill and its periods; splits that referred to it keep no bill.
+    /// Deletes the bill, its periods and its attachments; splits that
+    /// referred to it keep no bill.
     pub async fn delete(
         &self,
         ctx: &HouseholdCtx,
@@ -207,6 +209,8 @@ impl BillService {
         )
         .execute(&mut *tx)
         .await?;
+        let ids = [view.id.clone()];
+        delete_all_of_in(&mut tx, &*self.clock, ctx, origin, "bill", &ids).await?;
         let event = NewEvent::new(&*self.clock, "bill", "deleted", view.id.clone(), &view)?;
         append_event(&mut tx, ctx, origin, event).await?;
         tx.commit().await?;

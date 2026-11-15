@@ -165,3 +165,78 @@ async fn bad_uploads_are_rejected() {
         .await;
     assert_eq!(garbage.status, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn split_attachments_follow_their_split_over_http() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let mut ids = Vec::new();
+    for (name, kind) in [("Checking", "asset"), ("Food", "expense")] {
+        let created = server
+            .post(
+                "/api/v1/accounts",
+                json!({ "name": name, "type": kind }),
+                &owner,
+            )
+            .await;
+        ids.push(created.body["data"]["id"].as_str().unwrap().to_string());
+    }
+    let split = |id: Option<&str>, amount: &str| {
+        json!({ "id": id, "date": "2026-11-01", "description": "Lunch",
+                "source_id": ids[0], "destination_id": ids[1], "amount": amount })
+    };
+    let created = server
+        .post(
+            "/api/v1/transactions",
+            json!({ "splits": [split(None, "5")] }),
+            &owner,
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.body);
+    let group_id = created.body["data"]["id"].as_str().unwrap().to_string();
+    let split_id = created.body["data"]["splits"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let content_type = format!("multipart/form-data; boundary={BOUNDARY}");
+    let body = form(
+        &[("attachable_type", "split"), ("attachable_id", &split_id)],
+        Some(("lunch.txt", "text/plain", b"receipt")),
+    );
+    let uploaded = server
+        .send_raw(
+            Method::POST,
+            "/api/v1/attachments",
+            &content_type,
+            body,
+            &owner,
+        )
+        .await;
+    assert_eq!(uploaded.status, StatusCode::CREATED, "{}", uploaded.body);
+    let listing = format!("/api/v1/attachments?attachable_type=split&attachable_id={split_id}");
+
+    let put = server
+        .send(
+            Method::PUT,
+            &format!("/api/v1/transactions/{group_id}"),
+            Some(json!({ "splits": [split(Some(&split_id), "6")] })),
+            &owner,
+        )
+        .await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.body);
+    assert_eq!(put.body["data"]["splits"][0]["id"], split_id.as_str());
+    let kept = server.get(&listing, &owner).await;
+    assert_eq!(kept.body["data"].as_array().unwrap().len(), 1);
+
+    let deleted = server
+        .send(
+            Method::DELETE,
+            &format!("/api/v1/transactions/{group_id}"),
+            None,
+            &owner,
+        )
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let gone = server.get(&listing, &owner).await;
+    assert!(gone.body["data"].as_array().unwrap().is_empty());
+}

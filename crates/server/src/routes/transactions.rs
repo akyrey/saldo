@@ -8,7 +8,7 @@ use saldo_app::ctx::Origin;
 use saldo_app::transactions::{
     SplitInput, TransactionFilter, TransactionGroupView, TransactionInput,
 };
-use saldo_core::{AccountId, BillId, BudgetId, CategoryId, GroupId, TagId};
+use saldo_core::{AccountId, BillId, BudgetId, CategoryId, GroupId, SplitId, TagId};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use utoipa::{IntoParams, ToSchema};
@@ -93,6 +93,10 @@ pub struct TransactionRequest {
 /// One split. Money moves from `source_id` to `destination_id`.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct SplitRequest {
+    /// `PUT` only: the existing split this one continues, keeping its ID and
+    /// attachments. Leave it out for a new split; the group's splits that
+    /// no entry names are deleted with their attachments.
+    pub id: Option<Uuid>,
     /// `YYYY-MM-DD`.
     pub date: NaiveDate,
     pub description: String,
@@ -124,6 +128,7 @@ impl From<TransactionRequest> for TransactionInput {
             .splits
             .into_iter()
             .map(|split| SplitInput {
+                id: split.id.map(SplitId),
                 date: split.date,
                 description: split.description,
                 source_id: AccountId(split.source_id),

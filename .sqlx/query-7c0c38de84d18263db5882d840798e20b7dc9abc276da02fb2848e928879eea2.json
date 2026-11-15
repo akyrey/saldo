@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE splits SET position = -1 - position WHERE household_id = ? AND group_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7c0c38de84d18263db5882d840798e20b7dc9abc276da02fb2848e928879eea2"
+}

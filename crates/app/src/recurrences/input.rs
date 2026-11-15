@@ -263,6 +263,7 @@ async fn template_rows(
 
 fn as_split_input(split: &TemplateSplitInput, date: NaiveDate) -> SplitInput {
     SplitInput {
+        id: None,
         date,
         description: split.description.clone(),
         source_id: split.source_id,

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM split_tags WHERE split_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a3840f6660e5394a710498d557c6dffe5aaf8523aa13f524c8535304fc0a1123"
+}

@@ -223,6 +223,7 @@ async fn group_input(
         let tags: Vec<String> = serde_json::from_str(&t.tags)
             .map_err(|e| AppError::Internal(format!("corrupt template tags: {e}")))?;
         splits.push(SplitInput {
+            id: None,
             date,
             description: t.description.clone(),
             source_id: parse_stored(&t.source_account_id)?,

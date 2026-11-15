@@ -2,6 +2,7 @@
 //! files are stored once.
 
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
 
 use sha2::{Digest, Sha256};
 
@@ -53,6 +54,41 @@ pub(crate) async fn remove(data_dir: &Path, sha256: &str) -> Result<(), AppError
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(io_error(error)),
     }
+}
+
+/// Every stored file (named by its SHA-256) with its age. Files mid-write
+/// (`.partial`) and anything else in the folder are left out. No folder yet
+/// means no files.
+pub(crate) async fn stored_files(data_dir: &Path) -> Result<Vec<(String, Duration)>, AppError> {
+    let mut entries = match tokio::fs::read_dir(folder(data_dir)).await {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => return Err(io_error(error)),
+    };
+    let mut files = Vec::new();
+    while let Some(entry) = entries.next_entry().await.map_err(io_error)? {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !is_sha256(&name) {
+            continue;
+        }
+        // File times come from the file system, not from the app's clock,
+        // so the age is measured against the system time too.
+        let modified = entry
+            .metadata()
+            .await
+            .map_err(io_error)?
+            .modified()
+            .map_err(io_error)?;
+        let age = SystemTime::now()
+            .duration_since(modified)
+            .unwrap_or_default();
+        files.push((name, age));
+    }
+    Ok(files)
+}
+
+fn is_sha256(name: &str) -> bool {
+    name.len() == 64 && name.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
 fn io_error(error: std::io::Error) -> AppError {

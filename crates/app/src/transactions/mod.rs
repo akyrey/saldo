@@ -4,13 +4,15 @@ mod input;
 mod prepare;
 pub(crate) mod recurring;
 mod repo;
+mod split_ids;
 mod view;
 
 use chrono::NaiveDate;
-use saldo_core::{AccountId, BillId, BudgetId, CategoryId, GroupId, TagId};
+use saldo_core::{AccountId, BillId, BudgetId, CategoryId, GroupId, SplitId, TagId};
 use serde_json::{Map, Value};
 use sqlx::{SqliteConnection, SqlitePool};
 
+use crate::attachments::delete_all_of_in;
 use crate::bills;
 use crate::clock::{SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
@@ -19,7 +21,7 @@ use crate::events::{NewEvent, append_event};
 use crate::page::{Page, PageRequest};
 use crate::scope::Scope;
 
-pub(crate) use input::input_from_view;
+pub use input::input_from_view;
 pub use view::{SplitView, TransactionGroupView};
 
 pub const KINDS: [&str; 5] = [
@@ -41,6 +43,9 @@ pub struct TransactionInput {
 /// the asset or liability side.
 #[derive(Debug, Clone)]
 pub struct SplitInput {
+    /// On an update, the existing split this one continues: it keeps its ID
+    /// and attachments. `None` makes a new split. Not allowed on create.
+    pub id: Option<SplitId>,
     pub date: NaiveDate,
     pub description: String,
     pub source_id: AccountId,
@@ -120,6 +125,7 @@ impl TransactionService {
         origin: Origin,
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
+        split_ids::reject_ids(&input)?;
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let household_id = ctx.household_id.to_string();
         let id = new_id(&*self.clock).to_string();
@@ -134,7 +140,16 @@ impl TransactionService {
             &now,
         )
         .await?;
-        repo::insert_splits(&mut *conn, &*self.clock, &household_id, &id, &group, &now).await?;
+        repo::write_splits(
+            &mut *conn,
+            &*self.clock,
+            &household_id,
+            &id,
+            &group,
+            &[],
+            &now,
+        )
+        .await?;
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "created", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
@@ -143,7 +158,10 @@ impl TransactionService {
         Ok(view)
     }
 
-    /// Replaces the title and all splits of a group (the splits get new IDs).
+    /// Replaces the title and all splits of a group. A split that names one
+    /// of the group's split IDs keeps it (and its attachments); the others
+    /// are new, and the group's splits left out are deleted with their
+    /// attachments.
     pub async fn replace(
         &self,
         ctx: &HouseholdCtx,
@@ -221,14 +239,37 @@ impl TransactionService {
         if !repo::group_exists(&mut *conn, &household_id, &id).await? {
             return Err(AppError::NotFound);
         }
+        let plan = split_ids::plan(&mut *conn, &household_id, &id, &input).await?;
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let now = format_timestamp(self.clock.now());
         repo::update_group(&mut *conn, &household_id, &id, group.title(), &now).await?;
-        // The old splits go: periods they paid open again, then the new
-        // splits may pay them once more.
+        // Periods the old splits paid open again, then the saved splits may
+        // pay them once more.
         bills::release_group_in(&mut *conn, &*self.clock, ctx, origin, &id).await?;
-        repo::delete_splits(&mut *conn, &household_id, &id).await?;
-        repo::insert_splits(&mut *conn, &*self.clock, &household_id, &id, &group, &now).await?;
+        for dropped in &plan.dropped {
+            repo::delete_split(&mut *conn, &household_id, dropped).await?;
+        }
+        delete_all_of_in(
+            &mut *conn,
+            &*self.clock,
+            ctx,
+            origin,
+            "split",
+            &plan.dropped,
+        )
+        .await?;
+        repo::park_positions(&mut *conn, &household_id, &id).await?;
+        let kept = &plan.kept;
+        repo::write_splits(
+            &mut *conn,
+            &*self.clock,
+            &household_id,
+            &id,
+            &group,
+            kept,
+            &now,
+        )
+        .await?;
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "updated", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
@@ -236,7 +277,8 @@ impl TransactionService {
         Ok(view)
     }
 
-    /// Deletes a group and its splits; the event carries its last state.
+    /// Deletes a group, its splits and their attachments; the event carries
+    /// its last state.
     pub async fn delete(
         &self,
         ctx: &HouseholdCtx,
@@ -261,6 +303,8 @@ impl TransactionService {
         let view = load_one(&mut *conn, ctx, &id).await?;
         bills::release_group_in(&mut *conn, &*self.clock, ctx, origin, &id).await?;
         repo::delete_group(&mut *conn, &ctx.household_id.to_string(), &id).await?;
+        let split_ids: Vec<String> = view.splits.iter().map(|s| s.id.clone()).collect();
+        delete_all_of_in(&mut *conn, &*self.clock, ctx, origin, "split", &split_ids).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "deleted", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
         Ok(())
