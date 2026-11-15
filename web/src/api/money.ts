@@ -44,6 +44,11 @@ export function sumAmounts(amounts: readonly string[], places: number): string {
   return fromMinor(total, places);
 }
 
+/** True for a decimal string above zero, such as "3.00" (not "0.00" or "-3.00"). */
+export function isPositive(amount: string): boolean {
+  return !isNegative(amount) && /[1-9]/.test(amount);
+}
+
 /** True for a negative decimal string such as "-3.00". */
 export function isNegative(amount: string): boolean {
   return amount.trim().startsWith("-");
@@ -53,7 +58,12 @@ export function isNegative(amount: string): boolean {
  * Formats a decimal string for display with the currency symbol, using the
  * string form of `Intl.NumberFormat.format`, which keeps every digit exact.
  */
-export function formatMoney(amount: string, currency: string, locale?: string): string {
+export function formatMoney(
+  amount: string,
+  currency: string,
+  locale?: string,
+  options: { signed?: boolean } = {},
+): string {
   const fraction = DECIMAL.exec(amount)?.[3]?.length ?? 0;
   try {
     const format = new Intl.NumberFormat(locale, {
@@ -61,10 +71,13 @@ export function formatMoney(amount: string, currency: string, locale?: string): 
       currency,
       minimumFractionDigits: fraction,
       maximumFractionDigits: fraction,
+      // "exceptZero": "+€3.00", "-€3.00", "€0.00".
+      signDisplay: options.signed ? "exceptZero" : "auto",
     });
     return format.format(amount as Intl.StringNumericLiteral);
   } catch {
     // Unknown currency codes (crypto, custom) fall back to the plain string.
-    return `${amount} ${currency}`;
+    const plus = options.signed && isPositive(amount) ? "+" : "";
+    return `${plus}${amount} ${currency}`;
   }
 }

@@ -225,6 +225,33 @@ describe("transactions", () => {
     );
   });
 
+  it("lists days with totals and folds upcoming transactions away", async () => {
+    const future = {
+      id: "g2",
+      title: null,
+      created_at: "",
+      updated_at: "",
+      splits: [{ ...split("s3", "a1", "a2", "9.00"), date: "2999-01-01" }],
+    };
+    loggedIn({ "GET /api/v1/transactions": list([future, GROUP]) });
+    renderApp("/transactions");
+    const user = userEvent.setup();
+
+    const [day] = await screen.findAllByTestId("day-heading");
+    if (!day) throw new Error("expected a day heading");
+    expect(within(day).getByText("-€10.00")).toBeInTheDocument();
+    expect(screen.queryByText("split s3")).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole("button", { name: /Upcoming/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+    const row = screen.getByText("split s3").closest("tr");
+    if (!row) throw new Error("expected a row");
+    expect(row).toHaveAttribute("data-future", "true");
+    expect(within(row).getAllByText("Withdrawal")[0]).toHaveClass("text-kind-withdrawal");
+    expect(within(row).getByText("-€9.00")).toHaveClass("text-destructive");
+  });
+
   it("loads a group into the editor and deletes it", async () => {
     const seen = loggedIn({
       "GET /api/v1/transactions/g1": { data: GROUP },

@@ -24,6 +24,12 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.51 0.09 186);
+  /* Transaction kinds (badge text and tint). */
+  --kind-withdrawal: oklch(0.53 0.19 25);
+  --kind-deposit: oklch(0.52 0.13 150);
+  --kind-transfer: oklch(0.52 0.15 255);
+  --kind-opening: oklch(0.5 0.17 295);
+  --kind-reconciliation: oklch(0.56 0.12 70);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +52,11 @@
     --border: oklch(1 0 0 / 12%);
     --input: oklch(1 0 0 / 18%);
     --ring: oklch(0.7 0.11 182);
+    --kind-withdrawal: oklch(0.72 0.16 22);
+    --kind-deposit: oklch(0.76 0.14 150);
+    --kind-transfer: oklch(0.73 0.12 250);
+    --kind-opening: oklch(0.74 0.13 295);
+    --kind-reconciliation: oklch(0.79 0.12 75);
   }
 }
 
@@ -69,6 +80,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-kind-withdrawal: var(--kind-withdrawal);
+  --color-kind-deposit: var(--kind-deposit);
+  --color-kind-transfer: var(--kind-transfer);
+  --color-kind-opening: var(--kind-opening);
+  --color-kind-reconciliation: var(--kind-reconciliation);
 }
 
 @layer base {

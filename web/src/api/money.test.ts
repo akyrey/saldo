@@ -76,6 +76,13 @@ describe("formatting", () => {
     expect(formatMoney("0.123456789", "EUR", "en-US")).toBe("€0.123456789");
   });
 
+  it("adds a plus sign to positive amounts when asked", () => {
+    expect(formatMoney("3.00", "EUR", "en-US", { signed: true })).toBe("+€3.00");
+    expect(formatMoney("-3.00", "EUR", "en-US", { signed: true })).toBe("-€3.00");
+    expect(formatMoney("0.00", "EUR", "en-US", { signed: true })).toBe("€0.00");
+    expect(formatMoney("1.00", "NOT-A-CODE", "en-US", { signed: true })).toBe("+1.00 NOT-A-CODE");
+  });
+
   it("falls back for unknown currency codes", () => {
     expect(formatMoney("1.00", "NOT-A-CODE", "en-US")).toBe("1.00 NOT-A-CODE");
   });
