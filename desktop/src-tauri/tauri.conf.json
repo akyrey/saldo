@@ -40,5 +40,16 @@
       "signingIdentity": "-",
       "minimumSystemVersion": "11.0"
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE3NkJBRDREQjcyQzQwQTYKUldTbVFDeTNUYTFyRnpSTW1uNnp6R2xNc3kyZ245QVdGWldQK0VqU3lRYlhzbXdyb3RWb2VibGMK",
+      "endpoints": [
+        "https://github.com/akyrey/saldo/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
