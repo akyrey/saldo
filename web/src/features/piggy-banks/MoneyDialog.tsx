@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { errorMessage, fieldErrors } from "@/api/errors";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { errorProps } from "@/components/field-props";
 import { Alert } from "@/components/ui/alert";
@@ -86,13 +87,7 @@ export function MoneyDialog({ piggyBank, direction, accounts, onClose }: MoneyDi
           />
         </Field>
         <Field id="money-date" label="Date" error={errors.date}>
-          <Input
-            id="money-date"
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <DatePicker id="money-date" required value={date} onChange={(value) => setDate(value)} />
         </Field>
         {save.error && Object.keys(errors).length === 0 ? (
           <Alert>{errorMessage(save.error)}</Alert>

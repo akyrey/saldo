@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage, fieldErrors } from "@/api/errors";
 import { normalizeAmountInput } from "@/api/money";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
@@ -57,21 +58,19 @@ function LimitFormRow({ initial, submitLabel, save, onDone, onCancel }: LimitFor
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <Field id={`${prefix}-start`} label="From" error={errors.start_date}>
-          <Input
+          <DatePicker
             id={`${prefix}-start`}
-            type="date"
             required
             value={form.start_date}
-            onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
+            onChange={(value) => setForm((f) => ({ ...f, start_date: value }))}
           />
         </Field>
         <Field id={`${prefix}-end`} label="To" error={errors.end_date}>
-          <Input
+          <DatePicker
             id={`${prefix}-end`}
-            type="date"
             required
             value={form.end_date}
-            onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
+            onChange={(value) => setForm((f) => ({ ...f, end_date: value }))}
           />
         </Field>
         <Field id={`${prefix}-amount`} label="Limit" error={errors.amount}>

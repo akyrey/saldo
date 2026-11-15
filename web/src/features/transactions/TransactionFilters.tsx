@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Combobox } from "@/components/Combobox";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,19 +55,17 @@ export function TransactionFilters({
         </Button>
       </form>
       <Field id="filter-from" label="From">
-        <Input
+        <DatePicker
           id="filter-from"
-          type="date"
           value={value.from ?? ""}
-          onChange={(e) => onChange({ from: orUndefined(e.target.value) })}
+          onChange={(value) => onChange({ from: orUndefined(value) })}
         />
       </Field>
       <Field id="filter-to" label="To">
-        <Input
+        <DatePicker
           id="filter-to"
-          type="date"
           value={value.to ?? ""}
-          onChange={(e) => onChange({ to: orUndefined(e.target.value) })}
+          onChange={(value) => onChange({ to: orUndefined(value) })}
         />
       </Field>
       <Field id="filter-account" label="Account">

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { errorMessage, fieldErrors } from "@/api/errors";
 import { normalizeAmountInput } from "@/api/money";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { errorProps } from "@/components/field-props";
 import { Alert } from "@/components/ui/alert";
@@ -71,11 +72,10 @@ export function NewPiggyBankForm({ accounts, onDone }: NewPiggyBankFormProps) {
         />
       </Field>
       <Field id="piggy-target-date" label="Target date (optional)" error={errors.target_date}>
-        <Input
+        <DatePicker
           id="piggy-target-date"
-          type="date"
           value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
+          onChange={(value) => setTargetDate(value)}
         />
       </Field>
       <fieldset className="sm:col-span-3">

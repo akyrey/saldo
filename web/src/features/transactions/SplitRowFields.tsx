@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { errorProps } from "@/components/field-props";
 import { Badge } from "@/components/ui/badge";
@@ -87,12 +88,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {props.template ? null : (
           <Field id={id("date")} label="Date" error={errors.date}>
-            <Input
+            <DatePicker
               id={id("date")}
-              type="date"
               required
               value={row.date}
-              onChange={(e) => onChange({ date: e.target.value })}
+              onChange={(value) => onChange({ date: value })}
               {...errorProps(id("date"), errors.date)}
             />
           </Field>

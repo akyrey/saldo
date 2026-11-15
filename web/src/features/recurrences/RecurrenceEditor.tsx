@@ -2,6 +2,7 @@ import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { ApiError, errorMessage } from "@/api/errors";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
@@ -96,20 +97,18 @@ export function RecurrenceEditor({ initial, submitLabel, save, onSaved }: Recurr
           />
         </Field>
         <Field id="first-date" label="First date">
-          <Input
+          <DatePicker
             id="first-date"
-            type="date"
             required
             value={state.first_date}
-            onChange={(e) => set({ first_date: e.target.value })}
+            onChange={(value) => set({ first_date: value })}
           />
         </Field>
         <Field id="repeat-until" label="Repeat until (optional)">
-          <Input
+          <DatePicker
             id="repeat-until"
-            type="date"
             value={state.repeat_until}
-            onChange={(e) => set({ repeat_until: e.target.value })}
+            onChange={(value) => set({ repeat_until: value })}
           />
         </Field>
         <Field id="max-occurrences" label="Stop after (times, optional)">

@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState } from "@/components/QueryState";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { currenciesQuery } from "@/features/accounts/queries";
 import { todayIso } from "@/lib/dates";
@@ -89,19 +89,17 @@ export function ReportPage() {
       </nav>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field id="report-from" label="From">
-          <Input
+          <DatePicker
             id="report-from"
-            type="date"
             value={params.from}
-            onChange={(e) => e.target.value && set({ from: e.target.value })}
+            onChange={(value) => value && set({ from: value })}
           />
         </Field>
         <Field id="report-to" label="To">
-          <Input
+          <DatePicker
             id="report-to"
-            type="date"
             value={params.to}
-            onChange={(e) => e.target.value && set({ to: e.target.value })}
+            onChange={(value) => value && set({ to: value })}
           />
         </Field>
         <Field id="report-interval" label="Interval">

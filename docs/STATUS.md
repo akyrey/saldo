@@ -58,6 +58,7 @@ Record every place where the code differs from the architecture document, why, a
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
 - 2026-11-15 Transaction list (owner's request): grouped by day (a group is filed under its latest split date, the server's sort key) with a calendar tile, "Today"/"Yesterday" or the weekday, and the net total per currency of the page's withdrawals and deposits (transfers, opening balances and reconciliations count as neither; on an account's page the direction is relative to the account). Days after today fold into a closed "Upcoming" section with faded rows. Amounts are signed and coloured (in green with "+", out red); kinds have their own colour tokens (`--kind-*` in `index.css`; Tailwind's `dark:` variant is not used because dark mode follows `prefers-color-scheme`).
+- 2026-11-15 Date fields use `DatePicker` (typed `YYYY-MM-DD` plus a react-day-picker 10 calendar in a Radix popover, weeks starting on Monday, Today/Yesterday/Clear); the calendar chunk loads on first open.
 
 - 2026-11-13 CI: every GitHub Action moved to its Node 24 runtime release (checkout v7, setup-node v7, upload-artifact v7, download-artifact v8, docker setup-buildx v4, login v4, metadata v6, build-push v7; rust-cache v2 already was), ending the "Node.js 20 is deprecated" warnings. The app itself builds with Node 26 (LTS) in CI and the image; lint, typecheck, tests and build were checked on `node:26-slim`.
 
