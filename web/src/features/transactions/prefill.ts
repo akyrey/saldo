@@ -50,7 +50,11 @@ export function fromTemplate(template: Template, today: string): EditorState {
 /** A new, unsaved copy of a group, dated today (not reconciled, no attachments). */
 export function duplicateOf(group: TransactionGroup, today: string): EditorState {
   const copy = fromGroup(group);
-  return { ...copy, splits: copy.splits.map((row) => ({ ...row, date: today })) };
+  // A copy continues no saved split (`id` dropped): it is a new transaction.
+  return {
+    ...copy,
+    splits: copy.splits.map(({ id: _saved, ...row }) => ({ ...row, date: today })),
+  };
 }
 
 /** Which account types each side of a kind may use. */

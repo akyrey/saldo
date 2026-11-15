@@ -138,6 +138,14 @@ describe("toRequest", () => {
     });
   });
 
+  it("names the saved split a row continues, so it keeps its attachments", () => {
+    const saved = { ...emptySplit("2026-11-07"), id: "s1", amount: "1" };
+    const added = { ...emptySplit("2026-11-07"), amount: "2" };
+    const [first, second] = toRequest({ title: "", splits: [saved, added] }).splits;
+    expect(first?.id).toBe("s1");
+    expect(second).not.toHaveProperty("id");
+  });
+
   it("sends a null title when empty", () => {
     expect(toRequest({ title: " ", splits: [] }).title).toBeNull();
   });
@@ -179,6 +187,7 @@ describe("fromGroup", () => {
 
     expect(state.title).toBe("");
     expect(state.splits[0]).toMatchObject({
+      id: "s1",
       date: "2026-11-07",
       source_id: "a",
       destination_id: "b",

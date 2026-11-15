@@ -48,9 +48,31 @@ test("upload, download and delete attachments on a transaction and a bill", asyn
   const download = await downloading;
   expect(download.suggestedFilename()).toBe("receipt.pdf");
 
+  // Saving an edit keeps the split, so the file stays attached.
+  await page.getByLabel(/^Amount/).fill("3.50");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.goto(`/transactions/${groupId}/edit`);
+  await expect(page.getByLabel(/^Amount/)).toHaveValue("3.50");
+  await expect(page.getByText("Bakery receipt")).toBeVisible();
+
   await page.getByRole("button", { name: "Delete Bakery receipt" }).click();
   await page.getByRole("button", { name: "Really delete Bakery receipt?" }).click();
   await expect(page.getByText("No files yet.")).toBeVisible();
+
+  // Deleting the transaction takes its files along.
+  await page.getByLabel("File").setInputFiles(RECEIPT);
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByText("receipt.pdf", { exact: true })).toBeVisible();
+  const group = await page.request.get(`/api/v1/transactions/${groupId}`);
+  const splitId = ((await group.json()) as { data: { splits: { id: string }[] } }).data.splits[0]
+    ?.id;
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Really delete?" }).click();
+  await expect(page.getByRole("heading", { name: "Transactions", exact: true })).toBeVisible();
+  const left = await page.request.get(
+    `/api/v1/attachments?attachable_type=split&attachable_id=${splitId}`,
+  );
+  expect(((await left.json()) as { data: unknown[] }).data).toEqual([]);
 
   const billId = await post(page, "/api/v1/bills", {
     name: "Bakery subscription",

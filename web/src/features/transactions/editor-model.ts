@@ -9,6 +9,11 @@ import type { SplitKind } from "./search";
 export interface SplitRow {
   /** Stable React key; not sent to the server. */
   key: string;
+  /**
+   * The saved split this row continues (loaded rows only). Sent on save, so
+   * the split keeps its ID and attachments; a row without one is new.
+   */
+  id?: string;
   date: string;
   description: string;
   source_id: string;
@@ -93,6 +98,7 @@ export function fromGroup(group: TransactionGroup): EditorState {
     title: group.title ?? "",
     splits: group.splits.map((split) => ({
       key: newKey(),
+      id: split.id,
       date: split.date,
       description: split.description,
       source_id: split.source_account_id,
@@ -121,6 +127,7 @@ export function toRequest(state: EditorState): TransactionRequest {
     splits: state.splits.map((row) => {
       const foreignAmount = orNull(row.foreign_amount);
       return {
+        ...(row.id === undefined ? {} : { id: row.id }),
         date: row.date,
         description: row.description.trim(),
         source_id: row.source_id,

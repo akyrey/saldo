@@ -13349,6 +13349,14 @@
               "null"
             ]
           },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`PUT` only: the existing split this one continues, keeping its ID and\nattachments. Leave it out for a new split; the group's splits that\nno entry names are deleted with their attachments."
+          },
           "meta": {
             "type": "object",
             "description": "Free-form extra fields."

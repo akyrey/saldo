@@ -94,6 +94,8 @@ describe("duplicateOf", () => {
       ["2026-11-13", "1.00"],
     ]);
     expect(state.splits[0]?.key).not.toBe(state.splits[1]?.key);
+    // A copy is new: its splits continue nothing, so attachments stay behind.
+    expect(state.splits.map((s) => s.id)).toEqual([undefined, undefined]);
   });
 });
 

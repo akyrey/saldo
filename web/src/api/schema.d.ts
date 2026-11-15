@@ -3233,6 +3233,13 @@ export interface components {
       destination_id: string;
       foreign_amount?: string | null;
       foreign_currency?: string | null;
+      /**
+       * Format: uuid
+       * @description `PUT` only: the existing split this one continues, keeping its ID and
+       *     attachments. Leave it out for a new split; the group's splits that
+       *     no entry names are deleted with their attachments.
+       */
+      id?: string | null;
       /** @description Free-form extra fields. */
       meta?: Record<string, never>;
       notes?: string | null;
