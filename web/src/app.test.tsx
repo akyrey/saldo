@@ -270,6 +270,47 @@ describe("transactions", () => {
 });
 
 describe("categories and tags", () => {
+  it("gives a category a colour from the palette and shows it in the list", async () => {
+    const seen = loggedIn({
+      "GET /api/v1/categories": list([
+        { id: "c1", name: "Groceries", color: "green", created_at: "", updated_at: "" },
+      ]),
+      "PATCH /api/v1/categories/c1": { data: {} },
+    });
+    renderApp("/categories");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Colour of Groceries" }));
+    const palette = await screen.findByRole("group", { name: "Colours" });
+    expect(within(palette).getByRole("button", { name: "green" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(within(palette).getByRole("button", { name: "blue" }));
+    await waitFor(() => expect(seen.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = seen.find((r) => r.method === "PATCH");
+    expect(await patch?.json()).toEqual({ color: "blue" });
+  });
+
+  it("shows a category's colour beside it in the transaction list", async () => {
+    const coloured = {
+      ...GROUP,
+      splits: [{ ...split("s1", "a1", "a2", "4.00"), category_id: "c1" }],
+    };
+    loggedIn({
+      "GET /api/v1/categories": list([
+        { id: "c1", name: "Groceries", color: "green", created_at: "", updated_at: "" },
+      ]),
+      "GET /api/v1/transactions": list([coloured]),
+    });
+    renderApp("/transactions");
+
+    const row = (await screen.findAllByTestId("transaction-row"))[0];
+    if (!row) throw new Error("expected a row");
+    await within(row).findByText("Groceries");
+    expect(row.querySelector('[data-color="green"]')).toHaveClass("bg-cat-green");
+  });
+
   it("adds, renames and deletes a tag", async () => {
     let tags = [{ id: "t1", name: "weekend", created_at: "", updated_at: "" }];
     const seen = loggedIn({

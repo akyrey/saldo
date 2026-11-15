@@ -1,5 +1,6 @@
 import { api, call } from "@/api/client";
 import { NamedItemsPage, type NamedItemsConfig } from "@/features/shared/NamedItemsPage";
+import { CategoryColorPicker } from "./CategoryColorPicker";
 import { categoriesQuery, type Category } from "./queries";
 
 const config: NamedItemsConfig<Category> = {
@@ -10,6 +11,7 @@ const config: NamedItemsConfig<Category> = {
   rename: (id, name) =>
     call(api.PATCH("/api/v1/categories/{id}", { params: { path: { id } }, body: { name } })),
   remove: (id) => call(api.DELETE("/api/v1/categories/{id}", { params: { path: { id } } })),
+  decorate: (category) => <CategoryColorPicker category={category} />,
 };
 
 export function CategoriesPage() {

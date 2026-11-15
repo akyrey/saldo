@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
 import { Check, Pencil, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { errorMessage } from "@/api/errors";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState } from "@/components/QueryState";
@@ -21,6 +21,8 @@ export interface NamedItemsConfig<T extends NamedItem> {
   create: (name: string) => Promise<unknown>;
   rename: (id: string, name: string) => Promise<unknown>;
   remove: (id: string) => Promise<unknown>;
+  /** Shown before each item's name, for example a category's colour. */
+  decorate?: (item: T) => ReactNode;
 }
 
 function ItemRow<T extends NamedItem>(props: {
@@ -29,6 +31,7 @@ function ItemRow<T extends NamedItem>(props: {
   onRename: (name: string) => void;
   onRemove: () => void;
   busy: boolean;
+  decoration?: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(props.item.name);
@@ -65,7 +68,10 @@ function ItemRow<T extends NamedItem>(props: {
   }
   return (
     <div className="flex items-center justify-between gap-2 py-2">
-      <span>{props.item.name}</span>
+      <span className="flex items-center gap-2">
+        {props.decoration}
+        {props.item.name}
+      </span>
       <div className="flex gap-1">
         <Button
           size="icon"
@@ -140,6 +146,7 @@ export function NamedItemsPage<T extends NamedItem>({ config }: { config: NamedI
             item={item}
             singular={config.singular}
             busy={remove.isPending}
+            decoration={config.decorate?.(item)}
             onRename={(newName) => rename.mutate({ id: item.id, name: newName })}
             onRemove={() => remove.mutate(item.id)}
           />

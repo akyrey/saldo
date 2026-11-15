@@ -3,6 +3,7 @@ import { Pencil } from "lucide-react";
 import { Amount } from "@/components/Amount";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Account } from "@/features/accounts/queries";
+import { CategoryDot } from "@/features/categories/CategoryDot";
 import type { Category } from "@/features/categories/queries";
 import { dayHeading } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,12 @@ function SplitCells({ split, ctx }: { split: Split; ctx: RowContext }) {
         {source?.name ?? "?"} → {destination?.name ?? "?"}
       </TableCell>
       <TableCell className="hidden text-sm text-muted-foreground md:table-cell">
-        {category?.name}
+        {category ? (
+          <span className="inline-flex items-center gap-1.5">
+            <CategoryDot color={category.color} />
+            {category.name}
+          </span>
+        ) : null}
       </TableCell>
       <TableCell className="hidden sm:table-cell">
         <KindBadge kind={split.kind} />
