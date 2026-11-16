@@ -4,15 +4,17 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
-### Changed
-
-- The accounts page loads assets and liabilities at once; expense, revenue and equity accounts load only when their card is opened, 50 at a time with "Load more".
-- Inactive bills, recurring transactions and rules are dimmed. Inactive bills and recurring transactions move to a folded "Inactive" section; inactive rules stay in place (their order is the order they run in), and an inactive rule group's rules start folded.
+## [0.4.0] - 2026-11-16
 
 ### Added
 
 - Search on the accounts page, across all account types (`GET /accounts?q=`).
 - An on/off switch on each bill, recurring transaction, rule and rule group in its list.
+
+### Changed
+
+- The accounts page loads assets and liabilities at once; expense, revenue and equity accounts load only when their card is opened, 50 at a time with "Load more".
+- Inactive bills, recurring transactions and rules are dimmed. Inactive bills and recurring transactions move to a folded "Inactive" section; inactive rules stay in place (their order is the order they run in), and an inactive rule group's rules start folded.
 
 ## [0.3.0] - 2026-11-16
 
