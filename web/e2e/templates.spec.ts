@@ -51,7 +51,7 @@ test("save a transaction as a template, use it, and duplicate a transaction", as
   await expect(page).toHaveURL(/\/transactions$/);
 
   await page.goto("/transactions?q=Bread%20run");
-  const rows = page.getByRole("row", { name: /Tpl bank → Tpl bakery/ });
+  const rows = page.getByRole("row", { name: /Tpl bank to Tpl bakery/ });
   await expect(rows).toHaveCount(3);
   await expect(rows.filter({ hasText: "6.80" })).toHaveCount(1);
   await expect(rows.filter({ hasText: "4.20" })).toHaveCount(2);

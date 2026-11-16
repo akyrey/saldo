@@ -35,7 +35,7 @@ test("create and fire a recurring transaction, and guard a piggy bank", async ({
 
   await page.goto("/transactions?q=Rent");
   // One row: the second firing created nothing.
-  await expect(page.getByRole("row", { name: /Rent checking → Rent landlord/ })).toHaveCount(1);
+  await expect(page.getByRole("row", { name: /Rent checking to Rent landlord/ })).toHaveCount(1);
 
   // The account holds nothing beyond the rent paid, so saving money is refused.
   await page.goto("/piggy-banks");

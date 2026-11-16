@@ -56,3 +56,11 @@ export interface NewTransactionSearch {
 export function parseNewTransactionSearch(search: Record<string, unknown>): NewTransactionSearch {
   return { template: pick(search.template, UUID), duplicate: pick(search.duplicate, UUID) };
 }
+
+/** The filters folded behind the list's "Filters" button (search stays in view). */
+const PANEL_FILTERS = ["from", "to", "account_id", "category_id", "tag_id", "kind"] as const;
+
+/** How many of the folded filters are set, so the button can say so while they are hidden. */
+export function activeFilterCount(value: TransactionSearch): number {
+  return PANEL_FILTERS.filter((key) => value[key] !== undefined).length;
+}

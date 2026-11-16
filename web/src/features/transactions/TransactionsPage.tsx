@@ -31,7 +31,10 @@ export function TransactionsPage() {
         title="Transactions"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <TemplatePicker />
+            {/* Phones get it on the new-transaction page instead, to keep the header short. */}
+            <div className="hidden sm:block">
+              <TemplatePicker />
+            </div>
             <Button size="sm" asChild>
               <Link to="/transactions/new">
                 <Plus /> New transaction

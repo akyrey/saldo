@@ -1,6 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Amount } from "@/components/Amount";
 import { DateTile } from "@/components/DateTile";
 import {
   Table,
@@ -16,7 +15,7 @@ import { dayName, todayIso } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { groupByDay, type CurrencyTotal, type DayGroup } from "./day-groups";
 import type { TransactionGroup } from "./queries";
-import { FUTURE_ROW, GroupRows, type RowContext } from "./TransactionRows";
+import { FUTURE_ROW, GroupRows, Totals, type RowContext } from "./TransactionRows";
 
 interface TransactionTableProps {
   groups: readonly TransactionGroup[];
@@ -28,19 +27,9 @@ interface TransactionTableProps {
   today?: string;
 }
 
-function Totals({ totals }: { totals: readonly CurrencyTotal[] }) {
-  return (
-    <span className="inline-flex flex-col items-end gap-0.5 text-sm font-medium">
-      {totals.map((t) => (
-        <Amount key={t.currency} value={t.amount} currency={t.currency} signed />
-      ))}
-    </span>
-  );
-}
-
 /**
- * A row whose label spans the description and accounts columns, with totals in the
- * amount column. The hidden cells keep the columns aligned on narrow screens.
+ * A row with its label in the description column and totals in the amount column.
+ * The empty cells hide with their columns, so the columns line up at every width.
  */
 function SummaryRow(props: {
   label: ReactNode;
@@ -50,15 +39,14 @@ function SummaryRow(props: {
 }) {
   return (
     <TableRow data-testid={props.testId} className={cn("hover:bg-transparent", props.className)}>
-      <TableCell colSpan={2} className="pt-4 pb-1">
-        {props.label}
-      </TableCell>
+      <TableCell className="pt-4 pb-1 whitespace-nowrap">{props.label}</TableCell>
+      <TableCell className="hidden sm:table-cell" />
       <TableCell className="hidden md:table-cell" />
       <TableCell className="hidden sm:table-cell" />
       <TableCell className="pt-4 pb-1 text-right align-bottom">
         <Totals totals={props.totals} />
       </TableCell>
-      <TableCell />
+      <TableCell className="hidden sm:table-cell" />
     </TableRow>
   );
 }
@@ -129,11 +117,11 @@ export function TransactionTable(props: TransactionTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead className="pl-4">Description</TableHead>
-          <TableHead>From → To</TableHead>
+          <TableHead className="hidden sm:table-cell">From → To</TableHead>
           <TableHead className="hidden md:table-cell">Category</TableHead>
           <TableHead className="hidden sm:table-cell">Kind</TableHead>
           <TableHead className="text-right">Amount</TableHead>
-          <TableHead>
+          <TableHead className="hidden sm:table-cell">
             <span className="sr-only">Edit</span>
           </TableHead>
         </TableRow>

@@ -209,6 +209,11 @@ describe("transactions", () => {
     expect(await screen.findByText("(2 splits)")).toBeInTheDocument();
     expect(screen.getByText("split s1")).toBeInTheDocument();
     expect(screen.getByText("split s2")).toBeInTheDocument();
+    // The account filter is set, so the folded panel says one filter is active.
+    const filters = screen.getByRole("button", { name: /^Filters\s*1\s*active$/ });
+    expect(screen.getByLabelText("Kind")).not.toBeVisible();
+    await user.click(filters);
+    expect(filters).toHaveAttribute("aria-expanded", "true");
     await user.selectOptions(screen.getByLabelText("Kind"), "transfer");
     await waitFor(() => expect(router.state.location.search).toMatchObject({ kind: "transfer" }));
     await user.type(screen.getByLabelText("Search"), "bread");
@@ -240,6 +245,7 @@ describe("transactions", () => {
     const [day] = await screen.findAllByTestId("day-heading");
     if (!day) throw new Error("expected a day heading");
     expect(within(day).getByText("-€10.00")).toBeInTheDocument();
+    expect(screen.getByTestId("group-total")).toHaveTextContent("-€10.00");
     expect(screen.queryByText("split s3")).not.toBeInTheDocument();
 
     const toggle = screen.getByRole("button", { name: /Upcoming/ });
