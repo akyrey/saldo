@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupAccounts, ownerLabel } from "./grouping";
+import { flattenPages, groupAccounts, ownerLabel } from "./grouping";
 import type { Account, Balance } from "./queries";
 
 function account(id: string, type: string, currency = "EUR"): Account {
@@ -53,6 +53,29 @@ describe("groupAccounts", () => {
   it("skips accounts without a balance yet", () => {
     const groups = groupAccounts([account("a", "asset")], new Map(), undefined);
     expect(groups[0]?.totals).toEqual([]);
+  });
+});
+
+describe("flattenPages", () => {
+  it("joins the loaded pages and keys balances by account", () => {
+    const meta = { page: 1, per_page: 1, total: 3 };
+    const pages = [
+      { accounts: [account("a", "asset")], balances: [balance("a", "1.00")[1]], meta },
+      { accounts: [account("b", "asset")], balances: [balance("b", "2.00")[1]], meta },
+    ];
+
+    const flat = flattenPages(pages);
+
+    expect(flat.accounts.map((a) => a.id)).toEqual(["a", "b"]);
+    expect(flat.balances.get("b")?.balance).toBe("2.00");
+    expect(flat.total).toBe(3);
+  });
+
+  it("is empty before the first page arrives", () => {
+    const flat = flattenPages(undefined);
+    expect(flat.accounts).toEqual([]);
+    expect(flat.balances.size).toBe(0);
+    expect(flat.total).toBe(0);
   });
 });
 

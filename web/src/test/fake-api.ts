@@ -81,6 +81,49 @@ export function account(id: string, name: string, type: string, extra: object = 
   };
 }
 
+interface FakeBalance {
+  account_id: string;
+  balance: string;
+  currency: string;
+}
+
+/**
+ * `GET /accounts` and `GET /accounts/balances` that honour the `type`,
+ * `active`, `q`, `page` and `per_page` filters like the server does.
+ */
+export function accountRoutes(
+  accounts: ReturnType<typeof account>[],
+  balances: FakeBalance[],
+): Record<string, Handler> {
+  const matching = (request: Request) => {
+    const params = new URL(request.url).searchParams;
+    const type = params.get("type");
+    const active = params.get("active");
+    const q = params.get("q")?.trim().toLowerCase();
+    const found = accounts.filter(
+      (a) =>
+        (!type || a.type === type) &&
+        (active === null || String(a.active) === active) &&
+        (!q || a.name.toLowerCase().includes(q)),
+    );
+    const page = Number(params.get("page") ?? "1");
+    const perPage = Number(params.get("per_page") ?? "50");
+    const items = found.slice((page - 1) * perPage, page * perPage);
+    return { items, meta: { page, per_page: perPage, total: found.length } };
+  };
+  return {
+    "GET /api/v1/accounts": (request) => {
+      const { items, meta } = matching(request);
+      return { data: items, meta };
+    },
+    "GET /api/v1/accounts/balances": (request) => {
+      const { items, meta } = matching(request);
+      const data = items.flatMap((a) => balances.filter((b) => b.account_id === a.id));
+      return { data, meta };
+    },
+  };
+}
+
 export function split(
   id: string,
   source: string,

@@ -95,6 +95,7 @@ test("a three-split transaction with different accounts changes three balances",
   await expect(page.getByTestId("balance-Checking")).toHaveText("-€42.50");
   await expect(page.getByTestId("balance-Credit card")).toHaveText("-€17.25");
   await expect(page.getByTestId("balance-Savings")).toHaveText("€100.00");
+  await page.getByRole("button", { name: "Expense accounts" }).click();
   await expect(page.getByTestId("balance-Groceries")).toHaveText("€59.75");
 });
 

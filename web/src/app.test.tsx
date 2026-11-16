@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   account,
+  accountRoutes,
   apiError,
   CURRENCIES,
   fakeApi,
@@ -24,11 +25,11 @@ const ACCOUNTS = [
   account("a2", "Food", "expense"),
   account("a3", "Old savings", "asset", { active: false }),
 ];
-const BALANCES = list([
+const BALANCES = [
   { account_id: "a1", balance: "-10.00", currency: "EUR" },
   { account_id: "a2", balance: "10.00", currency: "EUR" },
   { account_id: "a3", balance: "0.00", currency: "EUR" },
-]);
+];
 const GROUP = {
   id: "g1",
   title: "Weekend",
@@ -42,8 +43,7 @@ function loggedIn(extra: Record<string, unknown> = {}) {
     "GET /api/v1/auth/me": ME,
     "GET /api/v1/household/members": MEMBERS,
     "GET /api/v1/currencies": CURRENCIES,
-    "GET /api/v1/accounts": list(ACCOUNTS),
-    "GET /api/v1/accounts/balances": BALANCES,
+    ...accountRoutes(ACCOUNTS, BALANCES),
     "GET /api/v1/categories": list([
       { id: "c1", name: "Groceries", created_at: "", updated_at: "" },
     ]),
@@ -128,11 +128,53 @@ describe("accounts", () => {
     const user = userEvent.setup();
 
     const assets = await screen.findByTestId("group-asset");
-    expect(within(assets).getByText("Checking")).toBeInTheDocument();
+    expect(await within(assets).findByText("Checking")).toBeInTheDocument();
     expect(within(assets).getAllByText("-€10.00")).toHaveLength(2);
     expect(within(assets).queryByText("Old savings")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Show archived" }));
-    expect(within(assets).getByText("Old savings")).toBeInTheDocument();
+    expect(await within(assets).findByText("Old savings")).toBeInTheDocument();
+  });
+
+  it("loads expense accounts only when their section is opened, a page at a time", async () => {
+    const payees = Array.from({ length: 60 }, (_, i) =>
+      account(`p${i}`, `Payee ${String(i).padStart(2, "0")}`, "expense"),
+    );
+    const seen = loggedIn(accountRoutes([...ACCOUNTS, ...payees], BALANCES));
+    renderApp("/accounts");
+    const user = userEvent.setup();
+
+    await screen.findByTestId("group-asset");
+    const listed = (type: string) =>
+      seen.filter((r) => r.url.includes("/accounts?") && r.url.includes(`type=${type}`));
+    expect(listed("asset").length).toBeGreaterThan(0);
+    expect(listed("expense")).toHaveLength(0);
+    expect(screen.queryByText("Payee 00")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /Expense accounts/ }));
+    const expenses = await screen.findByTestId("group-expense");
+    expect(await within(expenses).findByText("Food")).toBeInTheDocument();
+    expect(within(expenses).queryByText("Payee 59")).toBeNull();
+    expect(within(expenses).getByText("50 of 61")).toBeInTheDocument();
+
+    await user.click(within(expenses).getByRole("button", { name: "Load more" }));
+    expect(await within(expenses).findByText("Payee 59")).toBeInTheDocument();
+    expect(within(expenses).queryByRole("button", { name: "Load more" })).toBeNull();
+  });
+
+  it("searches every type by name on the server", async () => {
+    const seen = loggedIn();
+    renderApp("/accounts");
+    const user = userEvent.setup();
+
+    await screen.findByTestId("group-asset");
+    await user.type(screen.getByRole("searchbox", { name: "Search accounts" }), "foo");
+    const food = await screen.findByText("Food");
+    expect(screen.getByTestId("group-expense")).toContainElement(food);
+    expect(screen.queryByTestId("group-asset")).toBeNull();
+    expect(seen.some((r) => r.url.includes("/accounts?") && r.url.includes("q=foo"))).toBe(true);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search accounts" }), "zzz");
+    expect(await screen.findByText("No accounts match “foozzz”.")).toBeInTheDocument();
   });
 
   it("keeps the scope switch in the URL and sends it to the API", async () => {

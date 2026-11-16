@@ -1,5 +1,5 @@
 import { fromMinor, toMinor } from "@/api/money";
-import type { Account, Balance, Currency } from "./queries";
+import type { Account, AccountPage, Balance, Currency } from "./queries";
 import { placesOf } from "./queries";
 
 export const ACCOUNT_TYPES = ["asset", "liability", "revenue", "expense", "equity"] as const;
@@ -47,6 +47,22 @@ export function groupAccounts(
       }));
     return { type, accounts: members, totals };
   }).filter((group) => group.accounts.length > 0);
+}
+
+/** The accounts of the pages loaded so far, their balances by ID, and the full count. */
+export function flattenPages(pages: readonly AccountPage[] | undefined): {
+  accounts: Account[];
+  balances: Map<string, Balance>;
+  total: number;
+} {
+  const loaded = pages ?? [];
+  return {
+    accounts: loaded.flatMap((page) => page.accounts),
+    balances: new Map(
+      loaded.flatMap((page) => page.balances).map((balance) => [balance.account_id, balance]),
+    ),
+    total: loaded.at(-1)?.meta.total ?? 0,
+  };
 }
 
 /** "Joint" or the owner's name. */
