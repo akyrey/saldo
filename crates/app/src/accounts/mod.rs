@@ -31,6 +31,8 @@ pub struct AccountFilter {
     pub account_type: Option<String>,
     pub active: Option<bool>,
     pub scope: Scope,
+    /// Part of the name, ignoring ASCII case; blank means "any".
+    pub q: Option<String>,
 }
 
 /// An account's balance on a date (all time when `date` is `None`).
@@ -300,6 +302,7 @@ async fn list_rows(
         account_type: filter.account_type.clone(),
         active: filter.active,
         owner_user_id: filter.scope.owner(ctx),
+        q: filter.q.clone().filter(|q| !q.trim().is_empty()),
         limit: page.limit(),
         offset: page.offset(),
     };

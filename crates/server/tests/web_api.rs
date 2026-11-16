@@ -1,5 +1,5 @@
 //! Endpoints added in Phase 4 for the web app: the setup status and the
-//! balances of many accounts in one request.
+//! balances of many accounts in one request, and the account name search.
 
 #![allow(clippy::unwrap_used)] // helpers below are test code that clippy does not see as tests
 
@@ -91,6 +91,32 @@ async fn balances_follow_the_account_list_filters() {
     assert_eq!(balance_of(&assets.body, &checking), "-10.00");
     assert_eq!(assets.body["data"][0]["date"], "2026-11-02");
     assert_eq!(balance_of(&assets.body, &food), &Value::Null);
+}
+
+#[tokio::test]
+async fn accounts_and_balances_search_by_name() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let groceries = account(&server, &owner, "Groceries Store", "expense").await;
+    account(&server, &owner, "Cinema", "expense").await;
+    account(&server, &owner, "Checking", "asset").await;
+
+    let listed = server.get("/api/v1/accounts?q=grocer", &owner).await;
+    assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
+    assert_eq!(listed.body["meta"]["total"], 1);
+    assert_eq!(listed.body["data"][0]["id"], groceries.as_str());
+
+    let balances = server
+        .get("/api/v1/accounts/balances?q=GROCER&type=expense", &owner)
+        .await;
+    assert_eq!(balances.status, StatusCode::OK, "{}", balances.body);
+    assert_eq!(balances.body["meta"]["total"], 1);
+    assert_eq!(balances.body["data"][0]["account_id"], groceries.as_str());
+
+    let blank = server
+        .get("/api/v1/accounts?q=%20&type=expense", &owner)
+        .await;
+    assert_eq!(blank.body["meta"]["total"], 2, "a blank search matches all");
 }
 
 #[tokio::test]

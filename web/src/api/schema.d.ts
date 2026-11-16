@@ -3519,6 +3519,8 @@ export interface operations {
         active?: boolean;
         /** @description `household` (default), `mine` or `user:<id>`. */
         scope?: string;
+        /** @description Part of the account name, ignoring case. */
+        q?: string;
         page?: number;
         /** @description At most 200; default 50. */
         per_page?: number;
@@ -3594,6 +3596,8 @@ export interface operations {
         active?: boolean;
         /** @description `household` (default), `mine` or `user:<id>`. */
         scope?: string;
+        /** @description Part of the account name, ignoring case. */
+        q?: string;
         /** @description `YYYY-MM-DD`; balances at the end of that day. Default: all time. */
         date?: string;
         page?: number;

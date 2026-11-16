@@ -37,6 +37,8 @@ pub struct AccountQuery {
     pub active: Option<bool>,
     /// `household` (default), `mine` or `user:<id>`.
     pub scope: Option<String>,
+    /// Part of the account name, ignoring case.
+    pub q: Option<String>,
     pub page: Option<u32>,
     /// At most 200; default 50.
     pub per_page: Option<u32>,
@@ -54,6 +56,7 @@ pub async fn list_accounts(
         account_type: query.account_type,
         active: query.active,
         scope: scope(query.scope.as_deref())?,
+        q: query.q,
     };
     let result = state
         .app

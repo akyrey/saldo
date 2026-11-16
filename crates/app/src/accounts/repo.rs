@@ -121,6 +121,8 @@ pub(crate) struct ListFilter {
     pub account_type: Option<String>,
     pub active: Option<bool>,
     pub owner_user_id: Option<String>,
+    /// Matched anywhere in the name; SQLite's `LIKE` ignores ASCII case.
+    pub q: Option<String>,
     pub limit: i64,
     pub offset: i64,
 }
@@ -140,12 +142,14 @@ pub(crate) async fn list(
            FROM accounts
            WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
              AND (?4 IS NULL OR owner_user_id = ?4)
+             AND (?5 IS NULL OR name LIKE '%' || ?5 || '%')
            ORDER BY type, sort_order, name
-           LIMIT ?5 OFFSET ?6"#,
+           LIMIT ?6 OFFSET ?7"#,
         household_id,
         filter.account_type,
         filter.active,
         filter.owner_user_id,
+        filter.q,
         filter.limit,
         filter.offset,
     )
@@ -154,11 +158,13 @@ pub(crate) async fn list(
     let total = sqlx::query_scalar!(
         "SELECT count(*) FROM accounts
          WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
-           AND (?4 IS NULL OR owner_user_id = ?4)",
+           AND (?4 IS NULL OR owner_user_id = ?4)
+           AND (?5 IS NULL OR name LIKE '%' || ?5 || '%')",
         household_id,
         filter.account_type,
         filter.active,
         filter.owner_user_id,
+        filter.q,
     )
     .fetch_one(&mut *conn)
     .await?;

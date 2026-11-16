@@ -1,10 +1,10 @@
 mod common;
 
 use common::*;
-use saldo_app::accounts::{AccountFilter, AccountUpdate, NewAccount};
+use saldo_app::accounts::{AccountFilter, AccountUpdate, AccountView, NewAccount};
 use saldo_app::ctx::Origin;
 use saldo_app::error::AppError;
-use saldo_app::page::PageRequest;
+use saldo_app::page::{Page, PageRequest};
 use saldo_app::scope::Scope;
 
 fn new_account(name: &str, account_type: &str) -> NewAccount {
@@ -301,6 +301,48 @@ async fn equity_accounts_cannot_be_deleted() {
         .delete(&setup.ctx, Origin::Api, account_id(&equity.items[0]))
         .await;
     assert!(matches!(result, Err(AppError::Conflict(_))));
+}
+
+#[tokio::test]
+async fn searches_accounts_by_name_ignoring_case() {
+    let (test, setup) = with_household().await;
+    account(&test, &setup.ctx, "Supermarket Rossi", "expense", None).await;
+    account(&test, &setup.ctx, "Rossi Salary", "revenue", None).await;
+    account(&test, &setup.ctx, "Bakery", "expense", None).await;
+
+    let search = |q: &str, account_type: Option<&str>| {
+        let app = test.app.clone();
+        let ctx = setup.ctx;
+        let filter = AccountFilter {
+            account_type: account_type.map(str::to_string),
+            q: Some(q.to_string()),
+            ..Default::default()
+        };
+        async move {
+            app.accounts
+                .list(&ctx, &filter, PageRequest::default())
+                .await
+                .unwrap()
+        }
+    };
+    let names = |page: Page<AccountView>| -> Vec<String> {
+        page.items.into_iter().map(|a| a.name).collect()
+    };
+
+    assert_eq!(
+        names(search("rossi", None).await),
+        ["Supermarket Rossi", "Rossi Salary"]
+    );
+    assert_eq!(
+        names(search("ROSSI", Some("revenue")).await),
+        ["Rossi Salary"]
+    );
+    assert_eq!(search("nothing like it", None).await.total, 0);
+    assert_eq!(
+        search("  ", Some("expense")).await.total,
+        2,
+        "a blank search matches all"
+    );
 }
 
 #[tokio::test]

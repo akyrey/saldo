@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, household_id, owner_user_id, name, type AS account_type, equity_role,\n                  asset_role, liability_type, liability_direction, interest_rate, interest_period,\n                  currency_code, iban, bic, account_number, virtual_balance_minor,\n                  include_net_worth AS \"include_net_worth: bool\", active AS \"active: bool\",\n                  sort_order, notes, created_at, updated_at\n           FROM accounts\n           WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)\n             AND (?4 IS NULL OR owner_user_id = ?4)\n           ORDER BY type, sort_order, name\n           LIMIT ?5 OFFSET ?6",
+  "query": "SELECT id, household_id, owner_user_id, name, type AS account_type, equity_role,\n                  asset_role, liability_type, liability_direction, interest_rate, interest_period,\n                  currency_code, iban, bic, account_number, virtual_balance_minor,\n                  include_net_worth AS \"include_net_worth: bool\", active AS \"active: bool\",\n                  sort_order, notes, created_at, updated_at\n           FROM accounts\n           WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)\n             AND (?4 IS NULL OR owner_user_id = ?4)\n             AND (?5 IS NULL OR name LIKE '%' || ?5 || '%')\n           ORDER BY type, sort_order, name\n           LIMIT ?6 OFFSET ?7",
   "describe": {
     "columns": [
       {
@@ -247,7 +247,7 @@
       }
     ],
     "parameters": {
-      "Right": 6
+      "Right": 7
     },
     "nullable": [
       false,
@@ -274,5 +274,5 @@
       false
     ]
   },
-  "hash": "45b28454d684eb4794bca9e868007057551025ad3a17f7656720ac6dff641276"
+  "hash": "4309887d9b262eb089b46bce6452aba8d87657717f9d5c5043a713e2744a195b"
 }

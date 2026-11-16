@@ -45,6 +45,15 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "description": "Part of the account name, ignoring case.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -178,6 +187,15 @@
             "name": "scope",
             "in": "query",
             "description": "`household` (default), `mine` or `user:<id>`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Part of the account name, ignoring case.",
             "required": false,
             "schema": {
               "type": "string"

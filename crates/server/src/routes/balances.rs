@@ -31,6 +31,8 @@ pub struct BalancesQuery {
     pub active: Option<bool>,
     /// `household` (default), `mine` or `user:<id>`.
     pub scope: Option<String>,
+    /// Part of the account name, ignoring case.
+    pub q: Option<String>,
     /// `YYYY-MM-DD`; balances at the end of that day. Default: all time.
     pub date: Option<NaiveDate>,
     pub page: Option<u32>,
@@ -52,6 +54,7 @@ pub async fn account_balances(
         account_type: query.account_type,
         active: query.active,
         scope: scope(query.scope.as_deref())?,
+        q: query.q,
     };
     let result = state
         .app
