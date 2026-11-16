@@ -140,12 +140,28 @@ describe("TransactionEditor", () => {
     expect(save.mock.calls[0]?.[0].splits.map((s) => s.budget_id)).toEqual(["groceries", null]);
   });
 
-  it("flags a pair the server would reject and hides archived accounts", async () => {
+  it("offers only accounts that fit the other side, and no archived ones", async () => {
     renderEditor(() => Promise.resolve({}));
-    await fill(1, "food", "checking", "1");
-    expect(within(row(1)).getByText("Not allowed")).toBeInTheDocument();
-    await userEvent.type(within(row(1)).getByLabelText("Source account"), "old");
-    expect(within(row(1)).queryByRole("option", { name: /Old \(EUR\)/ })).toBeNull();
+    const user = userEvent.setup();
+    const fields = within(row(1));
+    const offered = async (label: string) => {
+      const field = fields.getByLabelText(label);
+      await user.clear(field);
+      await user.click(field);
+      return screen.queryAllByRole("option").map((option) => option.textContent ?? "");
+    };
+
+    // Money never leaves an expense account, and archived accounts stay hidden.
+    const sources = await offered("Source account");
+    expect(sources.some((o) => o.includes("Food"))).toBe(false);
+    expect(sources.some((o) => o.includes("Old"))).toBe(false);
+    expect(sources.some((o) => o.includes("Salary"))).toBe(true);
+
+    // Revenue only pays into own accounts.
+    await choose(fields.getByLabelText("Source account"), accountLabel("salary"));
+    const destinations = await offered("Destination account");
+    expect(destinations.some((o) => o.includes("Food"))).toBe(false);
+    expect(destinations.some((o) => o.includes("Checking"))).toBe(true);
   });
 
   it("puts server validation errors on the matching row and field", async () => {

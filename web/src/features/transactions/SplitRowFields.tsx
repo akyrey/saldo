@@ -14,7 +14,7 @@ import type { Tag } from "@/features/tags/queries";
 import { cn } from "@/lib/utils";
 import { AccountSelect } from "./AccountSelect";
 import { deriveKind, KIND_LABELS, type SplitRow, type TemplateKind } from "./editor-model";
-import { accountTypesFor } from "./prefill";
+import { sideTypes } from "./account-sides";
 import { TagPicker } from "./TagPicker";
 
 export interface SplitRowFieldsProps {
@@ -42,7 +42,9 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
   const source = accounts.find((a) => a.id === row.source_id);
   const destination = accounts.find((a) => a.id === row.destination_id);
   const kind = deriveKind(source, destination);
-  const sides = accountTypesFor(props.kindHint);
+  // Each picker offers only accounts that can pair with the other side's choice.
+  const sourceChoices = accounts.filter((a) => a.id !== row.destination_id);
+  const destinationChoices = accounts.filter((a) => a.id !== row.source_id);
   const budgetAllowed = kind === undefined || kind === "withdrawal";
   const currency = [source, destination].find(
     (a) => a && a.type !== "expense" && a.type !== "revenue" && a.type !== "equity",
@@ -121,8 +123,8 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
           <AccountSelect
             id={id("source")}
             label="Source account"
-            accounts={accounts}
-            types={sides?.source}
+            accounts={sourceChoices}
+            types={sideTypes("source", destination, props.kindHint)}
             value={row.source_id}
             onChange={(source_id) => onChange({ source_id })}
             {...errorProps(id("source"), errors.source_id)}
@@ -137,8 +139,8 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
           <AccountSelect
             id={id("destination")}
             label="Destination account"
-            accounts={accounts}
-            types={sides?.destination}
+            accounts={destinationChoices}
+            types={sideTypes("destination", source, props.kindHint)}
             value={row.destination_id}
             onChange={(destination_id) => onChange({ destination_id })}
             {...errorProps(id("destination"), errors.destination_id)}
