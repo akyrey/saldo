@@ -37,6 +37,8 @@ const BILL = {
   updated_at: "",
 };
 
+const GYM = { ...BILL, id: "b2", name: "Gym", active: false, next_due_date: null };
+
 function period(id: string, due: string, status: string) {
   return {
     id,
@@ -61,7 +63,8 @@ function api() {
       account("a1", "Checking", "asset"),
       account("a2", "Landlord", "expense"),
     ]),
-    "GET /api/v1/bills": list([BILL]),
+    "GET /api/v1/bills": list([GYM, BILL]),
+    "PATCH /api/v1/bills/b1": { data: { ...BILL, active: false } },
     "GET /api/v1/bills/b1": { data: BILL },
     "GET /api/v1/bills/b1/periods": {
       data: [period("p2", "2026-11-02", "open"), period("p1", "2026-10-02", "paid")],
@@ -88,6 +91,30 @@ describe("bill pages", () => {
     const row = rowOf(await screen.findByRole("link", { name: "Rent" }), "li");
     expect(within(row).getByText(/2026-11-02/)).toBeInTheDocument();
     expect(within(row).getByText(/800\.00/)).toBeInTheDocument();
+  });
+
+  it("folds inactive bills into a closed section below the active ones", async () => {
+    api();
+    renderApp("/bills");
+    await screen.findByRole("link", { name: "Rent" });
+    const gym = screen.getByRole("link", { name: "Gym" });
+    const section = gym.closest("details");
+    expect(section).not.toBeNull();
+    expect(section?.open).toBe(false);
+    expect(within(section as HTMLElement).getByText("Inactive (1)")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Rent" }).closest("details")).toBeNull();
+  });
+
+  it("turns a bill off from the list", async () => {
+    const seen = api();
+    renderApp("/bills");
+    const toggle = await screen.findByRole("switch", { name: "Rent active" });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(toggle);
+    await waitFor(() => expect(seen.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = seen.find((r) => r.method === "PATCH");
+    expect(new URL(patch?.url ?? "http://x").pathname).toBe("/api/v1/bills/b1");
+    expect(await patch?.json()).toEqual({ active: false });
   });
 
   it("skips a period and marks one paid by picking a transaction", async () => {

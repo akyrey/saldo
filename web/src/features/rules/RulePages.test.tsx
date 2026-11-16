@@ -38,7 +38,7 @@ function rule(id: string, title: string, order: number) {
   };
 }
 
-function api() {
+function api(extra: Record<string, unknown> = {}) {
   return fakeApi({
     "GET /api/v1/auth/me": ME,
     "GET /api/v1/household/members": MEMBERS,
@@ -84,6 +84,8 @@ function api() {
         ],
       },
     },
+    "PATCH /api/v1/rule-groups/g1": { data: { ...GROUP, active: false } },
+    ...extra,
   });
 }
 
@@ -100,6 +102,44 @@ describe("rule pages", () => {
     await waitFor(() => expect(seen.filter((r) => r.method === "PUT")).toHaveLength(2));
     const put = seen.find((r) => new URL(r.url).pathname === "/api/v1/rules/r1");
     expect(((await put?.json()) as { sort_order: number }).sort_order).toBe(1);
+  });
+
+  it("keeps an inactive rule in its place, dimmed, and turns a rule off", async () => {
+    const seen = api({
+      "GET /api/v1/rules": {
+        data: [{ ...rule("r1", "Rent", 0), active: false }, rule("r2", "Fuel", 1)],
+      },
+    });
+    renderApp("/rules");
+    const group = await screen.findByRole("region", { name: "Default" });
+    const items = within(group).getAllByRole("listitem");
+    expect(items.map((i) => within(i).getByRole("link").textContent)).toEqual(["Rent", "Fuel"]);
+    const rent = within(items[0] as HTMLElement).getByRole("switch", { name: "Rent active" });
+    expect(rent).toHaveAttribute("aria-checked", "false");
+
+    await userEvent.click(within(group).getByRole("switch", { name: "Fuel active" }));
+    await waitFor(() => expect(seen.some((r) => r.method === "PUT")).toBe(true));
+    const put = seen.find((r) => r.method === "PUT");
+    expect(new URL(put?.url ?? "http://x").pathname).toBe("/api/v1/rules/r2");
+    expect(((await put?.json()) as { active: boolean }).active).toBe(false);
+  });
+
+  it("turns a group off from its header", async () => {
+    const seen = api();
+    renderApp("/rules");
+    const group = await screen.findByRole("region", { name: "Default" });
+    await userEvent.click(within(group).getByRole("switch", { name: "Default active" }));
+    await waitFor(() => expect(seen.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = seen.find((r) => r.method === "PATCH");
+    expect(await patch?.json()).toEqual({ active: false });
+  });
+
+  it("shows an inactive group's rules folded", async () => {
+    api({ "GET /api/v1/rule-groups": { data: [{ ...GROUP, active: false }] } });
+    renderApp("/rules");
+    const group = await screen.findByRole("region", { name: "Default" });
+    const details = within(group).getByText("Show 2 rules").closest("details");
+    expect(details?.open).toBe(false);
   });
 
   it("creates a rule from the editor", async () => {

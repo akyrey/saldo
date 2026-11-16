@@ -39,3 +39,8 @@ export function fireRecurrence(id: string, date?: string) {
     api.POST("/api/v1/recurrences/{id}/fire", { params: { path: { id } }, body: { date } }),
   );
 }
+
+/** Replaces a recurrence; the list uses it to switch one on or off. */
+export function replaceRecurrence(id: string, body: RecurrenceRequest) {
+  return call(api.PUT("/api/v1/recurrences/{id}", { params: { path: { id } }, body }));
+}

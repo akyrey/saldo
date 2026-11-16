@@ -60,6 +60,25 @@ async function bodyOf(seen: Request[], method: string, path: string) {
 }
 
 describe("RecurrencesPage", () => {
+  it("folds inactive recurrences into a closed section and turns one off", async () => {
+    const gym = { ...RENT, id: "r2", title: "Gym", active: false };
+    const seen = api({
+      "GET /api/v1/recurrences": list([gym, RENT]),
+      "PUT /api/v1/recurrences/r1": { data: { ...RENT, active: false } },
+    });
+    renderApp("/recurrences");
+    const rent = await screen.findByRole("listitem", { name: "Rent" });
+    expect(rent.closest("details")).toBeNull();
+    const section = screen.getByRole("listitem", { name: "Gym" }).closest("details");
+    expect(section?.open).toBe(false);
+    expect(within(section as HTMLElement).getByText("Inactive (1)")).toBeInTheDocument();
+
+    await userEvent.click(within(rent).getByRole("switch", { name: "Rent active" }));
+    await waitFor(() => expect(seen.some((r) => r.method === "PUT")).toBe(true));
+    const body = await bodyOf(seen, "PUT", "/api/v1/recurrences/r1");
+    expect(body).toMatchObject({ title: "Rent", active: false, apply_rules: true });
+  });
+
   it("lists recurrences with their schedule and fires one now", async () => {
     const fired = { data: { recurrence_id: "r1", date: "2026-11-13", created: true, group: {} } };
     const seen = api({ "POST /api/v1/recurrences/r1/fire": json(201, fired) });
