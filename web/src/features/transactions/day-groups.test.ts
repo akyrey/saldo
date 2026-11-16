@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { split } from "@/test/fake-api";
-import { groupByDay, splitFlow, signedAmount } from "./day-groups";
+import { groupByDay, groupTotals, splitFlow, signedAmount } from "./day-groups";
 import type { TransactionGroup } from "./queries";
 
 function group(id: string, splits: ReturnType<typeof split>[]): TransactionGroup {
@@ -88,5 +88,32 @@ describe("groupByDay", () => {
 
   it("skips groups without splits", () => {
     expect(groupByDay([group("empty", [])], today).past).toEqual([]);
+  });
+});
+
+describe("groupTotals", () => {
+  it("nets the splits of one group per currency", () => {
+    const g = group("g", [
+      split("s1", "a1", "a2", "32.90"),
+      split("s2", "a1", "a2", "129.00"),
+      split("s3", "a1", "a2", "19.99", "deposit"),
+    ]);
+    expect(groupTotals(g)).toEqual([{ currency: "EUR", amount: "-141.91" }]);
+  });
+
+  it("sums a group of transfers without a sign", () => {
+    const g = group("g", [
+      split("s1", "a1", "a2", "100.00", "transfer"),
+      split("s2", "a1", "a3", "50.50", "transfer"),
+    ]);
+    expect(groupTotals(g)).toEqual([{ currency: "EUR", amount: "150.50" }]);
+  });
+
+  it("follows the perspective account", () => {
+    const g = group("g", [
+      split("s1", "a1", "a2", "100.00", "transfer"),
+      split("s2", "a3", "a1", "30.00", "transfer"),
+    ]);
+    expect(groupTotals(g, "a1")).toEqual([{ currency: "EUR", amount: "-70.00" }]);
   });
 });

@@ -45,12 +45,11 @@ function places(amount: string): number {
   return amount.split(".")[1]?.length ?? 0;
 }
 
-/** Net totals per currency of every non-neutral split, in first-seen currency order. */
-function totalsOf(groups: readonly TransactionGroup[], perspective?: string): CurrencyTotal[] {
+/** Per-currency sums of `splits`, signed by `flowOf`, in first-seen currency order. */
+function sumSplits(splits: readonly Split[], flowOf: (split: Split) => Flow): CurrencyTotal[] {
   const sums = new Map<string, { minor: bigint; places: number }>();
-  for (const split of groups.flatMap((g) => g.splits)) {
-    const flow = splitFlow(split, perspective);
-    if (flow === "neutral") continue;
+  for (const split of splits) {
+    const flow = flowOf(split);
     // The server writes every amount of a currency with the same places; the first one sets them.
     const prev = sums.get(split.currency) ?? { minor: 0n, places: places(split.amount) };
     const minor = toMinor(signedAmount(split.amount, flow), prev.places) ?? 0n;
@@ -60,6 +59,23 @@ function totalsOf(groups: readonly TransactionGroup[], perspective?: string): Cu
     currency,
     amount: fromMinor(sum.minor, sum.places),
   }));
+}
+
+/** Net totals per currency of every non-neutral split, in first-seen currency order. */
+function totalsOf(groups: readonly TransactionGroup[], perspective?: string): CurrencyTotal[] {
+  const moving = groups
+    .flatMap((g) => g.splits)
+    .filter((split) => splitFlow(split, perspective) !== "neutral");
+  return sumSplits(moving, (split) => splitFlow(split, perspective));
+}
+
+/**
+ * The total of one group's splits: the net of money in and out, or, for a
+ * group that only moves money between own accounts, the amount moved.
+ */
+export function groupTotals(group: TransactionGroup, perspective?: string): CurrencyTotal[] {
+  const net = totalsOf([group], perspective);
+  return net.length > 0 ? net : sumSplits(group.splits, () => "neutral");
 }
 
 /** A group's latest split date (`YYYY-MM-DD` sorts as text); the server sorts by it. */
