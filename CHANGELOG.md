@@ -4,6 +4,19 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-16
+
+### Added
+
+- A group with several splits shows its total next to its title in the transaction list.
+
+### Changed
+
+- Transaction list on phones: no more sideways scrolling; the accounts sit under the description, and tapping a description opens it. "New from template" moved to the new-transaction page on phones.
+- The list's filters fold behind a "Filters" button (with the number of active filters); search stays in view.
+- Accounts in the list show as chips with an icon for their type.
+- The transaction editor offers only accounts that fit: never an expense account as source or a revenue account as destination, only own accounts opposite an expense, revenue or equity account, and not the account already on the other side.
+
 ## [0.2.2] - 2026-11-16
 
 ### Fixed
