@@ -48,7 +48,7 @@ impl BillService {
         origin: Origin,
         input: NewBill,
     ) -> Result<BillView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(view)
@@ -113,7 +113,7 @@ impl BillService {
         id: BillId,
         update: BillUpdate,
     ) -> Result<BillView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(view)
@@ -192,7 +192,7 @@ impl BillService {
         origin: Origin,
         id: BillId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = find(&mut tx, ctx, id).await?;
         let view = view_of(&mut tx, row.clone()).await?;
         sqlx::query!(

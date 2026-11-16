@@ -188,7 +188,7 @@ async fn imports_may_book_on_archived_accounts_but_users_may_not() {
     assert_eq!(last_event(&test, &setup.ctx).await.origin, "import");
 
     // The `_in` variants see uncommitted rows of the same transaction.
-    let mut tx = test.app.pool.begin().await.unwrap();
+    let mut tx = saldo_app::db::begin(&test.app.pool).await.unwrap();
     let view = test
         .app
         .transactions

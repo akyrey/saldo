@@ -75,7 +75,7 @@ impl PiggyBankService {
         origin: Origin,
         input: NewPiggyBank,
     ) -> Result<PiggyBankView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -128,7 +128,7 @@ impl PiggyBankService {
         id: PiggyBankId,
         update: PiggyBankUpdate,
     ) -> Result<PiggyBankView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(result)
@@ -192,7 +192,7 @@ impl PiggyBankService {
         origin: Origin,
         id: PiggyBankId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

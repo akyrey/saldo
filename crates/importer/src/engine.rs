@@ -126,7 +126,7 @@ async fn run_entities(
     options: &Options,
     selected: &[&str],
 ) -> Result<ImportReport, ImportError> {
-    let mut tx = app.pool.begin().await?;
+    let mut tx = saldo_app::db::begin(&app.pool).await?;
     let refs = ExternalRefs::load(&mut tx, &ctx, FIREFLY).await?;
     let cx = ImportCx {
         firefly,

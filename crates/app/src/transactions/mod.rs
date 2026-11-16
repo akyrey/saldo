@@ -98,7 +98,7 @@ impl TransactionService {
         origin: Origin,
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -169,7 +169,7 @@ impl TransactionService {
         id: GroupId,
         input: TransactionInput,
     ) -> Result<TransactionGroupView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.replace_in(&mut tx, ctx, origin, id, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -285,7 +285,7 @@ impl TransactionService {
         origin: Origin,
         id: GroupId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

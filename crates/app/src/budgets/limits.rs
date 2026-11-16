@@ -46,7 +46,7 @@ impl BudgetService {
         budget_id: BudgetId,
         input: NewBudgetLimit,
     ) -> Result<BudgetLimitView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self
             .create_limit_in(&mut tx, ctx, origin, budget_id, input)
             .await?;
@@ -92,7 +92,7 @@ impl BudgetService {
         id: &str,
         update: BudgetLimitUpdate,
     ) -> Result<BudgetLimitView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self
             .update_limit_in(&mut tx, ctx, origin, id, update)
             .await?;
@@ -174,7 +174,7 @@ impl BudgetService {
         origin: Origin,
         id: &str,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_limit_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

@@ -103,7 +103,7 @@ impl BillService {
         ctx: &HouseholdCtx,
         today: NaiveDate,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         for row in all_rows(&mut tx, ctx).await? {
             materialise_bill(&mut tx, &*self.clock, &row, today).await?;
         }
@@ -145,7 +145,7 @@ impl BillService {
         kind: ReminderKind,
         today: NaiveDate,
     ) -> Result<bool, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = period_row(&mut tx, ctx, period).await?;
         let (day, now) = (today.to_string(), format_timestamp(self.clock.now()));
         let changed = sqlx::query!(
@@ -198,7 +198,7 @@ impl BillService {
         period: BillPeriodId,
         split: SplitId,
     ) -> Result<BillPeriodView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = period_row(&mut tx, ctx, period).await?;
         if row.status == "paid" {
             return Err(AppError::Conflict(
@@ -252,7 +252,7 @@ impl BillService {
         status: &str,
         verb: &str,
     ) -> Result<BillPeriodView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = period_row(&mut tx, ctx, period).await?;
         if row.status == status {
             return Err(AppError::Conflict(format!(

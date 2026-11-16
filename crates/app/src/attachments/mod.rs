@@ -86,7 +86,7 @@ impl AttachmentService {
         origin: Origin,
         input: NewAttachment,
     ) -> Result<AttachmentView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.upload_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(view)
@@ -164,7 +164,7 @@ impl AttachmentService {
         id: AttachmentId,
     ) -> Result<(), AppError> {
         let id = id.to_string();
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = find(&mut tx, ctx, &id).await?;
         let household_id = ctx.household_id.to_string();
         sqlx::query!(

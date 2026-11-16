@@ -39,7 +39,7 @@ impl NotificationService {
     /// and replays are absorbed by the `(channel_id, dedupe_key)` key.
     /// Returns how many events were read (fewer than `batch`: caught up).
     pub async fn fan_out(&self, batch: i64) -> Result<usize, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let cursor = sqlx::query_scalar!(
             "SELECT last_seq FROM consumer_cursors WHERE consumer = ?",
             CURSOR

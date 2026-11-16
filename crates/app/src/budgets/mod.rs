@@ -93,7 +93,7 @@ impl BudgetService {
         origin: Origin,
         input: NewBudget,
     ) -> Result<BudgetView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -149,7 +149,7 @@ impl BudgetService {
         id: BudgetId,
         update: BudgetUpdate,
     ) -> Result<BudgetView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(result)
@@ -212,7 +212,7 @@ impl BudgetService {
         origin: Origin,
         id: BudgetId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

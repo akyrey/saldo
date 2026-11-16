@@ -173,7 +173,7 @@ impl WebhookService {
         let now = self.clock.now();
         let now_text = format_timestamp(now);
         let attempts = delivery.attempts + 1;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let sent =
             match outcome {
                 Outcome::Success(code) => {

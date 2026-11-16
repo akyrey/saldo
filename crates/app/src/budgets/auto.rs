@@ -23,7 +23,7 @@ impl BudgetService {
         ctx: &HouseholdCtx,
         today: NaiveDate,
     ) -> Result<usize, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let budgets = repo::all(&mut tx, &ctx.household_id.to_string()).await?;
         let mut created = 0;
         for budget in budgets.iter().filter(|b| b.active) {

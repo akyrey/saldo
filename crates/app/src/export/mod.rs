@@ -97,7 +97,7 @@ impl ExportService {
     /// The JSON document, read in one transaction so it is consistent.
     pub async fn json(&self, ctx: &HouseholdCtx) -> Result<ExportDocument, AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let (rule_groups, rules) = rules::all_in(&mut tx, ctx).await?;
         let (budgets, budget_limits) = budgets::all_in(&mut tx, ctx).await?;
         let (piggy_banks, piggy_bank_events) = piggy_banks::all_in(&mut tx, ctx).await?;

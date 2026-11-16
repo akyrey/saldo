@@ -42,7 +42,7 @@ impl WebhookService {
 
     /// One batch of at most `limit` events.
     pub async fn dispatch_batch(&self, limit: i64) -> Result<DispatchReport, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let after = cursor(&mut tx).await?;
         let events = events_after(&mut tx, after, limit).await?;
         let Some(last) = events.last().map(|e| e.seq) else {

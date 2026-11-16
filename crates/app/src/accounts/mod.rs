@@ -59,7 +59,7 @@ impl AccountService {
         origin: Origin,
         input: NewAccount,
     ) -> Result<AccountView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -130,7 +130,7 @@ impl AccountService {
         id: AccountId,
         update: AccountUpdate,
     ) -> Result<AccountView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(result)
@@ -170,7 +170,7 @@ impl AccountService {
         origin: Origin,
         id: AccountId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

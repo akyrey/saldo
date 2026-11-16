@@ -52,7 +52,7 @@ impl TagService {
         origin: Origin,
         input: NewTag,
     ) -> Result<TagView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -103,7 +103,7 @@ impl TagService {
         id: TagId,
         update: TagUpdate,
     ) -> Result<TagView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(result)
@@ -154,7 +154,7 @@ impl TagService {
         origin: Origin,
         id: TagId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

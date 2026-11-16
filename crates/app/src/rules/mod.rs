@@ -116,7 +116,7 @@ impl RuleService {
         origin: Origin,
         input: NewRuleGroup,
     ) -> Result<RuleGroupView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.create_group_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(view)
@@ -160,7 +160,7 @@ impl RuleService {
         id: &str,
         update: RuleGroupUpdate,
     ) -> Result<RuleGroupView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self
             .update_group_in(&mut tx, ctx, origin, id, update)
             .await?;
@@ -211,7 +211,7 @@ impl RuleService {
         origin: Origin,
         id: &str,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let household_id = ctx.household_id.to_string();
         let view = store::group(&mut tx, &household_id, id).await?;
         sqlx::query!(
@@ -249,7 +249,7 @@ impl RuleService {
         origin: Origin,
         input: RuleInput,
     ) -> Result<RuleView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.create_rule_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(view)
@@ -282,7 +282,7 @@ impl RuleService {
         id: &str,
         input: RuleInput,
     ) -> Result<RuleView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self
             .replace_rule_in(&mut tx, ctx, origin, id, input)
             .await?;
@@ -317,7 +317,7 @@ impl RuleService {
         origin: Origin,
         id: &str,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let household_id = ctx.household_id.to_string();
         let view = store::rule(&mut tx, &household_id, id).await?;
         sqlx::query!(
@@ -408,7 +408,7 @@ impl RuleService {
         ctx: &HouseholdCtx,
         id: &str,
     ) -> Result<RuleApplyResult, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let rule = self.runnable(&mut tx, ctx, id).await?;
         let rules = [rule];
         let places = engine::decimal_places(&mut tx).await?;

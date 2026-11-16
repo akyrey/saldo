@@ -387,7 +387,7 @@ async fn marking_fired_through_prevents_a_backfill() {
     let f = fixture().await;
     let view = create(&f, input(&f, date(1), vec![repetition("daily", "")])).await;
     let service = &f.test.app.recurrences;
-    let mut tx = f.test.app.pool.begin().await.unwrap();
+    let mut tx = saldo_app::db::begin(&f.test.app.pool).await.unwrap();
     service
         .mark_fired_through_in(&mut tx, &f.ctx, id(&view), date(12))
         .await

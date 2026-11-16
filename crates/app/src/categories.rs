@@ -73,7 +73,7 @@ impl CategoryService {
         origin: Origin,
         input: NewCategory,
     ) -> Result<CategoryView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -126,7 +126,7 @@ impl CategoryService {
         id: CategoryId,
         update: CategoryUpdate,
     ) -> Result<CategoryView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(result)
@@ -187,7 +187,7 @@ impl CategoryService {
         origin: Origin,
         id: CategoryId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

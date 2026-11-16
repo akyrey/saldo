@@ -139,7 +139,7 @@ impl NotificationService {
             kind.as_str(),
             input.active.unwrap_or(true),
         );
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         sqlx::query!(
             "INSERT INTO notification_channels (id, household_id, user_id, kind, name, config, active, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -160,7 +160,7 @@ impl NotificationService {
         id: Uuid,
         update: ChannelUpdate,
     ) -> Result<ChannelView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = find(&mut tx, ctx, id).await?;
         let current = row.channel()?;
         let name = match update.name {
@@ -200,7 +200,7 @@ impl NotificationService {
         origin: Origin,
         id: Uuid,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = find(&mut tx, ctx, id).await?;
         let view = row.view()?;
         sqlx::query!(

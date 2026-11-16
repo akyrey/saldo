@@ -39,7 +39,7 @@ impl IdentityService {
         &self,
         identity: ExternalIdentity,
     ) -> Result<LoginResult, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let member = match linked_member(&mut tx, &identity).await? {
             Some(member) => member,
             None => {

@@ -31,7 +31,7 @@ impl IdentityService {
             user_id: UserId(new_id(&*self.clock)),
             role: Role::Owner,
         };
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let currency =
             currencies::find(&mut tx, &input.primary_currency, "primary_currency").await?;
         let currency = currency.code().to_string();
@@ -173,7 +173,7 @@ impl IdentityService {
         update: HouseholdUpdate,
     ) -> Result<HouseholdView, AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let current = household_view(&mut tx, ctx).await?;
         let name = match update.name {
             Some(name) => required("name", &name)?,
@@ -252,7 +252,7 @@ impl IdentityService {
 
         let user_id = UserId(new_id(&*self.clock));
         let now = format_timestamp(self.clock.now());
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let id = user_id.to_string();
         insert_user(&mut tx, &id, &email, &display_name, &password_hash, &now).await?;
         insert_member(
@@ -284,7 +284,7 @@ impl IdentityService {
                 "owners cannot remove themselves".to_string(),
             ));
         }
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = member_view(&mut tx, ctx, user_id).await?;
         let (household_id, id) = (ctx.household_id.to_string(), user_id.to_string());
         sqlx::query!(

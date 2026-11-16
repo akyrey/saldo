@@ -48,7 +48,7 @@ impl WebhookService {
             new_secret(),
         );
         let now = format_timestamp(self.clock.now());
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         sqlx::query!(
             "INSERT INTO webhook_endpoints (id, household_id, name, url, secret, event_types,
                  include_import_events, created_at, updated_at)
@@ -78,7 +78,7 @@ impl WebhookService {
         update: WebhookUpdate,
     ) -> Result<WebhookView, AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let current = repo::find(&mut tx, ctx, id).await?;
         let name = match update.name {
             Some(name) => required("name", &name)?,
@@ -133,7 +133,7 @@ impl WebhookService {
         id: &str,
     ) -> Result<(), AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = repo::find(&mut tx, ctx, id).await?;
         let household_id = ctx.household_id.to_string();
         sqlx::query!(
@@ -157,7 +157,7 @@ impl WebhookService {
         id: &str,
     ) -> Result<WebhookWithSecret, AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         repo::find(&mut tx, ctx, id).await?;
         let (secret, household_id, now) = (
             new_secret(),
@@ -187,7 +187,7 @@ impl WebhookService {
         id: &str,
     ) -> Result<String, AppError> {
         ctx.require_owner()?;
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let webhook = repo::find(&mut tx, ctx, id).await?;
         let data = json!({ "webhook": webhook, "message": "Test delivery from Saldo" });
         let (entity, verb) = TEST_EVENT.split_once('.').unwrap_or(("webhook", "test"));

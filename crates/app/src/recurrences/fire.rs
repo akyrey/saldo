@@ -62,7 +62,7 @@ impl RecurrenceService {
         id: RecurrenceId,
         date: NaiveDate,
     ) -> Result<RecurrenceFiredView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.fire_in(&mut tx, ctx, origin, id, date).await?;
         tx.commit().await?;
         Ok(result)

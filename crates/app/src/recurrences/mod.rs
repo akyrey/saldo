@@ -48,7 +48,7 @@ impl RecurrenceService {
         origin: Origin,
         input: RecurrenceInput,
     ) -> Result<RecurrenceView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -103,7 +103,7 @@ impl RecurrenceService {
         id: RecurrenceId,
         input: RecurrenceInput,
     ) -> Result<RecurrenceView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.replace_in(&mut tx, ctx, origin, id, input).await?;
         tx.commit().await?;
         Ok(result)
@@ -147,7 +147,7 @@ impl RecurrenceService {
         origin: Origin,
         id: RecurrenceId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let row = find(&mut tx, ctx, id).await?;
         let view = view_of(&mut tx, row.clone()).await?;
         repo::delete(&mut tx, &row.household_id, &row.id).await?;

@@ -3,9 +3,9 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use sqlx::SqlitePool;
 use sqlx::migrate::{MigrateError, Migrator};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
+use sqlx::{Sqlite, SqlitePool, Transaction};
 
 /// The migrations in `crates/app/migrations`, embedded into the binary at
 /// compile time, so the server needs no SQL files at run time.
@@ -34,6 +34,19 @@ pub async fn connect(url: &str) -> Result<SqlitePool, sqlx::Error> {
         .max_connections(MAX_CONNECTIONS)
         .connect_with(options)
         .await
+}
+
+/// Begins a transaction that takes SQLite's write lock up front
+/// (`BEGIN IMMEDIATE`). Use it instead of `pool.begin()`.
+///
+/// A plain (deferred) transaction starts as a reader and upgrades to a
+/// writer on its first write. If another connection committed in between,
+/// SQLite fails that upgrade at once with "database is locked", without
+/// waiting for `busy_timeout`. Taking the lock at `BEGIN` makes concurrent
+/// writers queue up on the busy timeout instead, like `SELECT ... FOR
+/// UPDATE` serialising writers in MySQL.
+pub async fn begin(pool: &SqlitePool) -> Result<Transaction<'static, Sqlite>, sqlx::Error> {
+    pool.begin_with("BEGIN IMMEDIATE").await
 }
 
 /// A fresh in-memory database, for tests. An in-memory SQLite database
@@ -112,6 +125,47 @@ mod tests {
         .execute(pool)
         .await
         .unwrap();
+    }
+
+    /// Many writers that each read, then write, on a file database (an
+    /// in-memory one has a single connection, so it cannot race).
+    #[tokio::test]
+    async fn concurrent_read_then_write_transactions_all_commit() {
+        let path = std::env::temp_dir().join(format!("saldo-begin-{}.db", uuid::Uuid::new_v4()));
+        let pool = connect(&format!("sqlite://{}", path.display()))
+            .await
+            .unwrap();
+        sqlx::query("CREATE TABLE counter (n INTEGER NOT NULL)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        let writers: Vec<_> = (0..16)
+            .map(|_| {
+                let pool = pool.clone();
+                tokio::spawn(async move {
+                    let mut tx = begin(&pool).await?;
+                    let (n,): (i64,) = sqlx::query_as("SELECT count(*) FROM counter")
+                        .fetch_one(&mut *tx)
+                        .await?;
+                    tokio::task::yield_now().await;
+                    sqlx::query("INSERT INTO counter (n) VALUES (?)")
+                        .bind(n)
+                        .execute(&mut *tx)
+                        .await?;
+                    tx.commit().await
+                })
+            })
+            .collect();
+        for writer in writers {
+            writer.await.unwrap().unwrap();
+        }
+        let (rows,): (i64,) = sqlx::query_as("SELECT count(*) FROM counter")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(rows, 16);
+        pool.close().await;
+        let _ = std::fs::remove_file(&path);
     }
 
     #[tokio::test]

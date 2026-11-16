@@ -67,7 +67,7 @@ impl TemplateService {
         origin: Origin,
         input: NewTemplate,
     ) -> Result<TransactionTemplateView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.create_in(&mut tx, ctx, origin, input).await?;
         tx.commit().await?;
         Ok(view)
@@ -109,7 +109,7 @@ impl TemplateService {
         id: TemplateId,
         update: TemplateUpdate,
     ) -> Result<TransactionTemplateView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self.update_in(&mut tx, ctx, origin, id, update).await?;
         tx.commit().await?;
         Ok(view)
@@ -159,7 +159,7 @@ impl TemplateService {
         origin: Origin,
         id: TemplateId,
     ) -> Result<(), AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         self.delete_in(&mut tx, ctx, origin, id).await?;
         tx.commit().await?;
         Ok(())

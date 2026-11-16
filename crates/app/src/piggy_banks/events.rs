@@ -53,7 +53,7 @@ impl PiggyBankService {
         id: PiggyBankId,
         input: NewPiggyBankEvent,
     ) -> Result<PiggyBankEventView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let result = self.add_event_in(&mut tx, ctx, origin, id, input).await?;
         tx.commit().await?;
         Ok(result)

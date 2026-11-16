@@ -21,7 +21,7 @@ impl TemplateService {
         group_id: GroupId,
         name: String,
     ) -> Result<TransactionTemplateView, AppError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = crate::db::begin(&self.pool).await?;
         let view = self
             .from_transaction_in(&mut tx, ctx, origin, group_id, name)
             .await?;
