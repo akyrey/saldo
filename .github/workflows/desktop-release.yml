@@ -11,9 +11,13 @@
 # the public half is in tauri.conf.json), and a last job writes `latest.json`,
 # which installed apps read once the release is published.
 #
-# No Apple or Windows certificate: the macOS app is signed ad-hoc (tauri.conf.json
-# signingIdentity "-"), which Apple Silicon requires for downloaded apps; without
-# it macOS calls the app "damaged". macOS still asks once to allow it in
+# No Apple Developer ID or Windows certificate. The macOS app is signed with a
+# self-signed certificate (secrets APPLE_CERTIFICATE and
+# APPLE_CERTIFICATE_PASSWORD, made by desktop/scripts/make-macos-signing-cert.sh)
+# so every release has the same identity and keeps its keychain access after
+# an update; without the secrets it falls back to ad-hoc (tauri.conf.json
+# signingIdentity "-"). Apple Silicon needs one of the two, or macOS calls the
+# app "damaged". Neither is notarized, so macOS still asks once to allow it in
 # System Settings, and Windows SmartScreen asks for "Run anyway".
 name: Desktop release
 
@@ -114,6 +118,35 @@ jobs:
             fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
             console.log("version", config.version);
           '
+      # Tauri only accepts certificates macOS trusts when it imports one
+      # itself (APPLE_CERTIFICATE), so the step imports it into its own
+      # keychain and hands Tauri just the identity name.
+      - name: macOS signing certificate
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          if [[ -z "$APPLE_CERTIFICATE" ]]; then
+            echo "No APPLE_CERTIFICATE secret: the app is signed ad-hoc"
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/saldo-signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          certificate="$RUNNER_TEMP/saldo-signing.p12"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          rm "$certificate"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          # The common name set by make-macos-signing-cert.sh.
+          identity="Saldo Self-Signed"
+          security find-identity -p codesigning "$keychain" | grep -q "\"$identity\"" \
+            || { echo "::error::$identity not found in APPLE_CERTIFICATE"; exit 1; }
+          echo "APPLE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
       - run: npm ci
         working-directory: web
       - run: npm ci
