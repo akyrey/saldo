@@ -171,6 +171,15 @@ const tagsRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/tags/TagsPage"), "TagsPage"),
 });
 
+const tagDuplicatesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "tags/duplicates",
+  component: lazyRouteComponent(
+    () => import("@/features/tags/TagDuplicatesPage"),
+    "TagDuplicatesPage",
+  ),
+});
+
 const billsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "bills",
@@ -328,6 +337,7 @@ const routeTree = rootRoute.addChildren([
     editTransactionRoute,
     categoriesRoute,
     tagsRoute,
+    tagDuplicatesRoute,
     exportRoute,
     billsRoute,
     newBillRoute,
