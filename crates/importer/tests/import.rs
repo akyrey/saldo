@@ -783,3 +783,99 @@ async fn changed_budgets_are_updated() {
         0
     );
 }
+
+/// The fixture's tags plus Firefly tag 5, "FOOD", a case duplicate of "food".
+fn tags_with_case_duplicate() -> Value {
+    let mut tags = fixture("tags.json");
+    let mut duplicate = tags["data"][2].clone();
+    duplicate["id"] = "5".into();
+    duplicate["attributes"]["tag"] = "FOOD".into();
+    tags["data"].as_array_mut().unwrap().push(duplicate);
+    tags
+}
+
+async fn tag_names(app: &App) -> Vec<String> {
+    sqlx::query_scalar("SELECT name FROM tags ORDER BY name")
+        .fetch_all(&app.pool)
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn firefly_tags_differing_in_case_import_as_one() {
+    let (app, ctx) = household().await;
+    let server = firefly_with(
+        fixture("accounts.json"),
+        fixture("categories.json"),
+        tags_with_case_duplicate(),
+    )
+    .await;
+
+    let report = import(&app, ctx, &server, false).await;
+
+    let tags = counts(&report, "tags");
+    assert_eq!(
+        (tags.created, tags.unchanged),
+        (4, 1),
+        "{}",
+        report.render()
+    );
+    assert_eq!(
+        tag_names(&app).await,
+        ["food", "salary", "unused", "weekly"]
+    );
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(DISTINCT local_id) FROM external_refs WHERE entity_type = 'tag'"
+        )
+        .await,
+        4
+    );
+    assert_eq!(scalar(&app, "SELECT count(*) FROM split_tags").await, 4);
+}
+
+#[tokio::test]
+async fn a_tag_recased_in_saldo_keeps_its_name_on_reimport() {
+    let (app, ctx) = household().await;
+    import(&app, ctx, &firefly(None, None).await, false).await;
+    let food: String = sqlx::query_scalar("SELECT id FROM tags WHERE name = 'food'")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    let rename = saldo_app::tags::TagUpdate {
+        name: Some("Food".into()),
+        description: None,
+    };
+    app.tags
+        .update(&ctx, Origin::Api, food.parse().unwrap(), rename)
+        .await
+        .unwrap();
+    let server = firefly_with(
+        fixture("accounts.json"),
+        fixture("categories.json"),
+        tags_with_case_duplicate(),
+    )
+    .await;
+
+    let report = import(&app, ctx, &server, false).await;
+
+    let tags = counts(&report, "tags");
+    assert_eq!(
+        (tags.updated, tags.unchanged),
+        (0, 5),
+        "{}",
+        report.render()
+    );
+    assert_eq!(
+        tag_names(&app).await,
+        ["Food", "salary", "unused", "weekly"]
+    );
+    assert_eq!(
+        counts(&report, "transactions").updated,
+        0,
+        "{}",
+        report.render()
+    );
+    assert_eq!(scalar(&app, "SELECT count(*) FROM split_tags").await, 4);
+}

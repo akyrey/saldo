@@ -349,7 +349,13 @@ fn to_split(
     };
     let mut tag_ids = Vec::new();
     for name in &s.tags {
-        match lookups.tags.get(name.trim()).and_then(|id| id.parse().ok()) {
+        match lookups
+            .tags
+            .get(&tags::name_key(name))
+            .and_then(|id| id.parse().ok())
+        {
+            // Firefly may name one Saldo tag in several cases; keep it once.
+            Some(id) if tag_ids.contains(&id) => {}
             Some(id) => tag_ids.push(id),
             None => report.note("tag not imported, split kept without it"),
         }
