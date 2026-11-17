@@ -4,6 +4,21 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-17
+
+### Added
+
+- Reconciliation: "Reconcile" on an asset or liability account ticks its transactions off against a bank statement's date and closing balance, and can book a difference as a reconciliation transaction. The account page shows "Reconciled up to …" with the history; the latest reconciliation can be undone. `GET /transactions` takes `reconciled`.
+- A Bill picker in the transaction and recurring transaction editors: a split can pay a bill, which marks the bill's matching period paid.
+
+### Changed
+
+- Changing a reconciled transaction's amount, date or accounts takes it out of its reconciliation; the editor asks first.
+
+### Fixed
+
+- Saving a transaction from the web app no longer clears its reconciled flag (`PUT /transactions/{id}` keeps it when the request leaves it out).
+
 ## [0.6.0] - 2026-11-17
 
 ### Added
