@@ -24,6 +24,7 @@ use crate::page::{MAX_PER_PAGE, PageRequest};
 use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
 use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
+use crate::subscriptions::{self, SubscriptionDismissalView};
 use crate::tags::{self, TagView};
 use crate::templates::{self, TransactionTemplateView};
 use crate::transactions::{self, TransactionGroupView};
@@ -69,6 +70,8 @@ pub struct ExportDocument {
     pub recurrences: Vec<RecurrenceView>,
     /// Transaction templates (Phase 8).
     pub templates: Vec<TransactionTemplateView>,
+    /// Subscription suggestions the household dismissed (Phase 9).
+    pub subscription_dismissals: Vec<SubscriptionDismissalView>,
 }
 
 #[derive(Clone)]
@@ -124,6 +127,7 @@ impl ExportService {
             piggy_bank_events,
             recurrences: recurrences::all_in(&mut tx, ctx).await?,
             templates: templates::all_in(&mut tx, ctx).await?,
+            subscription_dismissals: subscriptions::dismissals_in(&mut tx, ctx).await?,
         };
         tx.rollback().await?;
         Ok(document)

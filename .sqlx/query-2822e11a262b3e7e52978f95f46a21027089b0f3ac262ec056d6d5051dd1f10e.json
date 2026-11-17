@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO subscription_dismissals (household_id, account_id, currency_code, created_at)\n         VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "2822e11a262b3e7e52978f95f46a21027089b0f3ac262ec056d6d5051dd1f10e"
+}

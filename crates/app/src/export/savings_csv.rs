@@ -12,7 +12,29 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         ("budget_limits.csv", budget_limits(doc)),
         ("piggy_banks.csv", piggy_banks(doc)),
         ("piggy_bank_events.csv", piggy_bank_events(doc)),
+        ("subscription_dismissals.csv", subscription_dismissals(doc)),
     ]
+}
+
+fn subscription_dismissals(doc: &ExportDocument) -> String {
+    let account_names = names(
+        doc.accounts
+            .iter()
+            .map(|a| (a.id.as_str(), a.name.as_str())),
+    );
+    let header = ["account", "currency", "created_at"];
+    let rows = doc
+        .subscription_dismissals
+        .iter()
+        .map(|d| {
+            vec![
+                lookup(&account_names, &d.account_id),
+                d.currency.clone(),
+                d.created_at.clone(),
+            ]
+        })
+        .collect();
+    table(&header, rows)
 }
 
 fn budgets(doc: &ExportDocument) -> String {

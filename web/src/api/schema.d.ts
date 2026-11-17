@@ -1063,6 +1063,83 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/subscription-candidates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Repeating withdrawals of the last 18 months that no bill covers and nobody
+     *     dismissed, by next due date. Computed on each request; unpaginated.
+     */
+    get: operations["list_candidates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subscription-candidates/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Creates a bill first due on the first payment, links the payments (which
+     *     pays their periods) and skips the periods left open before the last one.
+     */
+    post: operations["accept_candidate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subscription-candidates/dismiss": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stops suggesting payments to the account in the currency. Dismissing
+     *     twice changes nothing.
+     */
+    post: operations["dismiss_candidate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subscription-dismissals/{account_id}/{currency}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Suggests payments to the account in the currency again. */
+    delete: operations["restore_candidate"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/tags": {
     parameters: {
       query?: never;
@@ -1353,6 +1430,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AcceptCandidateRequest: {
+      /**
+       * Format: uuid
+       * @description The expense account paid.
+       */
+      account_id: string;
+      amount_max: string;
+      amount_min: string;
+      currency: string;
+      /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      frequency: string;
+      /** @description The bill's name. */
+      name: string;
+      /**
+       * @description The past payments the bill covers: withdrawals to the account in the
+       *     currency, without a bill.
+       */
+      split_ids: string[];
+    };
     /** @description Fields to change. Missing fields stay; `null` clears a nullable field. */
     AccountPatch: {
       account_number?: string | null;
@@ -2327,6 +2423,15 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_SubscriptionDismissalView: {
+      /** @description A suggestion the household does not want to see again. */
+      data: {
+        account_id: string;
+        created_at: string;
+        currency: string;
+      };
+    };
+    /** @description A single result. */
     Data_TagView: {
       data: {
         created_at: string;
@@ -2502,6 +2607,29 @@ export interface components {
       data: string[];
     };
     /** @description A single result. */
+    Data_Vec_SubscriptionCandidateView: {
+      data: {
+        /** @description The expense account paid. */
+        account_id: string;
+        account_name: string;
+        amount_max: string;
+        amount_min: string;
+        /**
+         * Format: int32
+         * @description The share of gaps that fit the frequency, 0 to 100.
+         */
+        confidence: number;
+        currency: string;
+        first_payment: string;
+        /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+        frequency: string;
+        last_payment: string;
+        next_due: string;
+        /** @description The matched payments, oldest first. */
+        split_ids: string[];
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_TagDuplicateGroup: {
       data: {
         tags: components["schemas"]["TagUsageView"][];
@@ -2609,6 +2737,14 @@ export interface components {
       /** @description The secret whose SHA-256 the app sent as `desktop_challenge`. */
       verifier: string;
     };
+    DismissCandidateRequest: {
+      /**
+       * Format: uuid
+       * @description An expense account.
+       */
+      account_id: string;
+      currency: string;
+    };
     ErrorBody: {
       /** @description Stable machine-readable code, for example `validation_failed`. */
       code: string;
@@ -2675,6 +2811,8 @@ export interface components {
       recurrences: components["schemas"]["RecurrenceView"][];
       rule_groups: components["schemas"]["RuleGroupView"][];
       rules: components["schemas"]["RuleView"][];
+      /** @description Subscription suggestions the household dismissed (Phase 9). */
+      subscription_dismissals: components["schemas"]["SubscriptionDismissalView"][];
       tags: components["schemas"]["TagView"][];
       /** @description Transaction templates (Phase 8). */
       templates: components["schemas"]["TransactionTemplateView"][];
@@ -3435,6 +3573,33 @@ export interface components {
       source_account_id: string;
       tag_ids: string[];
       updated_at: string;
+    };
+    /** @description A repeating payment that could become a bill. */
+    SubscriptionCandidateView: {
+      /** @description The expense account paid. */
+      account_id: string;
+      account_name: string;
+      amount_max: string;
+      amount_min: string;
+      /**
+       * Format: int32
+       * @description The share of gaps that fit the frequency, 0 to 100.
+       */
+      confidence: number;
+      currency: string;
+      first_payment: string;
+      /** @description `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
+      frequency: string;
+      last_payment: string;
+      next_due: string;
+      /** @description The matched payments, oldest first. */
+      split_ids: string[];
+    };
+    /** @description A suggestion the household does not want to see again. */
+    SubscriptionDismissalView: {
+      account_id: string;
+      created_at: string;
+      currency: string;
     };
     /** @description Two or more tags with the same name ignoring case, most used first. */
     TagDuplicateGroup: {
@@ -6853,6 +7018,134 @@ export interface operations {
         };
       };
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_candidates: {
+    parameters: {
+      query?: {
+        /** @description `household` (default), `mine` or `user:<id>`: filters by the paying account's owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_SubscriptionCandidateView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  accept_candidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptCandidateRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  dismiss_candidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DismissCandidateRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_SubscriptionDismissalView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  restore_candidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        account_id: string;
+        currency: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

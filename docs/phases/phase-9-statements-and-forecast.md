@@ -83,7 +83,7 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
 - **Schema**: `subscription_dismissals (household_id, account_id, currency_code, created_at, PRIMARY KEY (household_id, account_id, currency_code))` with a foreign key to `accounts`.
 - **Core**: `detect_subscriptions(payments: &[Payment], today) -> Vec<Candidate>`. A `Payment` is `split_id`, `date`, `amount`, `counterparty` (the expense account) and `has_bill`. The rules:
   - Group withdrawals by `(counterparty, currency)`. Drop groups where any payment has a bill.
-  - Amounts must all be within 20% of the group's median (integer maths in minor units).
+  - Only payments within 20% of the latest payment's amount count (integer maths in minor units), so a price rise keeps the newer payments together.
   - Try frequencies from shortest to longest, comparing the gaps between consecutive payments:
 
     | Frequency | Gap tolerance | Payments needed |
@@ -99,7 +99,7 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
   - A candidate has the counterparty, currency, frequency, observed `amount_min` and `amount_max`, the first and last payment dates, the next due date, the matched `split_ids` and a `confidence` (the fraction of gaps that fit, in percent as an integer).
 - **App** (`SubscriptionService`): `candidates(ctx, today)` scans the last 18 months of withdrawals in scope and leaves out dismissed `(account, currency)` pairs; it is computed on each request, with no table of candidates. Two state changes:
   - `accept`: creates the bill through `BillService` (name = the counterparty account's name, editable; `first_due_date` = the first matched payment). It sets `bill_id` on the matched splits through `TransactionService`, so `matching_due_date` pays their periods, then skips the periods still open with a due date before the last matched payment. All of this runs in one database transaction, so the new bill does not start with overdue reminders.
-  - `dismiss`: inserts the dismissal and appends `subscription_candidate.dismissed`.
+  - `dismiss`: inserts the dismissal and appends `subscription_dismissal.created` (restoring appends `subscription_dismissal.deleted`, following the `<entity>.<verb>` naming).
 - **Server**: `GET /subscription-candidates?scope=`, `POST /subscription-candidates/accept` (`{ account_id, currency, name, frequency, amount_min, amount_max, split_ids }`; 422 if a split is not a withdrawal to that account or already has a bill), `POST /subscription-candidates/dismiss` (`{ account_id, currency }`), and `DELETE /subscription-dismissals/{account_id}/{currency}`.
 - **Web**: a "Suggestions" section on the bills page, with each candidate's payments, frequency, amount range and next date, an "Add as bill" dialog prefilled with the candidate, and "Dismiss". A dashboard hint shows when there are candidates.
 
@@ -182,7 +182,7 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
 
 ## 7. Contracts
 
-Honour the existing conventions in section 6: the error envelope, amounts as decimal strings, `scope` on every list and report, and pagination on the imports and reconciliation lists. New event types: `reconciliation.created`, `reconciliation.deleted`, `statement_import.created`, `statement_import.committed`, `statement_import.discarded`, `statement_import.reverted`, `subscription_candidate.dismissed`. Every new service function takes `HouseholdCtx` first and filters by `household_id`.
+Honour the existing conventions in section 6: the error envelope, amounts as decimal strings, `scope` on every list and report, and pagination on the imports and reconciliation lists. New event types: `reconciliation.created`, `reconciliation.deleted`, `statement_import.created`, `statement_import.committed`, `statement_import.discarded`, `statement_import.reverted`, `subscription_dismissal.created`, `subscription_dismissal.deleted`. Every new service function takes `HouseholdCtx` first and filters by `household_id`.
 
 ## 8. Rust concepts to explain
 

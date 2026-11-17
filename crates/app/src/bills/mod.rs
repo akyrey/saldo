@@ -25,6 +25,7 @@ use input::{
     parse_frequency,
 };
 pub(crate) use periods::all_periods_in;
+pub(crate) use periods::skip_open_before_in;
 pub use periods::{OpenPeriod, existing, link_splits_in, release_group_in};
 pub use scheduler::{REMINDER_INTERVAL, run_reminders};
 pub use view::{BillPeriodView, BillView};

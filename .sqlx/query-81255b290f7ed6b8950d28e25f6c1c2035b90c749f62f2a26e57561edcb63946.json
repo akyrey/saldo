@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT account_id, currency_code, created_at FROM subscription_dismissals\n         WHERE household_id = ? ORDER BY created_at, account_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "subscription_dismissals",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "subscription_dismissals",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "subscription_dismissals",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "81255b290f7ed6b8950d28e25f6c1c2035b90c749f62f2a26e57561edcb63946"
+}

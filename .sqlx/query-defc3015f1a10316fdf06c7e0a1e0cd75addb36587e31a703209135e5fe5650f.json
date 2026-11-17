@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM bill_periods WHERE bill_id = ? AND status = 'open' AND due_date < ? ORDER BY due_date",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bill_periods",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "defc3015f1a10316fdf06c7e0a1e0cd75addb36587e31a703209135e5fe5650f"
+}

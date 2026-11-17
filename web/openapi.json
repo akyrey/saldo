@@ -5078,6 +5078,205 @@
         }
       }
     },
+    "/api/v1/subscription-candidates": {
+      "get": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Repeating withdrawals of the last 18 months that no bill covers and nobody\ndismissed, by next due date. Computed on each request; unpaginated.",
+        "operationId": "list_candidates",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by the paying account's owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_SubscriptionCandidateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/subscription-candidates/accept": {
+      "post": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Creates a bill first due on the first payment, links the payments (which\npays their periods) and skips the periods left open before the last one.",
+        "operationId": "accept_candidate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptCandidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/subscription-candidates/dismiss": {
+      "post": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Stops suggesting payments to the account in the currency. Dismissing\ntwice changes nothing.",
+        "operationId": "dismiss_candidate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissCandidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_SubscriptionDismissalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/subscription-dismissals/{account_id}/{currency}": {
+      "delete": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Suggests payments to the account in the currency again.",
+        "operationId": "restore_candidate",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/tags": {
       "get": {
         "tags": [
@@ -6682,6 +6881,50 @@
   },
   "components": {
     "schemas": {
+      "AcceptCandidateRequest": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "currency",
+          "name",
+          "frequency",
+          "amount_min",
+          "amount_max",
+          "split_ids"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The expense account paid."
+          },
+          "amount_max": {
+            "type": "string"
+          },
+          "amount_min": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "name": {
+            "type": "string",
+            "description": "The bill's name."
+          },
+          "split_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The past payments the bill covers: withdrawals to the account in the\ncurrency, without a bill."
+          }
+        }
+      },
       "AccountPatch": {
         "type": "object",
         "description": "Fields to change. Missing fields stay; `null` clears a nullable field.",
@@ -10022,6 +10265,35 @@
           }
         }
       },
+      "Data_SubscriptionDismissalView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A suggestion the household does not want to see again.",
+            "required": [
+              "account_id",
+              "currency",
+              "created_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_TagView": {
         "type": "object",
         "description": "A single result.",
@@ -10643,6 +10915,79 @@
           }
         }
       },
+      "Data_Vec_SubscriptionCandidateView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A repeating payment that could become a bill.",
+              "required": [
+                "account_id",
+                "account_name",
+                "currency",
+                "frequency",
+                "amount_min",
+                "amount_max",
+                "first_payment",
+                "last_payment",
+                "next_due",
+                "split_ids",
+                "confidence"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string",
+                  "description": "The expense account paid."
+                },
+                "account_name": {
+                  "type": "string"
+                },
+                "amount_max": {
+                  "type": "string"
+                },
+                "amount_min": {
+                  "type": "string"
+                },
+                "confidence": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The share of gaps that fit the frequency, 0 to 100.",
+                  "minimum": 0
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "first_payment": {
+                  "type": "string"
+                },
+                "frequency": {
+                  "type": "string",
+                  "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+                },
+                "last_payment": {
+                  "type": "string"
+                },
+                "next_due": {
+                  "type": "string"
+                },
+                "split_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The matched payments, oldest first."
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_TagDuplicateGroup": {
         "type": "object",
         "description": "A single result.",
@@ -11005,6 +11350,23 @@
           }
         }
       },
+      "DismissCandidateRequest": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "currency"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "An expense account."
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
       "ErrorBody": {
         "type": "object",
         "required": [
@@ -11159,7 +11521,8 @@
           "piggy_banks",
           "piggy_bank_events",
           "recurrences",
-          "templates"
+          "templates",
+          "subscription_dismissals"
         ],
         "properties": {
           "accounts": {
@@ -11261,6 +11624,13 @@
             "items": {
               "$ref": "#/components/schemas/RuleView"
             }
+          },
+          "subscription_dismissals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionDismissalView"
+            },
+            "description": "Subscription suggestions the household dismissed (Phase 9)."
           },
           "tags": {
             "type": "array",
@@ -13933,6 +14303,87 @@
             }
           },
           "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "SubscriptionCandidateView": {
+        "type": "object",
+        "description": "A repeating payment that could become a bill.",
+        "required": [
+          "account_id",
+          "account_name",
+          "currency",
+          "frequency",
+          "amount_min",
+          "amount_max",
+          "first_payment",
+          "last_payment",
+          "next_due",
+          "split_ids",
+          "confidence"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "description": "The expense account paid."
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "amount_max": {
+            "type": "string"
+          },
+          "amount_min": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share of gaps that fit the frequency, 0 to 100.",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          },
+          "first_payment": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "`weekly`, `monthly`, `quarterly`, `half_year` or `yearly`."
+          },
+          "last_payment": {
+            "type": "string"
+          },
+          "next_due": {
+            "type": "string"
+          },
+          "split_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The matched payments, oldest first."
+          }
+        }
+      },
+      "SubscriptionDismissalView": {
+        "type": "object",
+        "description": "A suggestion the household does not want to see again.",
+        "required": [
+          "account_id",
+          "currency",
+          "created_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
             "type": "string"
           }
         }

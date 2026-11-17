@@ -308,6 +308,38 @@ pub async fn link_splits_in(
     Ok(())
 }
 
+/// Skips the bill's open periods due before `before` (`bill.period_skipped`
+/// each), so a bill created for past payments does not start overdue.
+pub(crate) async fn skip_open_before_in(
+    conn: &mut SqliteConnection,
+    clock: &dyn Clock,
+    ctx: &HouseholdCtx,
+    origin: Origin,
+    bill_id: &str,
+    before: NaiveDate,
+) -> Result<(), AppError> {
+    let before = before.to_string();
+    let open = sqlx::query_scalar!(
+        "SELECT id FROM bill_periods WHERE bill_id = ? AND status = 'open' AND due_date < ? ORDER BY due_date",
+        bill_id,
+        before,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let now = format_timestamp(clock.now());
+    for id in open {
+        sqlx::query!(
+            "UPDATE bill_periods SET status = 'skipped', updated_at = ? WHERE id = ?",
+            now,
+            id,
+        )
+        .execute(&mut *conn)
+        .await?;
+        emit(&mut *conn, clock, ctx, origin, &id, "period_skipped").await?;
+    }
+    Ok(())
+}
+
 /// Before a group's splits are deleted (delete or replace): every period
 /// they paid is open again (`bill.period_reopened`).
 pub async fn release_group_in(

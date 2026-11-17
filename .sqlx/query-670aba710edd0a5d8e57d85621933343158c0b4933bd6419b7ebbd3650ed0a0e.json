@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM subscription_dismissals\n         WHERE household_id = ? AND account_id = ? AND currency_code = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "670aba710edd0a5d8e57d85621933343158c0b4933bd6419b7ebbd3650ed0a0e"
+}

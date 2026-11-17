@@ -8,6 +8,7 @@ import { currenciesQuery, placesOf } from "@/features/accounts/queries";
 import { monthOf, monthRange } from "@/features/budgets/budget-model";
 import { todayIso } from "@/lib/dates";
 import { PairedBars, ValueLine } from "./charts";
+import { candidatesQuery } from "@/features/subscriptions/queries";
 import { forecastSpan, isBelowZero } from "./forecast-model";
 import { byCategoryQuery, cashFlowQuery, forecastQuery, netWorthQuery } from "./queries";
 import { cashFlowRows, defaultSpan, netWorthRows, REPORTS } from "./report-model";
@@ -24,6 +25,7 @@ export function DashboardPage() {
   const categories = useQuery(byCategoryQuery(month));
   const forecast = useQuery(forecastQuery({ ...forecastSpan(today, 1), scope }));
   const nextMonth = forecast.data?.currencies[0];
+  const suggestions = useQuery(candidatesQuery(scope)).data?.length ?? 0;
   const primaryWorth = netWorth.data?.currencies[0];
   const primaryFlow = cashFlow.data?.currencies[0];
   const topCategories = categories.data?.currencies[0];
@@ -31,6 +33,16 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Dashboard" />
+      {suggestions > 0 ? (
+        <p className="rounded-md border px-3 py-2 text-sm" data-testid="subscription-hint">
+          {suggestions === 1
+            ? "1 repeating payment has no bill yet."
+            : `${suggestions} repeating payments have no bill yet.`}{" "}
+          <Link to="/bills" className="text-primary underline-offset-4 hover:underline">
+            Review on the bills page
+          </Link>
+        </p>
+      ) : null}
       <nav aria-label="Reports" className="flex flex-wrap gap-2">
         {REPORTS.map((r) => (
           <Link

@@ -27,7 +27,15 @@ const BATCH_MS = 250;
 const KEYS: Record<string, QueryKey[]> = {
   account: [["accounts"], ["balances"], ["reports"]],
   // A transaction moves balances, budget spending, bill periods and reports.
-  transaction: [["transactions"], ["balances"], ["accounts"], ["budgets"], ["bills"], ["reports"]],
+  transaction: [
+    ["transactions"],
+    ["balances"],
+    ["accounts"],
+    ["budgets"],
+    ["bills"],
+    ["reports"],
+    ["subscriptions"],
+  ],
   category: [["categories"], ["transactions"], ["reports"]],
   tag: [["tags"], ["transactions"], ["reports"]],
   household_member: [["members"]],
@@ -36,13 +44,14 @@ const KEYS: Record<string, QueryKey[]> = {
   budget: [["budgets"], ["reports"]],
   budget_limit: [["budgets"], ["reports"]],
   // Bills and recurrences feed the forecast report.
-  bill: [["bills"], ["reports"]],
+  bill: [["bills"], ["reports"], ["subscriptions"]],
   rule: [["rules"]],
   rule_group: [["rules"]],
   piggy_bank: [["piggy-banks"]],
   recurrence: [["recurrences"], ["reports"]],
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
+  subscription_dismissal: [["subscriptions"]],
 };
 
 /** The keys an entity type affects, or `"all"` when we do not know it. */

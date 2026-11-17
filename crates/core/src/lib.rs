@@ -86,6 +86,7 @@ pub mod period;
 pub mod piggy_bank;
 pub mod recurrence;
 pub mod rules;
+pub mod subscriptions;
 pub mod transaction;
 pub mod validation;
 
@@ -118,6 +119,7 @@ pub use period::{DateRange, PERIODS, Period};
 pub use rules::{
     Action, Rule, RuleAction, RuleAmount, RuleError, RuleTrigger, SplitView as RuleSplit, Trigger,
 };
+pub use subscriptions::{Candidate, Payment, detect_subscriptions};
 pub use transaction::{NewSplit, NewTransactionGroup, SplitMeta, ValidatedGroup, ValidatedSplit};
 pub use validation::validate_group;
 

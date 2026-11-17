@@ -1,0 +1,93 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id AS \"id!\", s.date AS \"date!\", s.amount_minor AS \"amount_minor!\",\n                  s.currency_code AS \"currency_code!\", s.destination_account_id AS \"destination_account_id!\",\n                  d.name AS \"destination_name!\", s.bill_id IS NOT NULL AS \"has_bill!: bool\"\n           FROM splits s\n           JOIN accounts src ON src.household_id = s.household_id AND src.id = s.source_account_id\n           JOIN accounts d ON d.household_id = s.household_id AND d.id = s.destination_account_id\n           WHERE s.household_id = ?1 AND s.kind = 'withdrawal' AND s.date >= ?3 AND s.date <= ?4\n             AND (?2 IS NULL OR src.owner_user_id = ?2)\n             AND NOT EXISTS (SELECT 1 FROM subscription_dismissals x\n                             WHERE x.household_id = s.household_id\n                               AND x.account_id = s.destination_account_id\n                               AND x.currency_code = s.currency_code)",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "amount_minor!",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "destination_account_id!",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "destination_account_id"
+          }
+        }
+      },
+      {
+        "name": "destination_name!",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "has_bill!: bool",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "40df7192c5f73c3fe629b6f32eff5d71f4d2384a0ed511c5066ed017cb3e82d2"
+}

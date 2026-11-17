@@ -374,6 +374,7 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
             "recurrences.csv",
             "rule_groups.csv",
             "rules.csv",
+            "subscription_dismissals.csv",
             "tags.csv",
             "templates.csv",
             "transactions.csv"

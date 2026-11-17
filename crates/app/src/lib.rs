@@ -26,6 +26,7 @@ pub mod recurrences;
 pub mod reports;
 pub mod rules;
 pub mod scope;
+pub mod subscriptions;
 pub mod tags;
 pub mod templates;
 pub mod transactions;
@@ -50,6 +51,7 @@ use crate::piggy_banks::PiggyBankService;
 use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
+use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
 use crate::templates::TemplateService;
 use crate::transactions::TransactionService;
@@ -80,12 +82,14 @@ pub struct App {
     pub piggy_banks: PiggyBankService,
     pub recurrences: RecurrenceService,
     pub templates: TemplateService,
+    pub subscriptions: SubscriptionService,
 }
 
 impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
         let accounts = AccountService::new(pool.clone(), clock.clone());
         let transactions = TransactionService::new(pool.clone(), clock.clone());
+        let bills = BillService::new(pool.clone(), clock.clone());
         let attachments =
             AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
@@ -97,7 +101,13 @@ impl App {
             ),
             accounts,
             attachments,
-            bills: BillService::new(pool.clone(), clock.clone()),
+            subscriptions: SubscriptionService::new(
+                pool.clone(),
+                clock.clone(),
+                bills.clone(),
+                transactions.clone(),
+            ),
+            bills,
             categories: CategoryService::new(pool.clone(), clock.clone()),
             currencies: CurrencyService::new(pool.clone()),
             events: EventService::new(pool.clone()),

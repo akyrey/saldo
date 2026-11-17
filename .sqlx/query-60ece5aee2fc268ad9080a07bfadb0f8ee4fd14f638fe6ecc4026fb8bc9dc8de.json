@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bill_periods SET status = 'skipped', updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "60ece5aee2fc268ad9080a07bfadb0f8ee4fd14f638fe6ecc4026fb8bc9dc8de"
+}

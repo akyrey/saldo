@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { todayIso } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { partitionByActive } from "@/features/shared/active";
+import { SubscriptionSuggestions } from "@/features/subscriptions/SubscriptionSuggestions";
 import { amountRange, type Bill } from "./bill-form";
 import { billsQuery } from "./queries";
 
@@ -116,6 +117,7 @@ export function BillsPage() {
       />
       <QueryState isPending={bills.isPending} error={bills.error} />
       {toggle.error ? <Alert className="mb-4">{errorMessage(toggle.error)}</Alert> : null}
+      <SubscriptionSuggestions />
       {bills.data && bills.data.length === 0 ? (
         <p className="text-sm text-muted-foreground">No bills yet.</p>
       ) : null}

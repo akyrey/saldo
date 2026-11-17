@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT type FROM accounts WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "type",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "type"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "301664830bfbe8ee4d80ad1d8b281bb71da96d3c862273e4f94faeb74ed2e12e"
+}
