@@ -4,6 +4,19 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
+### Added
+
+- Budget carry-over for every budget, including hand-made limits: carry nothing, what is left, or what is left or overspent into the next limit. The carried amount is worked out when limits are read, so a late edit in an earlier month updates the later ones; progress bars show it next to the base amount.
+- A cash-flow forecast (`GET /reports/forecast`, Forecast page, "Next 30 days" card on the dashboard): the balance projected up to two years ahead from transactions already entered with a later date, recurring transactions and bills, with the lowest point and a warning when it goes below zero.
+- Subscription suggestions: repeating payments without a bill are listed on the bills page (`GET /subscription-candidates`) and can be added as a bill, which links the past payments, or dismissed.
+
+### Changed
+
+- The `rollover` auto-budget type is gone: existing rollover budgets become automatic limits with carry "what is left", and their limits go back to the base amount (the leftover used to be stored inside it). The Firefly importer maps rollover budgets the same way.
+- Write transactions that skip `BEGIN IMMEDIATE` are now rejected by the linter.
+
 ## [0.5.0] - 2026-11-17
 
 ### Added
