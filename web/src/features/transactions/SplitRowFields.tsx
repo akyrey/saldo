@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/Combobox";
 import { DescriptionInput } from "./DescriptionInput";
 import type { Account, Currency } from "@/features/accounts/queries";
+import type { Bill } from "@/features/bills/queries";
 import type { Budget } from "@/features/budgets/queries";
 import type { Category } from "@/features/categories/queries";
 import type { Tag } from "@/features/tags/queries";
@@ -24,6 +25,7 @@ export interface SplitRowFieldsProps {
   accounts: readonly Account[];
   categories: readonly Category[];
   budgets: readonly Budget[];
+  bills: readonly Bill[];
   tags: readonly Tag[];
   currencies: readonly Currency[];
   canRemove: boolean;
@@ -35,7 +37,7 @@ export interface SplitRowFieldsProps {
   kindHint?: TemplateKind;
 }
 
-/** One split: date, description, accounts, amounts, category and tags. */
+/** One split: date, description, accounts, amounts, category, budget, bill and tags. */
 export function SplitRowFields(props: SplitRowFieldsProps) {
   const { index, row, errors = {}, accounts, onChange } = props;
   const id = (field: string) => `split-${index}-${field}`;
@@ -187,6 +189,21 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
               .filter((b) => b.active || b.id === row.budget_id)
               .map((b) => ({ value: b.id, label: b.name }))}
             {...errorProps(id("budget"), errors.budget_id)}
+          />
+        </Field>
+        <Field id={id("bill")} label="Bill" error={errors.bill_id}>
+          <Combobox
+            id={id("bill")}
+            label="Bill"
+            clearable
+            placeholder="None"
+            value={row.bill_id}
+            onChange={(bill_id) => onChange({ bill_id })}
+            // Archived bills only when already linked (old splits may pay them).
+            options={props.bills
+              .filter((b) => b.active || b.id === row.bill_id)
+              .map((b) => ({ value: b.id, label: b.name }))}
+            {...errorProps(id("bill"), errors.bill_id)}
           />
         </Field>
         <Field id={id("tags")} label="Tags" error={errors.tag_ids} className="sm:col-span-2">

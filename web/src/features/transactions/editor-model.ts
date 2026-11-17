@@ -24,7 +24,7 @@ export interface SplitRow {
   category_id: string;
   /** Only withdrawals may have a budget. */
   budget_id: string;
-  /** Kept as loaded (no picker yet), so saving does not unlink a bill. */
+  /** The bill this split pays; it marks the bill's matching period paid. */
   bill_id: string;
   tag_ids: string[];
   notes: string;

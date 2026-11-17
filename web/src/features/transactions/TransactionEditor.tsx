@@ -14,6 +14,7 @@ import {
   placesOf,
   type Account,
 } from "@/features/accounts/queries";
+import { billsQuery } from "@/features/bills/queries";
 import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
@@ -57,8 +58,15 @@ export function TransactionEditor(props: TransactionEditorProps) {
   const queryClient = useQueryClient();
   const [state, setState] = useState(initial);
   const [errors, setErrors] = useState<EditorErrors>(NO_ERRORS);
-  const [accounts, categories, tags, currencies, budgets] = useQueries({
-    queries: [accountsQuery(), categoriesQuery, tagsQuery, currenciesQuery, budgetsQuery],
+  const [accounts, categories, tags, currencies, budgets, bills] = useQueries({
+    queries: [
+      accountsQuery(),
+      categoriesQuery,
+      tagsQuery,
+      currenciesQuery,
+      budgetsQuery,
+      billsQuery,
+    ],
   });
 
   const mutation = useMutation({
@@ -88,7 +96,12 @@ export function TransactionEditor(props: TransactionEditorProps) {
   });
 
   const loadError =
-    accounts.error ?? categories.error ?? tags.error ?? currencies.error ?? budgets.error;
+    accounts.error ??
+    categories.error ??
+    tags.error ??
+    currencies.error ??
+    budgets.error ??
+    bills.error;
   if (!accounts.data || loadError) {
     return <QueryState isPending={accounts.isPending} error={loadError} />;
   }
@@ -140,6 +153,7 @@ export function TransactionEditor(props: TransactionEditorProps) {
           accounts={accountList}
           categories={categories.data ?? []}
           budgets={budgets.data ?? []}
+          bills={bills.data ?? []}
           tags={tags.data ?? []}
           currencies={currencies.data ?? []}
           canRemove={state.splits.length > 1}

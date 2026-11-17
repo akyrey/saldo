@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/Combobox";
 import { accountsQuery, currenciesQuery } from "@/features/accounts/queries";
+import { billsQuery } from "@/features/bills/queries";
 import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { piggyBanksQuery } from "@/features/piggy-banks/queries";
@@ -43,7 +44,7 @@ export function RecurrenceEditor({ initial, submitLabel, save, onSaved }: Recurr
   const queryClient = useQueryClient();
   const [state, setState] = useState(initial);
   const [errors, setErrors] = useState<EditorErrors>(NO_ERRORS);
-  const [accounts, categories, tags, currencies, piggyBanks, budgets] = useQueries({
+  const [accounts, categories, tags, currencies, piggyBanks, budgets, bills] = useQueries({
     queries: [
       accountsQuery(),
       categoriesQuery,
@@ -51,6 +52,7 @@ export function RecurrenceEditor({ initial, submitLabel, save, onSaved }: Recurr
       currenciesQuery,
       piggyBanksQuery,
       budgetsQuery,
+      billsQuery,
     ],
   });
   const mutation = useMutation({
@@ -176,6 +178,7 @@ export function RecurrenceEditor({ initial, submitLabel, save, onSaved }: Recurr
             tags={tags.data ?? []}
             currencies={currencies.data ?? []}
             budgets={budgets.data ?? []}
+            bills={bills.data ?? []}
             canRemove={state.splits.length > 1}
             onChange={(changes) => setSplit(index, changes)}
             onRemove={() =>

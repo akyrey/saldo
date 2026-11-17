@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/errors";
 import { accountsQuery, currenciesQuery, type Account } from "@/features/accounts/queries";
+import { billsQuery, type Bill } from "@/features/bills/queries";
 import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
@@ -22,6 +23,25 @@ function account(id: string, name: string, type: string): Account {
     virtual_balance: "0.00",
     include_net_worth: true,
     active: true,
+    sort_order: 0,
+    created_at: "",
+    updated_at: "",
+  };
+}
+
+function bill(id: string, name: string, active: boolean): Bill {
+  return {
+    id,
+    name,
+    active,
+    amount_min: "10.00",
+    amount_max: "20.00",
+    currency: "EUR",
+    first_due_date: "2026-01-01",
+    repeat_freq: "monthly",
+    skip: 0,
+    remind_days_before: 0,
+    remind_every_days: 0,
     sort_order: 0,
     created_at: "",
     updated_at: "",
@@ -59,6 +79,10 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
       created_at: "",
       updated_at: "",
     },
+  ]);
+  queryClient.setQueryData(billsQuery.queryKey, [
+    bill("rent", "Rent", true),
+    bill("gym", "Gym", false),
   ]);
   queryClient.setQueryData(tagsQuery.queryKey, [
     { id: "tag", name: "weekend", created_at: "", updated_at: "" },
@@ -147,6 +171,23 @@ describe("TransactionEditor", () => {
     await user.click(screen.getByRole("button", { name: "Create transaction" }));
 
     expect(save.mock.calls[0]?.[0].splits.map((s) => s.budget_id)).toEqual(["groceries", null]);
+  });
+
+  it("links a split to an active bill, not an archived one", async () => {
+    const save = vi.fn((_body: TransactionRequest) => Promise.resolve({}));
+    renderEditor(save);
+    const user = userEvent.setup();
+    await fill(1, "checking", "food", "15");
+    const billInput = within(row(1)).getByLabelText("Bill");
+    await user.type(billInput, "gym");
+    expect(within(row(1)).queryByRole("option", { name: "Gym" })).toBeNull();
+    await choose(billInput, "Rent");
+    await user.click(screen.getByRole("button", { name: "Add split" }));
+    await fill(2, "checking", "food", "1");
+
+    await user.click(screen.getByRole("button", { name: "Create transaction" }));
+
+    expect(save.mock.calls[0]?.[0].splits.map((s) => s.bill_id)).toEqual(["rent", null]);
   });
 
   it("offers only accounts that fit the other side, and no archived ones", async () => {

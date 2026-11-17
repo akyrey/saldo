@@ -49,6 +49,7 @@ function loggedIn(extra: Record<string, unknown> = {}) {
     ]),
     "GET /api/v1/tags": list([]),
     "GET /api/v1/budgets": list([]),
+    "GET /api/v1/bills": list([]),
     "GET /api/v1/transactions": list([GROUP]),
     ...extra,
   });
@@ -103,6 +104,7 @@ describe("route guard", () => {
       "GET /api/v1/household/members": MEMBERS,
       "GET /api/v1/categories": list([]),
       "GET /api/v1/budgets": list([]),
+      "GET /api/v1/bills": list([]),
     });
     const { router } = renderApp("/categories");
     const user = userEvent.setup();
@@ -410,6 +412,7 @@ describe("categories and tags", () => {
     loggedIn({
       "GET /api/v1/categories": list([]),
       "GET /api/v1/budgets": list([]),
+      "GET /api/v1/bills": list([]),
       "POST /api/v1/categories": apiError(409, "conflict", "a category with this name exists"),
     });
     renderApp("/categories");

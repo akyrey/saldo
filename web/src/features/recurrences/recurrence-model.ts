@@ -30,7 +30,7 @@ export interface RepetitionRow {
 
 /**
  * A transaction split row plus the piggy bank a transfer feeds and the bill
- * it pays (kept as loaded; the editor has no bill picker yet).
+ * it pays.
  */
 export interface TemplateRow extends SplitRow {
   piggy_bank_id: string;

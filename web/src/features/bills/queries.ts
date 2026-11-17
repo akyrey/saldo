@@ -1,6 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, call } from "@/api/client";
+import type { components } from "@/api/schema";
 import { fetchAllPages, MAX_PER_PAGE } from "@/features/shared/pagination";
+
+export type Bill = components["schemas"]["BillView"];
 
 export const billsQuery = queryOptions({
   queryKey: ["bills", "all"],

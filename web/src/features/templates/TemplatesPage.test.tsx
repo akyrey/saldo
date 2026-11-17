@@ -53,6 +53,7 @@ function api(extra: Record<string, unknown> = {}) {
     "GET /api/v1/categories": list([]),
     "GET /api/v1/tags": list([]),
     "GET /api/v1/budgets": list([]),
+    "GET /api/v1/bills": list([]),
     "GET /api/v1/transactions": list([GROUP]),
     "GET /api/v1/transaction-templates": list([COFFEE, RENT]),
     [`GET /api/v1/transaction-templates/${T1}`]: { data: COFFEE },
