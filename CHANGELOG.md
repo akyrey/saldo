@@ -4,6 +4,15 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+
+- Merging tags: "Merge into…" on the tags page, and a "Case duplicates" page that merges groups of tags whose names differ only in case in one go (`GET /tags/duplicates`, `POST /tags/merge`). The kept tag takes over the others' transactions, recurring transactions, templates, rules and attachments.
+
+### Changed
+
+- Tag names are unique ignoring case: creating or renaming to "Food" when "food" exists is refused. Existing duplicates stay until merged.
+- The Firefly importer maps a tag to an existing tag of the same name in another case instead of creating a duplicate, and keeps a tag's Saldo spelling when the names differ only in case.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
