@@ -1057,6 +1057,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/tags/duplicates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Groups of tags whose names differ only in case, ordered by name; within a
+     *     group the most used tag comes first.
+     */
+    get: operations["list_duplicates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/tags/merge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Moves every use of the source tags (splits, recurrences, templates, rules,
+     *     attachments) to the target, then deletes the sources; all merges in one
+     *     transaction. Returns the target tags in request order.
+     */
+    post: operations["merge_tags"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/tags/{id}": {
     parameters: {
       query?: never;
@@ -2400,6 +2441,22 @@ export interface components {
       data: string[];
     };
     /** @description A single result. */
+    Data_Vec_TagDuplicateGroup: {
+      data: {
+        tags: components["schemas"]["TagUsageView"][];
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_TagView: {
+      data: {
+        created_at: string;
+        description?: string | null;
+        id: string;
+        name: string;
+        updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_TokenView: {
       data: {
         created_at: string;
@@ -2911,6 +2968,9 @@ export interface components {
       role: components["schemas"]["Role"];
       user_id: string;
     };
+    MergeTagsRequest: {
+      merges: components["schemas"]["TagMergeRequest"][];
+    };
     NetWorthCurrency: {
       currency: string;
       intervals: components["schemas"]["NetWorthInterval"][];
@@ -3273,10 +3333,28 @@ export interface components {
       tag_ids: string[];
       updated_at: string;
     };
+    /** @description Two or more tags with the same name ignoring case, most used first. */
+    TagDuplicateGroup: {
+      tags: components["schemas"]["TagUsageView"][];
+    };
+    /** @description Fold every tag in `sources` into `into`. */
+    TagMergeRequest: {
+      /** Format: uuid */
+      into: string;
+      sources: string[];
+    };
     TagPatch: {
       /** @description `null` clears the description. */
       description?: string | null;
       name?: string | null;
+    };
+    /** @description A tag with the number of splits that carry it. */
+    TagUsageView: {
+      description?: string | null;
+      id: string;
+      name: string;
+      /** Format: int64 */
+      split_count: number;
     };
     TagView: {
       created_at: string;
@@ -6698,6 +6776,72 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_duplicates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_TagDuplicateGroup"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  merge_tags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MergeTagsRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_TagView"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

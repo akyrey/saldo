@@ -5113,6 +5113,99 @@
         ]
       }
     },
+    "/api/v1/tags/duplicates": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Groups of tags whose names differ only in case, ordered by name; within a\ngroup the most used tag comes first.",
+        "operationId": "list_duplicates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TagDuplicateGroup"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tags/merge": {
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Moves every use of the source tags (splits, recurrences, templates, rules,\nattachments) to the target, then deletes the sources; all merges in one\ntransaction. Returns the target tags in request order.",
+        "operationId": "merge_tags",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeTagsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TagView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/tags/{id}": {
       "get": {
         "tags": [
@@ -10412,6 +10505,74 @@
           }
         }
       },
+      "Data_Vec_TagDuplicateGroup": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Two or more tags with the same name ignoring case, most used first.",
+              "required": [
+                "tags"
+              ],
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagUsageView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_TagView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_TokenView": {
         "type": "object",
         "description": "A single result.",
@@ -12307,6 +12468,20 @@
           }
         }
       },
+      "MergeTagsRequest": {
+        "type": "object",
+        "required": [
+          "merges"
+        ],
+        "properties": {
+          "merges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagMergeRequest"
+            }
+          }
+        }
+      },
       "NetWorthCurrency": {
         "type": "object",
         "required": [
@@ -13506,6 +13681,42 @@
           }
         }
       },
+      "TagDuplicateGroup": {
+        "type": "object",
+        "description": "Two or more tags with the same name ignoring case, most used first.",
+        "required": [
+          "tags"
+        ],
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagUsageView"
+            }
+          }
+        }
+      },
+      "TagMergeRequest": {
+        "type": "object",
+        "description": "Fold every tag in `sources` into `into`.",
+        "required": [
+          "into",
+          "sources"
+        ],
+        "properties": {
+          "into": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
       "TagPatch": {
         "type": "object",
         "properties": {
@@ -13521,6 +13732,33 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "TagUsageView": {
+        "type": "object",
+        "description": "A tag with the number of splits that carry it.",
+        "required": [
+          "id",
+          "name",
+          "split_count"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "split_count": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
