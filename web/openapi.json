@@ -6955,7 +6955,7 @@
           },
           "type": {
             "type": "string",
-            "description": "`reset` (the same amount every period) or `rollover` (plus what was left)."
+            "description": "`reset`: the same amount every period. Carrying what was left is the\nbudget's `carry`."
           }
         }
       },
@@ -6981,7 +6981,7 @@
           },
           "type": {
             "type": "string",
-            "description": "`reset` or `rollover`."
+            "description": "`reset` (carrying leftovers is the budget's `carry`)."
           }
         }
       },
@@ -7340,7 +7340,7 @@
       },
       "BudgetLimitView": {
         "type": "object",
-        "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+        "description": "A budget limit with what it received from the limit before it, what was\nspent against it (withdrawals booked on the budget, dated inside the\nlimit, in its currency or with a foreign amount in it) and what is left:\n`amount + carried - spent`, negative when overspent.",
         "required": [
           "id",
           "budget_id",
@@ -7348,6 +7348,7 @@
           "end_date",
           "amount",
           "currency",
+          "carried",
           "spent",
           "available",
           "created_at",
@@ -7362,6 +7363,10 @@
           },
           "budget_id": {
             "type": "string"
+          },
+          "carried": {
+            "type": "string",
+            "description": "Carried in from the previous limit (negative with carry `all` after\noverspending); computed when read, never stored."
           },
           "created_at": {
             "type": "string"
@@ -7411,6 +7416,13 @@
                 "type": "null"
               }
             ]
+          },
+          "carry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`none`, `leftover` or `all`."
           },
           "name": {
             "type": [
@@ -7536,6 +7548,7 @@
           "name",
           "active",
           "sort_order",
+          "carry",
           "created_at",
           "updated_at"
         ],
@@ -7553,6 +7566,10 @@
                 "type": "null"
               }
             ]
+          },
+          "carry": {
+            "type": "string",
+            "description": "What a limit passes on to the next one that starts the day after it:\n`none`, `leftover` (what was left) or `all` (overspending too)."
           },
           "created_at": {
             "type": "string"
@@ -8049,6 +8066,13 @@
                 "type": "null"
               }
             ]
+          },
+          "carry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What a limit passes on to the next one starting the day after it:\n`none` (default), `leftover` or `all` (overspending too)."
           },
           "name": {
             "type": "string"
@@ -8842,7 +8866,7 @@
         "properties": {
           "data": {
             "type": "object",
-            "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+            "description": "A budget limit with what it received from the limit before it, what was\nspent against it (withdrawals booked on the budget, dated inside the\nlimit, in its currency or with a foreign amount in it) and what is left:\n`amount + carried - spent`, negative when overspent.",
             "required": [
               "id",
               "budget_id",
@@ -8850,6 +8874,7 @@
               "end_date",
               "amount",
               "currency",
+              "carried",
               "spent",
               "available",
               "created_at",
@@ -8864,6 +8889,10 @@
               },
               "budget_id": {
                 "type": "string"
+              },
+              "carried": {
+                "type": "string",
+                "description": "Carried in from the previous limit (negative with carry `all` after\noverspending); computed when read, never stored."
               },
               "created_at": {
                 "type": "string"
@@ -8939,6 +8968,7 @@
               "name",
               "active",
               "sort_order",
+              "carry",
               "created_at",
               "updated_at"
             ],
@@ -8956,6 +8986,10 @@
                     "type": "null"
                   }
                 ]
+              },
+              "carry": {
+                "type": "string",
+                "description": "What a limit passes on to the next one that starts the day after it:\n`none`, `leftover` (what was left) or `all` (overspending too)."
               },
               "created_at": {
                 "type": "string"
@@ -11623,7 +11657,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "A budget limit with what was spent against it (withdrawals booked on the\nbudget, dated inside the limit, in its currency or with a foreign amount\nin it) and what is left (negative when overspent).",
+              "description": "A budget limit with what it received from the limit before it, what was\nspent against it (withdrawals booked on the budget, dated inside the\nlimit, in its currency or with a foreign amount in it) and what is left:\n`amount + carried - spent`, negative when overspent.",
               "required": [
                 "id",
                 "budget_id",
@@ -11631,6 +11665,7 @@
                 "end_date",
                 "amount",
                 "currency",
+                "carried",
                 "spent",
                 "available",
                 "created_at",
@@ -11645,6 +11680,10 @@
                 },
                 "budget_id": {
                   "type": "string"
+                },
+                "carried": {
+                  "type": "string",
+                  "description": "Carried in from the previous limit (negative with carry `all` after\noverspending); computed when read, never stored."
                 },
                 "created_at": {
                   "type": "string"
@@ -11699,6 +11738,7 @@
                 "name",
                 "active",
                 "sort_order",
+                "carry",
                 "created_at",
                 "updated_at"
               ],
@@ -11716,6 +11756,10 @@
                       "type": "null"
                     }
                   ]
+                },
+                "carry": {
+                  "type": "string",
+                  "description": "What a limit passes on to the next one that starts the day after it:\n`none`, `leftover` (what was left) or `all` (overspending too)."
                 },
                 "created_at": {
                   "type": "string"

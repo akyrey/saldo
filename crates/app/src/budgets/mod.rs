@@ -6,7 +6,7 @@ mod limits;
 pub(crate) mod repo;
 mod view;
 
-use saldo_core::{BudgetId, Money, Period};
+use saldo_core::{BudgetId, Carry, Money, Period};
 use sqlx::{SqliteConnection, SqlitePool};
 
 use crate::clock::{SharedClock, format_timestamp, new_id};
@@ -26,7 +26,7 @@ pub use view::{AutoBudgetView, BudgetLimitView, BudgetView};
 /// household's primary currency.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AutoBudgetInput {
-    /// `reset` or `rollover`.
+    /// `reset` (carrying leftovers is the budget's `carry`).
     pub auto_type: String,
     /// `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`.
     pub period: String,
@@ -41,6 +41,8 @@ pub struct NewBudget {
     pub sort_order: i64,
     pub notes: Option<String>,
     pub auto_budget: Option<AutoBudgetInput>,
+    /// `none`, `leftover` or `all` (saldo_core::Carry).
+    pub carry: String,
 }
 
 // `Default` written by hand because a new budget is active, and the derived
@@ -53,6 +55,7 @@ impl Default for NewBudget {
             sort_order: 0,
             notes: None,
             auto_budget: None,
+            carry: Carry::None.as_str().to_string(),
         }
     }
 }
@@ -66,6 +69,7 @@ pub struct BudgetUpdate {
     pub sort_order: Option<i64>,
     pub notes: Option<Option<String>>,
     pub auto_budget: Option<Option<AutoBudgetInput>>,
+    pub carry: Option<String>,
 }
 
 /// Filters for [`BudgetService::list`].
@@ -121,6 +125,7 @@ impl BudgetService {
             auto_period,
             auto_amount_minor,
             auto_currency_code,
+            carry: parse_carry(&input.carry)?,
             created_at: now.clone(),
             updated_at: now,
         };
@@ -174,6 +179,10 @@ impl BudgetService {
             active: update.active.unwrap_or(current.active),
             sort_order: update.sort_order.unwrap_or(current.sort_order),
             notes: update.notes.map_or(current.notes.clone(), clean_notes),
+            carry: match &update.carry {
+                Some(carry) => parse_carry(carry)?,
+                None => current.carry.clone(),
+            },
             updated_at: format_timestamp(self.clock.now()),
             ..current.clone()
         };
@@ -290,8 +299,12 @@ async fn auto_columns(
     let Some(input) = input else {
         return Ok((None, None, None, None));
     };
-    let auto_type = saldo_core::AutoBudgetType::parse(&input.auto_type)
-        .ok_or_else(|| AppError::invalid("auto_budget.type", "must be reset or rollover"))?;
+    let auto_type = saldo_core::AutoBudgetType::parse(&input.auto_type).ok_or_else(|| {
+        AppError::invalid(
+            "auto_budget.type",
+            "must be reset (carrying leftovers is the budget's carry)",
+        )
+    })?;
     let period = Period::parse(&input.period).ok_or_else(|| {
         AppError::invalid(
             "auto_budget.period",
@@ -310,6 +323,13 @@ async fn auto_columns(
         Some(amount.minor()),
         Some(code),
     ))
+}
+
+/// Checks a carry name; returns it as stored.
+fn parse_carry(text: &str) -> Result<String, AppError> {
+    Carry::parse(text)
+        .map(|carry| carry.as_str().to_string())
+        .ok_or_else(|| AppError::invalid("carry", "must be none, leftover or all"))
 }
 
 /// Parses a decimal amount that must be greater than zero.

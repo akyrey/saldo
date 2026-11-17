@@ -5,6 +5,7 @@ use chrono::NaiveDate;
 use sqlx::SqliteConnection;
 
 use super::BudgetService;
+use super::limits::limit_views;
 use super::repo::{self, BudgetRow, LimitRow};
 use super::view;
 use crate::clock::{format_timestamp, new_id};
@@ -64,20 +65,7 @@ impl BudgetService {
         let household_id = ctx.household_id.to_string();
         let last = repo::last_limit(conn, &household_id, &budget.id).await?;
         let last = last.as_ref().map(view::core_limit).transpose()?;
-        // Spends from the last limit (for a rollover) to the current period's end.
-        let from = last.map_or(auto.period.start_of(today), |l| l.range.start);
-        let to = auto.period.range_of(today).end;
-        let rows = repo::spends(
-            conn,
-            &household_id,
-            &budget.id,
-            &from.to_string(),
-            &to.to_string(),
-        )
-        .await?;
-        let spends = view::core_spends(&rows)?;
-        let limits = saldo_core::auto_limits(&auto, last.as_ref(), &spends, today)
-            .map_err(|e| AppError::Internal(e.to_string()))?;
+        let limits = saldo_core::auto_limits(&auto, last.as_ref(), today);
         let mut count = 0;
         for limit in limits {
             let now = format_timestamp(self.clock.now());
@@ -97,7 +85,8 @@ impl BudgetService {
                 continue;
             }
             repo::insert_limit(conn, &household_id, &row).await?;
-            let view = view::limit_view(conn, row, &spends).await?;
+            let mut views = limit_views(conn, ctx, &budget.id, vec![row]).await?;
+            let view = views.pop().ok_or(AppError::NotFound)?;
             let event = NewEvent::new(
                 &*self.clock,
                 "budget_limit",

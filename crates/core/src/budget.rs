@@ -1,5 +1,6 @@
 //! Budget maths: what was spent against a limit, what is left, and the
 //! limits an auto-budget creates for each new period (ARCHITECTURE.md 4.3).
+//! What one limit passes on to the next is in `carry`.
 
 use chrono::NaiveDate;
 
@@ -11,25 +12,21 @@ use crate::period::{DateRange, Period};
 /// How an auto-budget fills each new period.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AutoBudgetType {
-    /// Every period gets the same amount.
+    /// Every period gets the same amount. (Carrying leftovers is the
+    /// budget's `Carry`, computed when limits are read, not stored here.)
     Reset,
-    /// Every period gets the amount plus what was left of the previous one
-    /// (never less than the amount: overspending is not carried over).
-    Rollover,
 }
 
 impl AutoBudgetType {
     pub fn as_str(self) -> &'static str {
         match self {
             AutoBudgetType::Reset => "reset",
-            AutoBudgetType::Rollover => "rollover",
         }
     }
 
     pub fn parse(text: &str) -> Option<Self> {
         match text {
             "reset" => Some(AutoBudgetType::Reset),
-            "rollover" => Some(AutoBudgetType::Rollover),
             _ => None,
         }
     }
@@ -97,52 +94,31 @@ pub fn available(limit: &Limit, spent: Money) -> Result<Money, MoneyError> {
 /// The limits an auto-budget still has to create, oldest first: one per
 /// period, from the period after `last` (the budget's latest limit) up to and
 /// including the period that contains `today`. Without a `last` limit, only
-/// the current period is created.
-///
-/// A rollover period adds what was left of the period before it, if that
-/// limit was in the same currency and not overspent.
-pub fn auto_limits(
-    auto: &AutoBudget,
-    last: Option<&Limit>,
-    spends: &[Spend],
-    today: NaiveDate,
-) -> Result<Vec<Limit>, MoneyError> {
+/// the current period is created. Every limit gets the auto-budget's amount.
+pub fn auto_limits(auto: &AutoBudget, last: Option<&Limit>, today: NaiveDate) -> Vec<Limit> {
     let first = match last {
         // The period after the one `last` ends in (a hand-made limit may end
         // mid-period; the rest of that period stays covered by it).
         Some(limit) => match auto.period.range_of(limit.range.end).end.succ_opt() {
             Some(next) => next,
-            None => return Ok(Vec::new()),
+            None => return Vec::new(),
         },
         None => auto.period.start_of(today),
     };
-    let mut previous = last.copied();
     let mut created = Vec::new();
     let mut start = first;
     while start <= today {
         let range = auto.period.range_of(start);
-        let amount = match (auto.kind, previous) {
-            (AutoBudgetType::Rollover, Some(prev))
-                if prev.amount.currency() == auto.amount.currency() =>
-            {
-                let left = available(&prev, spent(&prev.range, prev.amount.currency(), spends)?)?;
-                if left.is_positive() {
-                    auto.amount.checked_add(left)?
-                } else {
-                    auto.amount
-                }
-            }
-            _ => auto.amount,
-        };
-        let limit = Limit { range, amount };
-        created.push(limit);
-        previous = Some(limit);
+        created.push(Limit {
+            range,
+            amount: auto.amount,
+        });
         match range.end.succ_opt() {
             Some(next) => start = next,
             None => break,
         }
     }
-    Ok(created)
+    created
 }
 
 #[cfg(test)]
@@ -175,9 +151,12 @@ mod tests {
 
     #[test]
     fn type_names_round_trip() {
-        for kind in [AutoBudgetType::Reset, AutoBudgetType::Rollover] {
-            assert_eq!(AutoBudgetType::parse(kind.as_str()), Some(kind));
-        }
+        assert_eq!(
+            AutoBudgetType::parse(AutoBudgetType::Reset.as_str()),
+            Some(AutoBudgetType::Reset)
+        );
+        // Rollover is now the budget's carry, not an auto-budget type.
+        assert_eq!(AutoBudgetType::parse("rollover"), None);
         assert_eq!(AutoBudgetType::parse("adjusted"), None);
     }
 
@@ -242,10 +221,8 @@ mod tests {
         let limits = auto_limits(
             &auto(AutoBudgetType::Reset, Period::Monthly),
             None,
-            &[],
             d(2026, 11, 13),
-        )
-        .unwrap();
+        );
         assert_eq!(
             limits,
             vec![Limit {
@@ -261,14 +238,11 @@ mod tests {
             range: month(2026, 8),
             amount: eur(10_000),
         };
-        let spends = [spend(d(2026, 8, 3), eur(1_000))];
         let limits = auto_limits(
             &auto(AutoBudgetType::Reset, Period::Monthly),
             Some(&last),
-            &spends,
             d(2026, 11, 13),
-        )
-        .unwrap();
+        );
         let ranges: Vec<_> = limits.iter().map(|l| l.range).collect();
         assert_eq!(
             ranges,
@@ -283,57 +257,14 @@ mod tests {
             range: month(2026, 11),
             amount: eur(30_000),
         };
-        let budget = auto(AutoBudgetType::Rollover, Period::Monthly);
-        assert!(
-            auto_limits(&budget, Some(&last), &[], d(2026, 11, 30))
-                .unwrap()
-                .is_empty()
-        );
+        let budget = auto(AutoBudgetType::Reset, Period::Monthly);
+        assert!(auto_limits(&budget, Some(&last), d(2026, 11, 30)).is_empty());
         // A limit reaching past today, too.
         let future = Limit {
             range: month(2027, 1),
             amount: eur(1),
         };
-        assert!(
-            auto_limits(&budget, Some(&future), &[], d(2026, 11, 30))
-                .unwrap()
-                .is_empty()
-        );
-    }
-
-    #[test]
-    fn rollover_carries_what_was_left_but_not_overspending() {
-        let last = Limit {
-            range: month(2026, 9),
-            amount: eur(30_000),
-        };
-        let spends = [
-            spend(d(2026, 9, 10), eur(20_000)),  // 100.00 left in September
-            spend(d(2026, 10, 10), eur(50_000)), // October overspent
-        ];
-        let limits = auto_limits(
-            &auto(AutoBudgetType::Rollover, Period::Monthly),
-            Some(&last),
-            &spends,
-            d(2026, 11, 2),
-        )
-        .unwrap();
-        let amounts: Vec<_> = limits.iter().map(|l| l.amount).collect();
-        // October: 300 + 100 left; November: 300 (October was overspent).
-        assert_eq!(amounts, vec![eur(40_000), eur(30_000)]);
-    }
-
-    #[test]
-    fn rollover_chains_leftovers_and_ignores_other_currencies() {
-        let usd_last = Limit {
-            range: month(2026, 9),
-            amount: Money::new(10_000, code("USD")),
-        };
-        let budget = auto(AutoBudgetType::Rollover, Period::Monthly);
-        let limits = auto_limits(&budget, Some(&usd_last), &[], d(2026, 11, 2)).unwrap();
-        // The USD limit carries nothing into EUR; then October's unspent 300 does.
-        let amounts: Vec<_> = limits.iter().map(|l| l.amount).collect();
-        assert_eq!(amounts, vec![eur(30_000), eur(60_000)]);
+        assert!(auto_limits(&budget, Some(&future), d(2026, 11, 30)).is_empty());
     }
 
     #[test]
@@ -344,24 +275,11 @@ mod tests {
         };
         let weekly = auto(AutoBudgetType::Reset, Period::Weekly);
         // 10 November is a Tuesday: its week ends on Sunday the 15th.
-        let limits = auto_limits(&weekly, Some(&last), &[], d(2026, 11, 20)).unwrap();
+        let limits = auto_limits(&weekly, Some(&last), d(2026, 11, 20));
         assert_eq!(limits.len(), 1);
         assert_eq!(
             limits[0].range,
             DateRange::new(d(2026, 11, 16), d(2026, 11, 22)).unwrap()
-        );
-    }
-
-    #[test]
-    fn rollover_overflow_is_an_error() {
-        let last = Limit {
-            range: month(2026, 10),
-            amount: eur(i64::MAX),
-        };
-        let budget = auto(AutoBudgetType::Rollover, Period::Monthly);
-        assert_eq!(
-            auto_limits(&budget, Some(&last), &[], d(2026, 11, 2)),
-            Err(MoneyError::Overflow)
         );
     }
 }

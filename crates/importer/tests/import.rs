@@ -784,6 +784,50 @@ async fn changed_budgets_are_updated() {
     );
 }
 
+/// Firefly stores a rollover budget's limits with the leftover added; Saldo
+/// stores the base and computes the carry (budget carry `leftover`).
+#[tokio::test]
+async fn rollover_budgets_import_with_a_carry_and_base_limits() {
+    let (app, ctx) = household().await;
+    let mut budgets = fixture("budgets.json");
+    budgets["data"][0]["attributes"]["auto_budget_type"] = "rollover".into();
+    budgets["data"][0]["attributes"]["auto_budget_amount"] = "200.000000000000".into();
+    let server = firefly(None, None).await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/budgets"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(budgets))
+        .with_priority(1)
+        .mount(&server)
+        .await;
+    let options = || Options {
+        only: Some(vec!["budgets".to_string()]),
+        ..Options::default()
+    };
+    let client = || FireflyClient::new(&server.uri(), "secret-token".into()).unwrap();
+    run(app.clone(), client(), ctx, options()).await.unwrap();
+
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(*) FROM budgets WHERE name = 'Groceries' AND auto_type = 'reset' AND carry = 'leftover'"
+        )
+        .await,
+        1
+    );
+    // Both fixture limits (300 and 250) were above the 200 base.
+    assert_eq!(
+        scalar(
+            &app,
+            "SELECT count(*) FROM budget_limits WHERE amount_minor = 20000"
+        )
+        .await,
+        2
+    );
+
+    let second = run(app.clone(), client(), ctx, options()).await.unwrap();
+    assert!(!second.has_changes(), "{}", second.render());
+}
+
 /// The fixture's tags plus Firefly tag 5, "FOOD", a case duplicate of "food".
 fn tags_with_case_duplicate() -> Value {
     let mut tags = fixture("tags.json");

@@ -22,6 +22,7 @@ function formOf(budget: Budget): BudgetForm {
     autoType: budget.auto_budget?.type ?? "",
     autoPeriod: budget.auto_budget?.period ?? "monthly",
     autoAmount: budget.auto_budget?.amount ?? "",
+    carry: budget.carry,
   };
 }
 

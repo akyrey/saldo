@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_BUDGET_FORM,
+  limitTotal,
   monthLabel,
   monthOf,
   monthRange,
@@ -33,6 +34,14 @@ describe("progress", () => {
   });
 });
 
+describe("limitTotal", () => {
+  it("adds what was carried in, which may be negative", () => {
+    expect(limitTotal({ amount: "100.00", carried: "60.00" }, 2)).toBe("160.00");
+    expect(limitTotal({ amount: "100.00", carried: "-120.50" }, 2)).toBe("-20.50");
+    expect(limitTotal({ amount: "100", carried: "0" }, 0)).toBe("100");
+  });
+});
+
 describe("toBudgetRequest", () => {
   it("trims and leaves out an empty automatic limit", () => {
     expect(toBudgetRequest({ ...EMPTY_BUDGET_FORM, name: " Food ", notes: " " })).toEqual({
@@ -40,13 +49,21 @@ describe("toBudgetRequest", () => {
       active: true,
       notes: null,
       auto_budget: null,
+      carry: "none",
     });
   });
 
-  it("sends an automatic limit with a normalised amount", () => {
-    const form = { ...EMPTY_BUDGET_FORM, name: "Fun", autoType: "rollover", autoAmount: "12,5" };
+  it("sends an automatic limit with a normalised amount and the carry", () => {
+    const form = {
+      ...EMPTY_BUDGET_FORM,
+      name: "Fun",
+      autoType: "reset",
+      autoAmount: "12,5",
+      carry: "all",
+    };
+    expect(toBudgetRequest(form).carry).toBe("all");
     expect(toBudgetRequest(form).auto_budget).toEqual({
-      type: "rollover",
+      type: "reset",
       period: "monthly",
       amount: "12.5",
     });

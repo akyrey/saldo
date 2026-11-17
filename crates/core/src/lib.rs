@@ -74,6 +74,7 @@ pub mod account;
 pub mod balance;
 pub mod bills;
 pub mod budget;
+pub mod carry;
 pub mod currency;
 pub mod error;
 pub mod ids;
@@ -99,6 +100,7 @@ pub use bills::{
     Bill, BillFrequency, BillPeriod, BillSchedule, PeriodStatus, ReminderKind, reminder_due,
 };
 pub use budget::{AutoBudget, AutoBudgetType, Limit, Spend, auto_limits, available, spent};
+pub use carry::{Carry, carried};
 pub use currency::{Currency, CurrencyCode, MAX_DECIMAL_PLACES};
 pub use error::{
     CurrencyError, IdError, InvalidAccountPair, MoneyError, Reference, ValidationError,

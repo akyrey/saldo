@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, active AS \"active: bool\", sort_order, notes, auto_type, auto_period,\n                  auto_amount_minor, auto_currency_code, created_at, updated_at\n           FROM budgets WHERE household_id = ? AND id = ?",
+  "query": "SELECT id, name, active AS \"active: bool\", sort_order, notes, auto_type, auto_period,\n                  auto_amount_minor, auto_currency_code, carry, created_at, updated_at\n           FROM budgets WHERE household_id = ? AND id = ?",
   "describe": {
     "columns": [
       {
@@ -103,8 +103,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "carry",
         "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "carry"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -115,7 +126,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 10,
+        "ordinal": 11,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -139,8 +150,9 @@
       true,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "e763716933ddffdffb3f354560c1451380ef94db8ccde1cc4062f2b03d1711f0"
+  "hash": "e049ccfccf30cbfae59c80d4c9c5ef2d757fe79dc4f634d976ef9b5699c4dd58"
 }

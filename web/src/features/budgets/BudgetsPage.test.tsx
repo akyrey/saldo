@@ -16,6 +16,7 @@ const BUDGET = {
   sort_order: 0,
   notes: null,
   auto_budget: { type: "reset", period: "monthly", amount: "300.00", currency: "EUR" },
+  carry: "leftover",
   created_at: "",
   updated_at: "t1",
 };
@@ -26,6 +27,7 @@ const LIMIT = {
   end_date: "2026-11-30",
   amount: "300.00",
   currency: "EUR",
+  carried: "0.00",
   spent: "330.00",
   available: "-30.00",
   notes: null,
@@ -61,6 +63,18 @@ describe("budgets", () => {
     expect(await screen.findByText(/December 2026/)).toBeInTheDocument();
   });
 
+  it("adds what the previous limit carried in to the bar", async () => {
+    api({
+      "GET /api/v1/budgets/b1/limits": list([{ ...LIMIT, carried: "100.00", available: "70.00" }]),
+    });
+    renderApp("/budgets?month=2026-11");
+
+    const bar = await screen.findByRole("progressbar", { name: "Spent 330.00 of 400.00 EUR" });
+    expect(bar).toHaveAttribute("aria-valuenow", "82");
+    expect(screen.getByText(/carried/)).toBeInTheDocument();
+    expect(screen.getByText(/Left:/)).toBeInTheDocument();
+  });
+
   it("creates a budget with an automatic limit", async () => {
     const seen = api({ "POST /api/v1/budgets": { data: BUDGET } });
     renderApp("/budgets?month=2026-11");
@@ -79,6 +93,7 @@ describe("budgets", () => {
       active: true,
       notes: null,
       auto_budget: { type: "reset", period: "monthly", amount: "50.5" },
+      carry: "none",
     });
   });
 

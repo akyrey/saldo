@@ -63,7 +63,8 @@ pub async fn list_budgets(
 /// An automatic limit: `amount` per `period`.
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct AutoBudgetRequest {
-    /// `reset` (the same amount every period) or `rollover` (plus what was left).
+    /// `reset`: the same amount every period. Carrying what was left is the
+    /// budget's `carry`.
     #[serde(rename = "type")]
     pub auto_type: String,
     /// `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`.
@@ -94,6 +95,9 @@ pub struct CreateBudgetRequest {
     pub sort_order: Option<i64>,
     pub notes: Option<String>,
     pub auto_budget: Option<AutoBudgetRequest>,
+    /// What a limit passes on to the next one starting the day after it:
+    /// `none` (default), `leftover` or `all` (overspending too).
+    pub carry: Option<String>,
 }
 
 /// Creates a budget; an automatic limit also creates the current period's limit.
@@ -111,6 +115,7 @@ pub async fn create_budget(
         sort_order: body.sort_order.unwrap_or(0),
         notes: body.notes,
         auto_budget: body.auto_budget.map(AutoBudgetInput::from),
+        carry: body.carry.unwrap_or_else(|| "none".to_string()),
     };
     let view = state
         .app
@@ -144,6 +149,8 @@ pub struct BudgetPatch {
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<AutoBudgetRequest>)]
     pub auto_budget: Option<Option<AutoBudgetRequest>>,
+    /// `none`, `leftover` or `all`.
+    pub carry: Option<String>,
 }
 
 #[utoipa::path(patch, path = "/budgets/{id}", tag = "budgets", params(("id" = Uuid, Path)), request_body = BudgetPatch,
@@ -161,6 +168,7 @@ pub async fn update_budget(
         sort_order: body.sort_order,
         notes: body.notes,
         auto_budget: body.auto_budget.map(|a| a.map(AutoBudgetInput::from)),
+        carry: body.carry,
     };
     let view = state
         .app

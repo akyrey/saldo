@@ -1,7 +1,7 @@
 import { Field } from "@/components/Field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { AUTO_TYPES, PERIODS, type BudgetForm } from "./budget-model";
+import { AUTO_TYPES, CARRY_OPTIONS, PERIODS, type BudgetForm } from "./budget-model";
 
 interface BudgetFormFieldsProps {
   form: BudgetForm;
@@ -67,6 +67,19 @@ export function BudgetFormFields({ form, errors, onChange, compact }: BudgetForm
       ) : null}
       {compact ? null : (
         <>
+          <Field id="budget-carry" label="Carry over" error={errors.carry}>
+            <NativeSelect
+              id="budget-carry"
+              value={form.carry}
+              onChange={(e) => onChange({ carry: e.target.value })}
+            >
+              {CARRY_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
           <Field id="budget-notes" label="Notes" error={errors.notes} className="sm:col-span-2">
             <Input
               id="budget-notes"

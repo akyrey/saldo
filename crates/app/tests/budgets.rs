@@ -266,36 +266,9 @@ async fn an_auto_budget_creates_the_current_period_limit() {
     assert!(view.auto_budget.is_none());
 }
 
-#[tokio::test]
-async fn rollover_carries_the_unspent_amount_into_the_next_month() {
-    let (test, setup) = with_household().await;
-    let ctx = &setup.ctx;
-    let input = NewBudget {
-        name: "Fun".into(),
-        auto_budget: Some(monthly("rollover", "100")),
-        ..NewBudget::default()
-    };
-    let id: BudgetId = test
-        .app
-        .budgets
-        .create(ctx, Origin::Api, input)
-        .await
-        .unwrap()
-        .id
-        .parse()
-        .unwrap();
-    spend(&test, ctx, 20, "40.00", Some(id)).await;
-
-    test.clock.advance(TimeDelta::days(30)); // 2026-12-13
-    let today = test.app.identity.household_today(ctx).await.unwrap();
-    assert_eq!(
-        test.app
-            .budgets
-            .create_auto_limits(ctx, today)
-            .await
-            .unwrap(),
-        1
-    );
+/// The December limit of a budget with `carry` and 100.00 a month, after
+/// `spent` in November; returns (amount, carried, available).
+async fn december(test: &TestApp, ctx: &HouseholdCtx, id: BudgetId) -> (String, String, String) {
     let limits = test
         .app
         .budgets
@@ -303,14 +276,184 @@ async fn rollover_carries_the_unspent_amount_into_the_next_month() {
         .await
         .unwrap();
     let december = &limits.items[0];
+    assert_eq!(december.start_date, "2026-12-01");
+    (
+        december.amount.clone(),
+        december.carried.clone(),
+        december.available.clone(),
+    )
+}
+
+#[tokio::test]
+async fn carry_is_computed_when_limits_are_read() {
+    let (test, setup) = with_household().await;
+    let ctx = &setup.ctx;
+    let input = NewBudget {
+        name: "Fun".into(),
+        auto_budget: Some(monthly("reset", "100")),
+        carry: "leftover".into(),
+        ..NewBudget::default()
+    };
+    let view = test
+        .app
+        .budgets
+        .create(ctx, Origin::Api, input)
+        .await
+        .unwrap();
+    assert_eq!(view.carry, "leftover");
+    let id: BudgetId = view.id.parse().unwrap();
+    spend(&test, ctx, 20, "40.00", Some(id)).await;
+
+    test.clock.advance(TimeDelta::days(30)); // 2026-12-13
+    let today = test.app.identity.household_today(ctx).await.unwrap();
+    test.app
+        .budgets
+        .create_auto_limits(ctx, today)
+        .await
+        .unwrap();
+    // The stored amount stays the base; the carry is added when read.
     assert_eq!(
-        (december.start_date.as_str(), december.amount.as_str()),
-        ("2026-12-01", "160.00")
+        december(&test, ctx, id).await,
+        ("100.00".into(), "60.00".into(), "160.00".into())
     );
-    let event = last_event(&test, ctx).await;
+
+    // A late November payment changes December without touching its row.
+    spend(&test, ctx, 25, "50.00", Some(id)).await;
     assert_eq!(
-        (event.event_type.as_str(), event.origin.as_str()),
-        ("budget_limit.created", "scheduler")
+        last_event(&test, ctx).await.event_type,
+        "transaction.created"
+    );
+    assert_eq!(december(&test, ctx, id).await.1, "10.00");
+
+    // Overspending is forgotten with `leftover` and carried with `all`.
+    spend(&test, ctx, 26, "30.00", Some(id)).await;
+    assert_eq!(december(&test, ctx, id).await.1, "0.00");
+    let update = BudgetUpdate {
+        carry: Some("all".into()),
+        ..BudgetUpdate::default()
+    };
+    let view = test
+        .app
+        .budgets
+        .update(ctx, Origin::Api, id, update)
+        .await
+        .unwrap();
+    assert_eq!(view.carry, "all");
+    assert_eq!(last_event(&test, ctx).await.event_type, "budget.updated");
+    assert_eq!(
+        december(&test, ctx, id).await,
+        ("100.00".into(), "-20.00".into(), "80.00".into())
+    );
+}
+
+#[tokio::test]
+async fn hand_made_limits_carry_and_bad_values_are_rejected() {
+    let (test, setup) = with_household().await;
+    let ctx = &setup.ctx;
+    let id = budget(&test, ctx, "Trips").await;
+    let update = BudgetUpdate {
+        carry: Some("leftover".into()),
+        ..BudgetUpdate::default()
+    };
+    test.app
+        .budgets
+        .update(ctx, Origin::Api, id, update)
+        .await
+        .unwrap();
+    let december_day = |day| NaiveDate::from_ymd_opt(2026, 12, day).unwrap();
+    for (start, end) in [(date(1), date(30)), (december_day(1), december_day(31))] {
+        test.app
+            .budgets
+            .create_limit(ctx, Origin::Api, id, limit(start, end, "200"))
+            .await
+            .unwrap();
+    }
+    spend(&test, ctx, 3, "50.00", Some(id)).await;
+    assert_eq!(
+        december(&test, ctx, id).await,
+        ("200.00".into(), "150.00".into(), "350.00".into())
+    );
+
+    for (field, update) in [
+        (
+            "carry",
+            BudgetUpdate {
+                carry: Some("sometimes".into()),
+                ..BudgetUpdate::default()
+            },
+        ),
+        (
+            "auto_budget.type",
+            BudgetUpdate {
+                auto_budget: Some(Some(monthly("rollover", "1"))),
+                ..BudgetUpdate::default()
+            },
+        ),
+    ] {
+        let err = test
+            .app
+            .budgets
+            .update(ctx, Origin::Api, id, update)
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, AppError::Invalid { field: ref f, .. } if f == field),
+            "{field}: {err:?}"
+        );
+    }
+}
+
+/// Rollover budgets from before Phase 9 stored the carry in each limit.
+#[tokio::test]
+async fn the_carry_migration_resets_rollover_limits_to_the_base() {
+    use saldo_app::db::{MIGRATOR, connect_in_memory};
+    const BEFORE: i64 = 20261115183605;
+    let pool = connect_in_memory().await.unwrap();
+    MIGRATOR.run_to(BEFORE, &pool).await.unwrap();
+    for sql in [
+        "INSERT INTO households (id, name, primary_currency, created_at, updated_at)
+         VALUES ('h', 'Home', 'EUR', 't', 't')",
+        "INSERT INTO budgets (id, household_id, name, auto_type, auto_period, auto_amount_minor,
+                              auto_currency_code, created_at, updated_at)
+         VALUES ('roll', 'h', 'Fun', 'rollover', 'monthly', 10000, 'EUR', 't', 't'),
+                ('plain', 'h', 'Food', 'reset', 'monthly', 10000, 'EUR', 't', 't')",
+        "INSERT INTO budget_limits (id, household_id, budget_id, start_date, end_date, amount_minor,
+                                    currency_code, created_at, updated_at)
+         VALUES ('a', 'h', 'roll', '2026-10-01', '2026-10-31', 16000, 'EUR', 't', 't'),
+                ('b', 'h', 'roll', '2026-11-01', '2026-11-30', 10000, 'EUR', 't', 't'),
+                ('c', 'h', 'roll', '2026-11-01', '2026-11-30', 5000, 'USD', 't', 't'),
+                ('d', 'h', 'plain', '2026-11-01', '2026-11-30', 25000, 'EUR', 't', 't')",
+    ] {
+        sqlx::query(sql).execute(&pool).await.unwrap();
+    }
+    MIGRATOR.run(&pool).await.unwrap();
+
+    let budgets: Vec<(String, String, String)> =
+        sqlx::query_as("SELECT id, auto_type, carry FROM budgets ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        budgets,
+        vec![
+            ("plain".into(), "reset".into(), "none".into()),
+            ("roll".into(), "reset".into(), "leftover".into()),
+        ]
+    );
+    let amounts: Vec<(String, i64)> =
+        sqlx::query_as("SELECT id, amount_minor FROM budget_limits ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    // The inflated EUR limit goes back to the base; USD and other budgets stay.
+    assert_eq!(
+        amounts,
+        vec![
+            ("a".into(), 10000),
+            ("b".into(), 10000),
+            ("c".into(), 5000),
+            ("d".into(), 25000)
+        ]
     );
 }
 

@@ -1416,7 +1416,10 @@ export interface components {
       currency?: string | null;
       /** @description `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
       period: string;
-      /** @description `reset` (the same amount every period) or `rollover` (plus what was left). */
+      /**
+       * @description `reset`: the same amount every period. Carrying what was left is the
+       *     budget's `carry`.
+       */
       type: string;
     };
     /** @description An automatic limit: `amount` per `period`. */
@@ -1425,7 +1428,7 @@ export interface components {
       currency: string;
       /** @description `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`. */
       period: string;
-      /** @description `reset` or `rollover`. */
+      /** @description `reset` (carrying leftovers is the budget's `carry`). */
       type: string;
     };
     /** @description An account's balance on a date (all time when `date` is `None`). */
@@ -1525,14 +1528,20 @@ export interface components {
       range: components["schemas"]["ReportRange"];
     };
     /**
-     * @description A budget limit with what was spent against it (withdrawals booked on the
-     *     budget, dated inside the limit, in its currency or with a foreign amount
-     *     in it) and what is left (negative when overspent).
+     * @description A budget limit with what it received from the limit before it, what was
+     *     spent against it (withdrawals booked on the budget, dated inside the
+     *     limit, in its currency or with a foreign amount in it) and what is left:
+     *     `amount + carried - spent`, negative when overspent.
      */
     BudgetLimitView: {
       amount: string;
       available: string;
       budget_id: string;
+      /**
+       * @description Carried in from the previous limit (negative with carry `all` after
+       *     overspending); computed when read, never stored.
+       */
+      carried: string;
       created_at: string;
       currency: string;
       end_date: string;
@@ -1545,6 +1554,8 @@ export interface components {
     BudgetPatch: {
       active?: boolean | null;
       auto_budget?: components["schemas"]["AutoBudgetRequest"] | null;
+      /** @description `none`, `leftover` or `all`. */
+      carry?: string | null;
       name?: string | null;
       /** @description `null` clears the notes. */
       notes?: string | null;
@@ -1581,6 +1592,11 @@ export interface components {
     BudgetView: {
       active: boolean;
       auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+      /**
+       * @description What a limit passes on to the next one that starts the day after it:
+       *     `none`, `leftover` (what was left) or `all` (overspending too).
+       */
+      carry: string;
       created_at: string;
       id: string;
       name: string;
@@ -1728,6 +1744,11 @@ export interface components {
       /** @description Default `true`. */
       active?: boolean | null;
       auto_budget?: components["schemas"]["AutoBudgetRequest"] | null;
+      /**
+       * @description What a limit passes on to the next one starting the day after it:
+       *     `none` (default), `leftover` or `all` (overspending too).
+       */
+      carry?: string | null;
       name: string;
       notes?: string | null;
       /**
@@ -1959,14 +1980,20 @@ export interface components {
     /** @description A single result. */
     Data_BudgetLimitView: {
       /**
-       * @description A budget limit with what was spent against it (withdrawals booked on the
-       *     budget, dated inside the limit, in its currency or with a foreign amount
-       *     in it) and what is left (negative when overspent).
+       * @description A budget limit with what it received from the limit before it, what was
+       *     spent against it (withdrawals booked on the budget, dated inside the
+       *     limit, in its currency or with a foreign amount in it) and what is left:
+       *     `amount + carried - spent`, negative when overspent.
        */
       data: {
         amount: string;
         available: string;
         budget_id: string;
+        /**
+         * @description Carried in from the previous limit (negative with carry `all` after
+         *     overspending); computed when read, never stored.
+         */
+        carried: string;
         created_at: string;
         currency: string;
         end_date: string;
@@ -1995,6 +2022,11 @@ export interface components {
       data: {
         active: boolean;
         auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+        /**
+         * @description What a limit passes on to the next one that starts the day after it:
+         *     `none`, `leftover` (what was left) or `all` (overspending too).
+         */
+        carry: string;
         created_at: string;
         id: string;
         name: string;
@@ -2753,6 +2785,11 @@ export interface components {
         amount: string;
         available: string;
         budget_id: string;
+        /**
+         * @description Carried in from the previous limit (negative with carry `all` after
+         *     overspending); computed when read, never stored.
+         */
+        carried: string;
         created_at: string;
         currency: string;
         end_date: string;
@@ -2769,6 +2806,11 @@ export interface components {
       data: {
         active: boolean;
         auto_budget?: components["schemas"]["AutoBudgetView"] | null;
+        /**
+         * @description What a limit passes on to the next one that starts the day after it:
+         *     `none`, `leftover` (what was left) or `all` (overspending too).
+         */
+        carry: string;
         created_at: string;
         id: string;
         name: string;

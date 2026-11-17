@@ -1,6 +1,6 @@
 // Budget maths for the screens, free of React. Amounts stay decimal strings
 // and are compared as `bigint` minor units, never as floats.
-import { normalizeAmountInput, toMinor } from "@/api/money";
+import { fromMinor, normalizeAmountInput, toMinor } from "@/api/money";
 import type { BudgetRequest } from "./queries";
 
 /** A calendar month as `YYYY-MM`. */
@@ -58,9 +58,19 @@ export function progress(spent: string, amount: string, places: number): Progres
   return { percent: Math.max(0, Math.min(100, percent)), overspent: used > total };
 }
 
-export const AUTO_TYPES = [
-  { value: "reset", label: "Same amount every period" },
-  { value: "rollover", label: "Carry what is left over" },
+/** What a limit can spend: its amount plus what the limit before it carried in. */
+export function limitTotal(limit: { amount: string; carried: string }, places: number): string {
+  const amount = toMinor(limit.amount, places) ?? 0n;
+  const carried = toMinor(limit.carried, places) ?? 0n;
+  return fromMinor(amount + carried, places);
+}
+
+export const AUTO_TYPES = [{ value: "reset", label: "Same amount every period" }] as const;
+
+export const CARRY_OPTIONS = [
+  { value: "none", label: "Nothing" },
+  { value: "leftover", label: "What is left" },
+  { value: "all", label: "What is left or overspent" },
 ] as const;
 
 export const PERIODS = [
@@ -81,6 +91,8 @@ export interface BudgetForm {
   autoType: string;
   autoPeriod: string;
   autoAmount: string;
+  /** `none`, `leftover` or `all`. */
+  carry: string;
 }
 
 export const EMPTY_BUDGET_FORM: BudgetForm = {
@@ -90,6 +102,7 @@ export const EMPTY_BUDGET_FORM: BudgetForm = {
   autoType: "",
   autoPeriod: "monthly",
   autoAmount: "",
+  carry: "none",
 };
 
 /** The request body for creating or replacing a budget's fields. */
@@ -107,5 +120,6 @@ export function toBudgetRequest(form: BudgetForm): BudgetRequest {
             period: form.autoPeriod,
             amount: normalizeAmountInput(form.autoAmount),
           },
+    carry: form.carry,
   };
 }

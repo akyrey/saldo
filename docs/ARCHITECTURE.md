@@ -179,7 +179,7 @@ Balance of an account = sum of amounts where it is the destination − sum where
 - **Schedules**: bills and recurrences each have their own schedule type (built in parallel in Phase 5): `bills::BillSchedule` (weekly, monthly, quarterly, half-year, yearly, with `skip`; `occurrences(from, to)`, `matching_due_date`) and `recurrence::RecurrenceSchedule` with `recurrence::occurrences(schedule, from, to) -> Vec<NaiveDate>` (daily, weekly, monthly, nth weekday, yearly, with `skip`, a weekend policy, `repeat_until` and `max_occurrences`). Month-end is clamped (31st → 30th/28th). Pure functions; today's date is a parameter.
 - **Rules**: `Trigger` and `Action` are enums whose variants carry data, for example `Trigger::DescriptionContains(String)`, `Trigger::AmountMoreThan(i64)`, `Action::SetCategory(CategoryId)`, `Action::LinkToBill(BillId)`. `fn evaluate(rule: &Rule, split: &SplitView) -> Vec<Action>` is pure; applying the actions is a service in `app`.
 - **Bill reminders**: `fn reminder_due(period: &BillPeriod, bill: &Bill, today: NaiveDate) -> Option<ReminderKind>` decides `DueSoon` / `Overdue` / nothing.
-- **Budget maths**: spent per budget limit, available amount, auto-budget rollover.
+- **Budget maths**: spent per budget limit, available amount, the limits an auto-budget creates (always its base amount), and the carry-over (Phase 9): `carry::carried(limits, spends, Carry) -> Vec<Money>` gives what each limit receives from the previous one in its currency. A limit carries only into one that starts the day after it ends; `leftover` passes on a positive rest, `all` a negative one too, `none` nothing. Computed when limits are read, never stored, so editing an older transaction updates every later limit.
 
 ## 5. SQL schema
 
@@ -399,7 +399,7 @@ CREATE TABLE budgets (
     active              INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
     sort_order          INTEGER NOT NULL DEFAULT 0,
     notes               TEXT,
-    auto_type           TEXT CHECK (auto_type IN ('reset', 'rollover')),
+    auto_type           TEXT CHECK (auto_type IN ('reset', 'rollover')),   -- only 'reset' is written since Phase 9
     auto_period         TEXT CHECK (auto_period IN ('daily', 'weekly', 'monthly', 'quarterly', 'half_year', 'yearly')),
     auto_amount_minor   INTEGER CHECK (auto_amount_minor > 0),
     auto_currency_code  TEXT REFERENCES currencies (code),
@@ -408,6 +408,12 @@ CREATE TABLE budgets (
     UNIQUE (household_id, id),
     UNIQUE (household_id, name)
 ) STRICT;
+-- Added in Phase 9 (migration 20261117212151): what a limit passes on to the
+-- next one (saldo_core::Carry). budget_limits.amount_minor is the base amount;
+-- the migration moved 'rollover' auto-budgets to auto_type 'reset' with carry
+-- 'leftover' and took the stored leftover out of their limits.
+-- ALTER TABLE budgets ADD COLUMN carry TEXT NOT NULL DEFAULT 'none'
+--     CHECK (carry IN ('none', 'leftover', 'all'));
 
 CREATE TABLE budget_limits (
     id             TEXT PRIMARY KEY,
@@ -782,7 +788,7 @@ Conventions:
 | Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE; resumes from `Last-Event-ID` or `?after_seq=`, otherwise starts at the newest event; keep-alive every 15 s) | 2 list, 6 stream |
 | Export | `GET /export/json`, `GET /export/csv` (zip) | 3 |
 | Attachments | `GET /attachments?attachable_type=&attachable_id=` (one target's files, oldest first, unpaginated; both parameters required), `POST /attachments` (multipart), `GET /attachments/{id}`, `GET /attachments/{id}/download`, `DELETE /attachments/{id}` | 3 |
-| Budgets | `GET/POST /budgets` (`?active=`), `GET/PATCH/DELETE /budgets/{id}`, `GET/POST /budgets/{id}/limits` (`?from=&to=`, newest first), `PATCH/DELETE /budget-limits/{id}`. Limits of one budget in one currency may not overlap (409) | 5 |
+| Budgets | `GET/POST /budgets` (`?active=`), `GET/PATCH/DELETE /budgets/{id}`, `GET/POST /budgets/{id}/limits` (`?from=&to=`, newest first), `PATCH/DELETE /budget-limits/{id}`. Limits of one budget in one currency may not overlap (409). A budget has `carry` (`none`, `leftover`, `all`; Phase 9) and `auto_budget.type` is only `reset`. A limit's view has `amount` (the stored base), `carried` (from the previous limit, computed), `spent` and `available` (`amount + carried - spent`). The budget-vs-actual report counts base amounts only: in a report over several intervals a carry would be counted in each | 5, 9 |
 | Bills | `GET/POST /bills`, `GET/PATCH/DELETE /bills/{id}`, `GET /bills/{id}/periods`, `POST /bill-periods/{id}/pay` (link a split), `POST /bill-periods/{id}/skip`, `POST /bill-periods/{id}/reopen` | 5 |
 | Piggy banks | `GET/POST /piggy-banks`, `GET/PATCH/DELETE /piggy-banks/{id}`, `GET/POST /piggy-banks/{id}/events` | 5 |
 | Recurrences | `GET/POST /recurrences` (`?active=`), `GET/PUT/DELETE /recurrences/{id}`, `POST /recurrences/{id}/fire` (`{ date? }`, default today; 201 created, 200 with `created: false` if it already fired), `POST /recurrences/preview` (next dates of an unsaved schedule) | 5 |
@@ -894,7 +900,7 @@ Import order and mapping:
 | 1 | `/v1/currencies` | `currencies` | Only enabled ones; fail if `decimal_places` > 8 |
 | 2 | `/v1/accounts` | `accounts` | `asset`, `expense`, `revenue`, `liability`/`liabilities` map directly. `initial-balance` → the Equity(OpeningBalance) account; `reconciliation` → Equity(Reconciliation); `cash` → an expense account and a revenue account both named `(cash)`, picked by direction; `import` accounts are skipped and reported. `account_role` `defaultAsset/sharedAsset/savingAsset/ccAsset/cashWalletAsset` → `asset_role`. Opening balances arrive as transactions, not from the account fields |
 | 3 | `/v1/categories`, `/v1/tags` | `categories`, `tags` | |
-| 4 | `/v1/budgets`, `/v1/budgets/{id}/limits` | `budgets`, `budget_limits` | auto-budget fields map 1:1 (`none` → NULL) |
+| 4 | `/v1/budgets`, `/v1/budgets/{id}/limits` | `budgets`, `budget_limits` | auto-budget fields map 1:1 (`none` → NULL), except `rollover`: a `reset` auto-budget with carry `leftover`, and its limits in the auto currency above the auto amount import at the auto amount (Firefly stores the leftover in them) |
 | 5 | `/v1/subscriptions` | `bills`, `bill_periods` | `date` → `first_due_date`; `paid_dates[]` → paid periods linked to the imported split |
 | 6 | `/v1/piggy-banks` | `piggy_banks`, `piggy_bank_accounts` | Linked accounts must be asset accounts. The events come at step 11 |
 | 7 | `/v1/rule-groups`, `/v1/rules` | `rule_groups`, `rules`, triggers, actions | Names become IDs and currency labels become codes. Unsupported keywords or unknown names: the rule is imported inactive, keeping the raw values, and listed in the report. Supported triggers and actions are `TRIGGER_KINDS` and `ACTION_KINDS` in `saldo_core::rules` |

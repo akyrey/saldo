@@ -46,10 +46,19 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
       name: "Groceries",
       active: true,
       sort_order: 0,
+      carry: "none",
       created_at: "",
       updated_at: "",
     },
-    { id: "old", name: "Old budget", active: false, sort_order: 1, created_at: "", updated_at: "" },
+    {
+      id: "old",
+      name: "Old budget",
+      active: false,
+      sort_order: 1,
+      carry: "none",
+      created_at: "",
+      updated_at: "",
+    },
   ]);
   queryClient.setQueryData(tagsQuery.queryKey, [
     { id: "tag", name: "weekend", created_at: "", updated_at: "" },

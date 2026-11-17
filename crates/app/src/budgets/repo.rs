@@ -16,6 +16,8 @@ pub(crate) struct BudgetRow {
     pub auto_period: Option<String>,
     pub auto_amount_minor: Option<i64>,
     pub auto_currency_code: Option<String>,
+    /// `none`, `leftover` or `all` (saldo_core::Carry).
+    pub carry: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -52,7 +54,7 @@ pub(crate) async fn find(
     sqlx::query_as!(
         BudgetRow,
         r#"SELECT id, name, active AS "active: bool", sort_order, notes, auto_type, auto_period,
-                  auto_amount_minor, auto_currency_code, created_at, updated_at
+                  auto_amount_minor, auto_currency_code, carry, created_at, updated_at
            FROM budgets WHERE household_id = ? AND id = ?"#,
         household_id,
         id,
@@ -73,7 +75,7 @@ pub(crate) async fn list(
     let rows = sqlx::query_as!(
         BudgetRow,
         r#"SELECT id, name, active AS "active: bool", sort_order, notes, auto_type, auto_period,
-                  auto_amount_minor, auto_currency_code, created_at, updated_at
+                  auto_amount_minor, auto_currency_code, carry, created_at, updated_at
            FROM budgets WHERE household_id = ?1 AND (?2 IS NULL OR active = ?2)
            ORDER BY sort_order, name LIMIT ?3 OFFSET ?4"#,
         household_id,
@@ -101,7 +103,7 @@ pub(crate) async fn all(
     let rows = sqlx::query_as!(
         BudgetRow,
         r#"SELECT id, name, active AS "active: bool", sort_order, notes, auto_type, auto_period,
-                  auto_amount_minor, auto_currency_code, created_at, updated_at
+                  auto_amount_minor, auto_currency_code, carry, created_at, updated_at
            FROM budgets WHERE household_id = ? ORDER BY sort_order, name"#,
         household_id,
     )
@@ -117,10 +119,11 @@ pub(crate) async fn insert(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         "INSERT INTO budgets (id, household_id, name, active, sort_order, notes, auto_type, auto_period,
-                              auto_amount_minor, auto_currency_code, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                              auto_amount_minor, auto_currency_code, carry, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         row.id, household_id, row.name, row.active, row.sort_order, row.notes, row.auto_type,
-        row.auto_period, row.auto_amount_minor, row.auto_currency_code, row.created_at, row.updated_at,
+        row.auto_period, row.auto_amount_minor, row.auto_currency_code, row.carry, row.created_at,
+        row.updated_at,
     )
     .execute(&mut *conn)
     .await?;
@@ -134,10 +137,11 @@ pub(crate) async fn update(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         "UPDATE budgets SET name = ?, active = ?, sort_order = ?, notes = ?, auto_type = ?, auto_period = ?,
-                auto_amount_minor = ?, auto_currency_code = ?, updated_at = ?
+                auto_amount_minor = ?, auto_currency_code = ?, carry = ?, updated_at = ?
          WHERE household_id = ? AND id = ?",
         row.name, row.active, row.sort_order, row.notes, row.auto_type, row.auto_period,
-        row.auto_amount_minor, row.auto_currency_code, row.updated_at, household_id, row.id,
+        row.auto_amount_minor, row.auto_currency_code, row.carry, row.updated_at, household_id,
+        row.id,
     )
     .execute(&mut *conn)
     .await?;

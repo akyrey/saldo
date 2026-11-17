@@ -24,6 +24,7 @@ fn budgets(doc: &ExportDocument) -> String {
         "auto_period",
         "auto_amount",
         "auto_currency",
+        "carry",
         "notes",
     ];
     let rows = doc
@@ -41,6 +42,7 @@ fn budgets(doc: &ExportDocument) -> String {
                 field(|a| &a.period),
                 field(|a| &a.amount),
                 field(|a| &a.currency),
+                b.carry.clone(),
                 opt(&b.notes),
             ]
         })
@@ -57,6 +59,7 @@ fn budget_limits(doc: &ExportDocument) -> String {
         "end_date",
         "amount",
         "currency",
+        "carried",
         "spent",
         "available",
         "notes",
@@ -72,6 +75,7 @@ fn budget_limits(doc: &ExportDocument) -> String {
                 l.end_date.clone(),
                 l.amount.clone(),
                 l.currency.clone(),
+                l.carried.clone(),
                 l.spent.clone(),
                 l.available.clone(),
                 opt(&l.notes),

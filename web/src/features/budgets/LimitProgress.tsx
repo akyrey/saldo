@@ -1,6 +1,7 @@
 import { Amount } from "@/components/Amount";
 import { cn } from "@/lib/utils";
-import { progress } from "./budget-model";
+import { isNegative, toMinor } from "@/api/money";
+import { limitTotal, progress } from "./budget-model";
 import type { BudgetLimit } from "./queries";
 
 interface LimitProgressProps {
@@ -8,9 +9,11 @@ interface LimitProgressProps {
   places: number;
 }
 
-/** One limit as a bar: what was spent of the amount, and what is left. */
+/** One limit as a bar: what was spent of the amount (plus any carry), and what is left. */
 export function LimitProgress({ limit, places }: LimitProgressProps) {
-  const { percent, overspent } = progress(limit.spent, limit.amount, places);
+  const total = limitTotal(limit, places);
+  const { percent, overspent } = progress(limit.spent, total, places);
+  const hasCarry = (toMinor(limit.carried, places) ?? 0n) !== 0n;
   return (
     <div className="flex flex-col gap-1" data-testid={`limit-${limit.id}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
@@ -19,12 +22,25 @@ export function LimitProgress({ limit, places }: LimitProgressProps) {
         </span>
         <span>
           <Amount value={limit.spent} currency={limit.currency} /> of{" "}
-          <Amount value={limit.amount} currency={limit.currency} />
+          <Amount value={total} currency={limit.currency} />
+          {hasCarry ? (
+            <span className="text-xs text-muted-foreground">
+              {" "}
+              (<Amount value={limit.amount} currency={limit.currency} />{" "}
+              {isNegative(limit.carried) ? "−" : "+"}{" "}
+              <Amount
+                value={limit.carried.replace(/^-/, "")}
+                currency={limit.currency}
+                className={isNegative(limit.carried) ? "text-destructive" : undefined}
+              />{" "}
+              carried)
+            </span>
+          ) : null}
         </span>
       </div>
       <div
         role="progressbar"
-        aria-label={`Spent ${limit.spent} of ${limit.amount} ${limit.currency}`}
+        aria-label={`Spent ${limit.spent} of ${total} ${limit.currency}`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}

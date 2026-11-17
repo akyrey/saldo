@@ -2,7 +2,7 @@
 //! the conversions between them, stored rows and `saldo-core` types.
 
 use chrono::NaiveDate;
-use saldo_core::{AutoBudget, AutoBudgetType, DateRange, Limit, Money, Period, Spend};
+use saldo_core::{AutoBudget, AutoBudgetType, Carry, DateRange, Limit, Money, Period, Spend};
 use serde::Serialize;
 use sqlx::SqliteConnection;
 
@@ -20,6 +20,9 @@ pub struct BudgetView {
     pub notes: Option<String>,
     /// `None` when the budget has no automatic limit.
     pub auto_budget: Option<AutoBudgetView>,
+    /// What a limit passes on to the next one that starts the day after it:
+    /// `none`, `leftover` (what was left) or `all` (overspending too).
+    pub carry: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -27,7 +30,7 @@ pub struct BudgetView {
 /// An automatic limit: `amount` per `period`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
 pub struct AutoBudgetView {
-    /// `reset` or `rollover`.
+    /// `reset` (carrying leftovers is the budget's `carry`).
     #[serde(rename = "type")]
     pub auto_type: String,
     /// `daily`, `weekly`, `monthly`, `quarterly`, `half_year` or `yearly`.
@@ -36,9 +39,10 @@ pub struct AutoBudgetView {
     pub currency: String,
 }
 
-/// A budget limit with what was spent against it (withdrawals booked on the
-/// budget, dated inside the limit, in its currency or with a foreign amount
-/// in it) and what is left (negative when overspent).
+/// A budget limit with what it received from the limit before it, what was
+/// spent against it (withdrawals booked on the budget, dated inside the
+/// limit, in its currency or with a foreign amount in it) and what is left:
+/// `amount + carried - spent`, negative when overspent.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
 pub struct BudgetLimitView {
     pub id: String,
@@ -47,6 +51,9 @@ pub struct BudgetLimitView {
     pub end_date: String,
     pub amount: String,
     pub currency: String,
+    /// Carried in from the previous limit (negative with carry `all` after
+    /// overspending); computed when read, never stored.
+    pub carried: String,
     pub spent: String,
     pub available: String,
     pub notes: Option<String>,
@@ -82,6 +89,7 @@ pub(crate) async fn budget_view(
         sort_order: row.sort_order,
         notes: row.notes,
         auto_budget,
+        carry: row.carry,
         created_at: row.created_at,
         updated_at: row.updated_at,
     })
@@ -107,6 +115,11 @@ pub(crate) async fn core_auto_budget(
         period: Period::parse(period).ok_or_else(|| corrupt("auto_period"))?,
         amount: Money::new(minor, currency.code()),
     }))
+}
+
+pub(crate) fn core_carry(row: &BudgetRow) -> Result<Carry, AppError> {
+    Carry::parse(&row.carry)
+        .ok_or_else(|| AppError::Internal(format!("corrupt carry on budget {}", row.id)))
 }
 
 pub(crate) fn core_limit(row: &LimitRow) -> Result<Limit, AppError> {
@@ -137,17 +150,22 @@ pub(crate) fn core_spends(rows: &[SpendRow]) -> Result<Vec<Spend>, AppError> {
 }
 
 /// The view of a limit, with spent and available computed by `saldo-core`
-/// from `spends` (which must cover the limit's dates).
+/// from `spends` (which must cover the limit's dates) and `carried`.
 pub(crate) async fn limit_view(
     conn: &mut SqliteConnection,
     row: LimitRow,
     spends: &[Spend],
+    carried: Money,
 ) -> Result<BudgetLimitView, AppError> {
     let limit = core_limit(&row)?;
     let currency = currencies::find(conn, &row.currency_code, "currency").await?;
     let overflow = |e: saldo_core::MoneyError| AppError::Internal(e.to_string());
     let spent = saldo_core::spent(&limit.range, currency.code(), spends).map_err(overflow)?;
-    let available = saldo_core::available(&limit, spent).map_err(overflow)?;
+    let with_carry = Limit {
+        amount: limit.amount.checked_add(carried).map_err(overflow)?,
+        ..limit
+    };
+    let available = saldo_core::available(&with_carry, spent).map_err(overflow)?;
     Ok(BudgetLimitView {
         id: row.id,
         budget_id: row.budget_id,
@@ -155,6 +173,7 @@ pub(crate) async fn limit_view(
         end_date: row.end_date,
         amount: limit.amount.to_decimal_string(&currency),
         currency: row.currency_code,
+        carried: carried.to_decimal_string(&currency),
         spent: spent.to_decimal_string(&currency),
         available: available.to_decimal_string(&currency),
         notes: row.notes,

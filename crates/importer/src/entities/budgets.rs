@@ -1,7 +1,9 @@
 //! `/v1/budgets` and `/v1/budgets/{id}/limits` → `budgets`, `budget_limits`
-//! (ARCHITECTURE.md 9.1, row 4). Auto-budget fields map 1:1; `none` and
-//! Firefly's `adjusted` type (which Saldo does not have) import without an
-//! automatic limit.
+//! (ARCHITECTURE.md 9.1, row 4). A `reset` auto-budget maps 1:1; `rollover`
+//! becomes a `reset` auto-budget with carry `leftover`, and its limits drop
+//! the leftover Firefly added to their amounts (Saldo computes the carry when
+//! reading). `none` and Firefly's `adjusted` type (which Saldo does not have)
+//! import without an automatic limit.
 
 use std::collections::HashMap;
 
@@ -54,8 +56,9 @@ pub async fn import_budgets(cx: &ImportCx, report: &mut ImportReport) -> Result<
             }
             continue;
         };
+        let base = rollover_base(&budget.attributes, &places);
         for limit in limits {
-            import_limit(cx, state, report, &places, local, &limit).await?;
+            import_limit(cx, state, report, &places, local, base.as_ref(), &limit).await?;
         }
     }
     Ok(())
@@ -66,7 +69,7 @@ pub async fn import_budgets(cx: &ImportCx, report: &mut ImportReport) -> Result<
 fn to_input(budget: &Budget, places: &Places, report: &mut ImportReport) -> NewBudget {
     let auto_budget = match budget.auto_budget_type.as_deref() {
         None | Some("none") => None,
-        Some(kind @ ("reset" | "rollover")) => match auto_input(kind, budget, places) {
+        Some("reset" | "rollover") => match auto_input(budget, places) {
             Ok(auto) => Some(auto),
             Err(why) => {
                 report.note(&format!("auto-budget not imported: {why}"));
@@ -80,16 +83,21 @@ fn to_input(budget: &Budget, places: &Places, report: &mut ImportReport) -> NewB
             None
         }
     };
+    let carry = match (&auto_budget, budget.auto_budget_type.as_deref()) {
+        (Some(_), Some("rollover")) => "leftover",
+        _ => "none",
+    };
     NewBudget {
         name: budget.name.trim().to_string(),
         active: budget.active.unwrap_or(true),
         sort_order: budget.order.unwrap_or(0),
         notes: clean(budget.notes.as_deref()),
         auto_budget,
+        carry: carry.to_string(),
     }
 }
 
-fn auto_input(kind: &str, budget: &Budget, places: &Places) -> Result<AutoBudgetInput, String> {
+fn auto_input(budget: &Budget, places: &Places) -> Result<AutoBudgetInput, String> {
     let (Some(period), Some(amount), Some(code)) = (
         &budget.auto_budget_period,
         &budget.auto_budget_amount,
@@ -102,7 +110,7 @@ fn auto_input(kind: &str, budget: &Budget, places: &Places) -> Result<AutoBudget
         .copied()
         .ok_or_else(|| format!("unknown currency {code}"))?;
     Ok(AutoBudgetInput {
-        auto_type: kind.to_string(),
+        auto_type: "reset".to_string(),
         period: period.clone(),
         amount: normalize(amount, decimals)?,
         currency: Some(code.clone()),
@@ -131,6 +139,7 @@ fn same(input: &NewBudget, view: &BudgetView) -> bool {
         && input.active == view.active
         && input.sort_order == view.sort_order
         && input.notes == view.notes
+        && input.carry == view.carry
         && auto_same
 }
 
@@ -164,6 +173,7 @@ async fn import_budget(
                 sort_order: Some(input.sort_order),
                 notes: Some(input.notes.clone()),
                 auto_budget: Some(input.auto_budget.clone()),
+                carry: Some(input.carry.clone()),
             };
             let id = parse_id(&view.id)?;
             service
@@ -232,6 +242,44 @@ fn limit_input(limit: &BudgetLimit, places: &Places) -> Result<NewBudgetLimit, S
     })
 }
 
+/// A rollover budget's auto amount and currency: Firefly stores each limit
+/// as this amount plus the leftover carried into it.
+struct RolloverBase {
+    currency: String,
+    amount: String,
+}
+
+fn rollover_base(budget: &Budget, places: &Places) -> Option<RolloverBase> {
+    if budget.auto_budget_type.as_deref() != Some("rollover") {
+        return None;
+    }
+    let auto = auto_input(budget, places).ok()?;
+    Some(RolloverBase {
+        currency: auto.currency?,
+        amount: auto.amount,
+    })
+}
+
+/// The limit without Firefly's carried leftover: a limit of a rollover
+/// budget in its currency above the base amount is set to the base.
+fn without_carry(input: NewBudgetLimit, base: Option<&RolloverBase>) -> NewBudgetLimit {
+    // Both are normalised to the currency's decimal places, so without the
+    // decimal point they are minor units and compare as integers.
+    let minor = |text: &str| text.replace('.', "").parse::<i64>().ok();
+    match base {
+        Some(base)
+            if input.currency.as_deref() == Some(base.currency.as_str())
+                && minor(&input.amount) > minor(&base.amount) =>
+        {
+            NewBudgetLimit {
+                amount: base.amount.clone(),
+                ..input
+            }
+        }
+        _ => input,
+    }
+}
+
 fn same_limit(input: &NewBudgetLimit, view: &BudgetLimitView) -> bool {
     input.start_date.to_string() == view.start_date
         && input.end_date.to_string() == view.end_date
@@ -246,10 +294,11 @@ async fn import_limit(
     report: &mut ImportReport,
     places: &Places,
     budget: BudgetId,
+    base: Option<&RolloverBase>,
     item: &Resource<BudgetLimit>,
 ) -> Result<(), ImportError> {
     let input = match limit_input(&item.attributes, places) {
-        Ok(input) => input,
+        Ok(input) => without_carry(input, base),
         Err(why) => {
             report.skipped(LIMITS, format!("limit {}: {why}", item.id));
             return Ok(());

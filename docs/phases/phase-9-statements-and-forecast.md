@@ -64,8 +64,8 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
   - A limit carries to the next only when the next starts the day after it ends. A gap resets the carry to zero, and the first limit carries zero in.
   - The carry is `left = base + carried_in - spent`. With `leftover` only a positive `left` carries; with `all`, a negative one carries too; with `none` nothing does.
 - **Core cleanup**: `auto_limits` no longer adds leftovers; it creates base-amount limits only. Delete the rollover branch and its tests, and move the useful cases to `carried`.
-- **App**: the limit view gains `carried` and `available` (`amount + carried`); `left` becomes `available - spent`. Computing a budget's limits loads that budget's whole chain once (a handful of budgets with monthly limits; no caching). Changing `carry` appends `budget.updated`. Derived values append nothing.
-- **Server**: the budget's `carry` is on create and `PATCH`; `auto_budget.type` accepts only `reset`. The budget-vs-actual report adds `carried` and `available` next to `budgeted` (which stays the base).
+- **App**: the limit view gains `carried`; `available` (what is left) becomes `amount + carried - spent`, so existing clients keep its meaning. Computing a budget's limits loads that budget's whole chain once (a handful of budgets with monthly limits; no caching). Changing `carry` appends `budget.updated`. Derived values append nothing.
+- **Server**: the budget's `carry` is on create and `PATCH`; `auto_budget.type` accepts only `reset`. The budget-vs-actual report keeps base amounts only: over several intervals a carried leftover would be counted once per interval it passes through. The Firefly importer maps `rollover` to `reset` plus carry `leftover` and imports its limits at the base amount, by the same rule as the migration.
 - **Web**: a "Carry over" select on the budget form (`Nothing`, `What is left`, `What is left or overspent`). Progress bars show `base + carried` when `carried` is not zero, and a negative carry is shown in the danger colour. Remove the `rollover` option from the auto-budget type.
 
 ### Track B: cash-flow forecast
@@ -209,7 +209,7 @@ cd web && npm run lint && npm run typecheck && npm test && npx playwright test
 - Track A:
   - A property test: with `all`, the last limit's `left` equals the sum of the bases minus the sum of what was spent over a gap-free chain.
   - With `leftover`, `carried` is never negative.
-  - Editing a transaction in an earlier period changes the next limit's `available` with no write to `budget_limits`.
+  - Editing a transaction in an earlier period changes the next limit's `carried` and `available` with no write to `budget_limits`.
   - The migration test converts a rollover budget and its limits as described.
 - Track B: a test household with a recurrence, a bill paid by an account, a bill covered by a recurrence and a future-dated split produces exactly the hand-computed points; an overdue bill period counts tomorrow.
 - Track C:

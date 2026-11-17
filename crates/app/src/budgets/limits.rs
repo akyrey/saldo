@@ -1,7 +1,9 @@
 //! Budget limits: an amount a budget may spend between two dates.
 
+use std::collections::HashMap;
+
 use chrono::NaiveDate;
-use saldo_core::BudgetId;
+use saldo_core::{BudgetId, Carry, Money, Spend};
 use sqlx::SqliteConnection;
 
 use super::repo::{self, LimitRow};
@@ -10,7 +12,7 @@ use super::{BudgetService, clean_notes, positive_amount};
 use crate::clock::{format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::currencies;
-use crate::error::AppError;
+use crate::error::{AppError, parse_stored};
 use crate::events::{NewEvent, append_event};
 use crate::identity;
 use crate::page::{Page, PageRequest};
@@ -279,25 +281,57 @@ impl BudgetService {
     }
 }
 
-/// Views of several limits of one budget, loading the spends once.
+/// Views of several limits of one budget, loading the spends once. With a
+/// carry, a limit depends on every limit before it, so the whole chain up to
+/// the latest requested limit is loaded (a few hundred rows at most).
 pub(crate) async fn limit_views(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     budget_id: &str,
     rows: Vec<LimitRow>,
 ) -> Result<Vec<BudgetLimitView>, AppError> {
-    let (Some(from), Some(to)) = (
-        rows.iter().map(|r| r.start_date.clone()).min(),
-        rows.iter().map(|r| r.end_date.clone()).max(),
-    ) else {
+    let Some(to) = rows.iter().map(|r| r.end_date.clone()).max() else {
         return Ok(Vec::new());
     };
     let household_id = ctx.household_id.to_string();
+    let budget = repo::find(conn, &household_id, budget_id).await?;
+    let carry = view::core_carry(&budget)?;
+    let chain = match carry {
+        Carry::None => rows.clone(),
+        _ => repo::limits(conn, &household_id, budget_id, None, Some(&to)).await?,
+    };
+    let from = chain
+        .iter()
+        .chain(&rows)
+        .map(|r| r.start_date.clone())
+        .min()
+        .unwrap_or_else(|| to.clone());
     let spends = repo::spends(conn, &household_id, budget_id, &from, &to).await?;
     let spends = view::core_spends(&spends)?;
+    let carried = carried_by_id(&chain, &spends, carry)?;
     let mut views = Vec::with_capacity(rows.len());
     for row in rows {
-        views.push(view::limit_view(conn, row, &spends).await?);
+        let currency = parse_stored(&row.currency_code)?;
+        let carried_in = carried
+            .get(&row.id)
+            .copied()
+            .unwrap_or(Money::zero(currency));
+        views.push(view::limit_view(conn, row, &spends, carried_in).await?);
     }
     Ok(views)
+}
+
+/// What each limit of `chain` (sorted by start date) carries in, by limit ID.
+fn carried_by_id(
+    chain: &[LimitRow],
+    spends: &[Spend],
+    carry: Carry,
+) -> Result<HashMap<String, Money>, AppError> {
+    let limits = chain
+        .iter()
+        .map(view::core_limit)
+        .collect::<Result<Vec<_>, _>>()?;
+    let carried = saldo_core::carried(&limits, spends, carry)
+        .map_err(|e| AppError::Internal(e.to_string()))?;
+    Ok(chain.iter().map(|r| r.id.clone()).zip(carried).collect())
 }

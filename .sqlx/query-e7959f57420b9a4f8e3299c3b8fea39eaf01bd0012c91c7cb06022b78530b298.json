@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, active AS \"active: bool\", sort_order, notes, auto_type, auto_period,\n                  auto_amount_minor, auto_currency_code, created_at, updated_at\n           FROM budgets WHERE household_id = ? ORDER BY sort_order, name",
+  "query": "SELECT id, name, active AS \"active: bool\", sort_order, notes, auto_type, auto_period,\n                  auto_amount_minor, auto_currency_code, carry, created_at, updated_at\n           FROM budgets WHERE household_id = ?1 AND (?2 IS NULL OR active = ?2)\n           ORDER BY sort_order, name LIMIT ?3 OFFSET ?4",
   "describe": {
     "columns": [
       {
@@ -103,8 +103,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "carry",
         "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budgets",
+            "name": "carry"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -115,7 +126,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 10,
+        "ordinal": 11,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -126,7 +137,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 4
     },
     "nullable": [
       false,
@@ -139,8 +150,9 @@
       true,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "d032819bfdfa387b23c78544be5a56a0e2a44288e1ad7ecf2461b5c08dffd39a"
+  "hash": "e7959f57420b9a4f8e3299c3b8fea39eaf01bd0012c91c7cb06022b78530b298"
 }

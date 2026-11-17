@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE budgets SET name = ?, active = ?, sort_order = ?, notes = ?, auto_type = ?, auto_period = ?,\n                auto_amount_minor = ?, auto_currency_code = ?, carry = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "41f3a86b9d772556df30160ac3cc15264a824985239315b694714bc088d8821f"
+}
