@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { CURRENCIES, fakeApi, ME, MEMBERS } from "@/test/fake-api";
+import { CURRENCIES, fakeApi, list, ME, MEMBERS } from "@/test/fake-api";
 import { renderApp } from "@/test/render-app";
 
 // Recharts measures its container; jsdom has no layout, so give it a size.
@@ -74,8 +74,49 @@ const BY_CATEGORY = {
   },
 };
 
+const FORECAST = {
+  data: {
+    range: { from: "2026-11-17", to: "2027-02-17", interval: "week" },
+    currencies: [
+      {
+        currency: "EUR",
+        start_balance: "500.00",
+        points: [
+          { date: "2026-11-22", balance: "500.00" },
+          { date: "2026-12-06", balance: "-300.00" },
+        ],
+        lowest: { date: "2026-12-01", balance: "-300.00" },
+        items: [
+          {
+            date: "2026-12-01",
+            source: "recurrence",
+            source_id: "r1",
+            title: "Rent",
+            account_id: "checking",
+            amount: "-800.00",
+          },
+          {
+            date: "2026-12-01",
+            source: "bill",
+            source_id: "b1",
+            title: "Insurance",
+            account_id: null,
+            amount: "0.00",
+          },
+        ],
+      },
+    ],
+  },
+};
+const ACCOUNTS = list([
+  { id: "checking", name: "Checking", type: "asset", currency: "EUR", active: true },
+  { id: "shop", name: "Shop", type: "expense", currency: "EUR", active: true },
+]);
+
 function api() {
   return fakeApi({
+    "GET /api/v1/reports/forecast": FORECAST,
+    "GET /api/v1/accounts": ACCOUNTS,
     "GET /api/v1/auth/me": ME,
     "GET /api/v1/household/members": MEMBERS,
     "GET /api/v1/currencies": CURRENCIES,
@@ -92,6 +133,27 @@ describe("reports", () => {
     expect(await screen.findByTestId("net-worth-now")).toHaveTextContent("2,540.25");
     expect(await screen.findByText("Food")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Income and expenses per month" })).toBeInTheDocument();
+    expect(await screen.findByTestId("next-30-lowest")).toHaveTextContent("2026-12-01");
+  });
+
+  it("shows the forecast, warns below zero and changes the horizon and account", async () => {
+    const seen = api();
+    renderApp("/forecast");
+    expect(await screen.findByTestId("forecast-lowest-EUR")).toHaveTextContent("-€300.00");
+    expect(screen.getByRole("alert")).toHaveTextContent("below zero on 2026-12-01");
+    expect(screen.getByText(/Recurring · Checking/)).toBeInTheDocument();
+    expect(screen.getByText(/Bill · account unknown/)).toBeInTheDocument();
+    const lastQuery = () =>
+      new URL(seen.filter((r) => r.url.includes("/forecast")).at(-1)?.url ?? "").searchParams;
+    expect(lastQuery().get("interval")).toBe("week");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "1 yr" }));
+    await waitFor(() => expect(lastQuery().get("interval")).toBe("month"));
+    const account = screen.getByLabelText("Account");
+    expect(within(account).queryByText("Shop")).toBeNull();
+    await user.selectOptions(account, "checking");
+    await waitFor(() => expect(lastQuery().get("account_id")).toBe("checking"));
   });
 
   it("passes span, interval and scope to the report and shows its table", async () => {

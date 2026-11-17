@@ -4,6 +4,7 @@
 mod input;
 mod periods;
 mod scheduler;
+pub(crate) mod upcoming;
 mod view;
 
 use saldo_core::BillId;

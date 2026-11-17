@@ -35,11 +35,12 @@ const KEYS: Record<string, QueryKey[]> = {
   webhook: [["webhooks"]],
   budget: [["budgets"], ["reports"]],
   budget_limit: [["budgets"], ["reports"]],
-  bill: [["bills"]],
+  // Bills and recurrences feed the forecast report.
+  bill: [["bills"], ["reports"]],
   rule: [["rules"]],
   rule_group: [["rules"]],
   piggy_bank: [["piggy-banks"]],
-  recurrence: [["recurrences"]],
+  recurrence: [["recurrences"], ["reports"]],
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
 };

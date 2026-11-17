@@ -86,6 +86,13 @@ export function ReportPage() {
             {r.title}
           </Link>
         ))}
+        <Link
+          to="/forecast"
+          search={{}}
+          className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+        >
+          Forecast
+        </Link>
       </nav>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field id="report-from" label="From">

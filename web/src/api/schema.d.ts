@@ -899,6 +899,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reports/forecast": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The balance projected from today to `to`: transactions already entered
+     *     with a later date, recurrences that will fire, and bills at their highest
+     *     amount (paid from the account that paid them last; a bill a recurrence
+     *     pays counts once). Per account currency, with the lowest point.
+     */
+    get: operations["forecast"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/reports/net-worth": {
     parameters: {
       query?: never;
@@ -2105,6 +2127,13 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_ForecastReport: {
+      data: {
+        currencies: components["schemas"]["ForecastCurrency"][];
+        range: components["schemas"]["ReportRange"];
+      };
+    };
+    /** @description A single result. */
     Data_HouseholdView: {
       data: {
         created_at: string;
@@ -2666,6 +2695,38 @@ export interface components {
        * @description Defaults to the household's today.
        */
       date?: string | null;
+    };
+    /** @description The projected balance in one currency. */
+    ForecastCurrency: {
+      currency: string;
+      /** @description Every planned amount, by date. */
+      items: components["schemas"]["ForecastItem"][];
+      /** @description The lowest end-of-day balance in the span (the earliest on a tie). */
+      lowest: components["schemas"]["ForecastPoint"];
+      /** @description The balance at the end of each interval. */
+      points: components["schemas"]["ForecastPoint"][];
+      /** @description The balance at the end of today. */
+      start_balance: string;
+    };
+    ForecastItem: {
+      /** @description `None` for a bill nobody has paid yet (counted in the total only). */
+      account_id?: string | null;
+      /** @description Positive when money comes in, negative when it goes out. */
+      amount: string;
+      date: string;
+      /** @description `transaction` (entered with a later date), `recurrence` or `bill`. */
+      source: string;
+      /** @description The transaction group, recurrence or bill. */
+      source_id: string;
+      title: string;
+    };
+    ForecastPoint: {
+      balance: string;
+      date: string;
+    };
+    ForecastReport: {
+      currencies: components["schemas"]["ForecastCurrency"][];
+      range: components["schemas"]["ReportRange"];
     };
     Health: {
       /** @description The API version clients speak (`v1`). */
@@ -6280,6 +6341,42 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Data_CashFlowReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  forecast: {
+    parameters: {
+      query: {
+        /** @description Last date (inclusive), `YYYY-MM-DD`: after today, at most 24 months ahead. */
+        to: string;
+        /** @description `day`, `week` (default) or `month`. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+        /** @description One asset or liability account instead of all those counted in net worth. */
+        account_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ForecastReport"];
         };
       };
       422: {

@@ -4,6 +4,7 @@
 mod fire;
 mod input;
 mod repo;
+pub(crate) mod upcoming;
 mod view;
 
 use saldo_core::RecurrenceId;

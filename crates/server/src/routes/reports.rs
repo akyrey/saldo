@@ -1,15 +1,19 @@
-//! `/reports/*`: net worth, cash flow, by category, by tag, budget vs actual.
+//! `/reports/*`: net worth, cash flow, by category, by tag, budget vs actual,
+//! and the cash-flow forecast.
 
 use axum::Json;
 use axum::extract::State;
 use chrono::NaiveDate;
 use saldo_app::reports::{
-    BreakdownReport, BudgetReport, CashFlowReport, Interval, NetWorthReport, ReportQuery,
+    BreakdownReport, BudgetReport, CashFlowReport, ForecastQuery, ForecastReport, Interval,
+    NetWorthReport, ReportQuery,
 };
+use saldo_core::AccountId;
 use serde::Deserialize;
 use utoipa::IntoParams;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
+use uuid::Uuid;
 
 use super::scope;
 use crate::auth::Auth;
@@ -25,6 +29,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(by_category))
         .routes(routes!(by_tag))
         .routes(routes!(budget_vs_actual))
+        .routes(routes!(forecast))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -133,5 +138,43 @@ pub async fn budget_vs_actual(
         .reports
         .budget_vs_actual(&auth.ctx, &params.query()?)
         .await?;
+    Ok(Json(Data::new(report)))
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ForecastParams {
+    /// Last date (inclusive), `YYYY-MM-DD`: after today, at most 24 months ahead.
+    pub to: NaiveDate,
+    /// `day`, `week` (default) or `month`.
+    pub interval: Option<String>,
+    /// `household` (default), `mine` or `user:<id>`: filters by account owner.
+    pub scope: Option<String>,
+    /// One asset or liability account instead of all those counted in net worth.
+    pub account_id: Option<Uuid>,
+}
+
+/// The balance projected from today to `to`: transactions already entered
+/// with a later date, recurrences that will fire, and bills at their highest
+/// amount (paid from the account that paid them last; a bill a recurrence
+/// pays counts once). Per account currency, with the lowest point.
+#[utoipa::path(get, path = "/reports/forecast", tag = "reports", params(ForecastParams),
+    responses((status = 200, body = Data<ForecastReport>), (status = 422, body = ErrorEnvelope)), security(("bearer" = []), ("cookie" = [])))]
+pub async fn forecast(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+    ApiQuery(params): ApiQuery<ForecastParams>,
+) -> Result<Json<Data<ForecastReport>>, ApiError> {
+    let query = ForecastQuery {
+        to: params.to,
+        interval: params
+            .interval
+            .as_deref()
+            .map_or(Ok(Interval::Week), Interval::parse)?,
+        scope: scope(params.scope.as_deref())?,
+        account_id: params.account_id.map(AccountId),
+    };
+    let today = state.app.identity.household_today(&auth.ctx).await?;
+    let report = state.app.reports.forecast(&auth.ctx, today, &query).await?;
     Ok(Json(Data::new(report)))
 }

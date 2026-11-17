@@ -4282,6 +4282,83 @@
         ]
       }
     },
+    "/api/v1/reports/forecast": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "The balance projected from today to `to`: transactions already entered\nwith a later date, recurrences that will fire, and bills at their highest\namount (paid from the account that paid them last; a bill a recurrence\npays counts once). Per account currency, with the lowest point.",
+        "operationId": "forecast",
+        "parameters": [
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`: after today, at most 24 months ahead.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (default) or `month`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "description": "One asset or liability account instead of all those counted in net worth.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ForecastReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/reports/net-worth": {
       "get": {
         "tags": [
@@ -9242,6 +9319,33 @@
           }
         }
       },
+      "Data_ForecastReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "range",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ForecastCurrency"
+                }
+              },
+              "range": {
+                "$ref": "#/components/schemas/ReportRange"
+              }
+            }
+          }
+        }
+      },
       "Data_HouseholdView": {
         "type": "object",
         "description": "A single result.",
@@ -11218,6 +11322,114 @@
             ],
             "format": "date",
             "description": "Defaults to the household's today."
+          }
+        }
+      },
+      "ForecastCurrency": {
+        "type": "object",
+        "description": "The projected balance in one currency.",
+        "required": [
+          "currency",
+          "start_balance",
+          "points",
+          "lowest",
+          "items"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastItem"
+            },
+            "description": "Every planned amount, by date."
+          },
+          "lowest": {
+            "$ref": "#/components/schemas/ForecastPoint",
+            "description": "The lowest end-of-day balance in the span (the earliest on a tie)."
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastPoint"
+            },
+            "description": "The balance at the end of each interval."
+          },
+          "start_balance": {
+            "type": "string",
+            "description": "The balance at the end of today."
+          }
+        }
+      },
+      "ForecastItem": {
+        "type": "object",
+        "required": [
+          "date",
+          "source",
+          "source_id",
+          "title",
+          "amount"
+        ],
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`None` for a bill nobody has paid yet (counted in the total only)."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Positive when money comes in, negative when it goes out."
+          },
+          "date": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "`transaction` (entered with a later date), `recurrence` or `bill`."
+          },
+          "source_id": {
+            "type": "string",
+            "description": "The transaction group, recurrence or bill."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ForecastPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "balance"
+        ],
+        "properties": {
+          "balance": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          }
+        }
+      },
+      "ForecastReport": {
+        "type": "object",
+        "required": [
+          "range",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastCurrency"
+            }
+          },
+          "range": {
+            "$ref": "#/components/schemas/ReportRange"
           }
         }
       },

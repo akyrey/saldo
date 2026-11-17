@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.source_account_id FROM bill_periods p JOIN splits s ON s.id = p.paid_split_id\n         WHERE p.bill_id = ? AND p.status = 'paid'\n         ORDER BY p.due_date DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "source_account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "source_account_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a273208b0324014a909091aa43d77eed812aa654380732ff5a05bf5ad6b5a0da"
+}

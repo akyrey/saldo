@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id AS \"id!\", currency_code FROM accounts\n           WHERE household_id = ?1 AND type IN ('asset', 'liability')\n             AND (?2 IS NULL OR owner_user_id = ?2)\n             AND (CASE WHEN ?3 IS NULL THEN include_net_worth = 1 ELSE id = ?3 END)",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "currency_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bfa3dbc8aba7838995dc2259f4da20d4933bb7365413946ba22d1a5d7b91f82a"
+}

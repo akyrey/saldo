@@ -52,3 +52,19 @@ export const budgetReportQuery = (p: ReportParams) =>
     queryFn: async () =>
       (await call(api.GET("/api/v1/reports/budget-vs-actual", { params: { query: p } }))).data,
   });
+
+export type ForecastReport = components["schemas"]["ForecastReport"];
+
+export interface ForecastParams {
+  to: string;
+  interval: "day" | "week" | "month";
+  scope?: string;
+  account_id?: string;
+}
+
+export const forecastQuery = (p: ForecastParams) =>
+  queryOptions({
+    queryKey: ["reports", "forecast", p.to, p.interval, p.scope ?? "household", p.account_id ?? ""],
+    queryFn: async () =>
+      (await call(api.GET("/api/v1/reports/forecast", { params: { query: p } }))).data,
+  });

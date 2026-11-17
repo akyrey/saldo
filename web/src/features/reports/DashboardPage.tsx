@@ -8,7 +8,8 @@ import { currenciesQuery, placesOf } from "@/features/accounts/queries";
 import { monthOf, monthRange } from "@/features/budgets/budget-model";
 import { todayIso } from "@/lib/dates";
 import { PairedBars, ValueLine } from "./charts";
-import { byCategoryQuery, cashFlowQuery, netWorthQuery } from "./queries";
+import { forecastSpan, isBelowZero } from "./forecast-model";
+import { byCategoryQuery, cashFlowQuery, forecastQuery, netWorthQuery } from "./queries";
 import { cashFlowRows, defaultSpan, netWorthRows, REPORTS } from "./report-model";
 
 /** An overview: net worth and cash flow over a year, this month's top categories. */
@@ -21,6 +22,8 @@ export function DashboardPage() {
   const netWorth = useQuery(netWorthQuery(year));
   const cashFlow = useQuery(cashFlowQuery(year));
   const categories = useQuery(byCategoryQuery(month));
+  const forecast = useQuery(forecastQuery({ ...forecastSpan(today, 1), scope }));
+  const nextMonth = forecast.data?.currencies[0];
   const primaryWorth = netWorth.data?.currencies[0];
   const primaryFlow = cashFlow.data?.currencies[0];
   const topCategories = categories.data?.currencies[0];
@@ -40,6 +43,13 @@ export function DashboardPage() {
             {r.title}
           </Link>
         ))}
+        <Link
+          to="/forecast"
+          search={{}}
+          className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+        >
+          Forecast
+        </Link>
       </nav>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -93,6 +103,41 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Next 30 days</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <QueryState isPending={forecast.isPending} error={forecast.error} />
+          {nextMonth ? (
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
+              <span>
+                In 30 days:{" "}
+                <Amount
+                  value={nextMonth.points.at(-1)?.balance ?? nextMonth.start_balance}
+                  currency={nextMonth.currency}
+                  className="text-lg font-semibold"
+                />
+              </span>
+              <span
+                data-testid="next-30-lowest"
+                className={isBelowZero(nextMonth.lowest.balance) ? "text-destructive" : undefined}
+              >
+                Lowest: <Amount value={nextMonth.lowest.balance} currency={nextMonth.currency} /> on{" "}
+                {nextMonth.lowest.date}
+              </span>
+              <span className="text-muted-foreground">{nextMonth.items.length} planned</span>
+              <Link
+                to="/forecast"
+                search={{}}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Open forecast
+              </Link>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Spending this month by category</CardTitle>

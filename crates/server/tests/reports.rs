@@ -91,3 +91,62 @@ async fn every_report_answers_with_its_range() {
         );
     }
 }
+
+#[tokio::test]
+async fn the_forecast_projects_from_today() {
+    let server = server().await;
+    let auth = Auth::Bearer(server.setup_and_login().await);
+    let checking = create(
+        &server,
+        &auth,
+        "/api/v1/accounts",
+        json!({ "name": "Checking", "type": "asset" }),
+    )
+    .await;
+    let shop = create(
+        &server,
+        &auth,
+        "/api/v1/accounts",
+        json!({ "name": "Shop", "type": "expense" }),
+    )
+    .await;
+    // Today is 2026-11-13; the 20th is still ahead.
+    create(
+        &server,
+        &auth,
+        "/api/v1/transactions",
+        json!({ "splits": [{
+        "date": "2026-11-20", "description": "tv", "source_id": checking["id"],
+        "destination_id": shop["id"], "amount": "400.00"
+    }] }),
+    )
+    .await;
+
+    let path = format!(
+        "/api/v1/reports/forecast?to=2026-12-31&account_id={}",
+        checking["id"].as_str().unwrap()
+    );
+    let response = server.get(&path, &auth).await;
+    assert_eq!(response.status, StatusCode::OK, "{}", response.body);
+    let data = &response.body["data"];
+    assert_eq!(data["range"]["from"], "2026-11-13");
+    assert_eq!(data["range"]["interval"], "week");
+    let eur = &data["currencies"][0];
+    assert_eq!(eur["start_balance"], "0.00");
+    assert_eq!(eur["lowest"]["date"], "2026-11-20");
+    assert_eq!(eur["lowest"]["balance"], "-400.00");
+    assert_eq!(eur["items"][0]["source"], "transaction");
+
+    for bad in [
+        "/api/v1/reports/forecast",
+        "/api/v1/reports/forecast?to=2026-11-01",
+        "/api/v1/reports/forecast?to=2026-12-31&interval=year",
+        "/api/v1/reports/forecast?to=2030-01-01",
+    ] {
+        let status = server.get(bad, &auth).await.status;
+        assert!(
+            status == StatusCode::UNPROCESSABLE_ENTITY || status == StatusCode::BAD_REQUEST,
+            "{bad}: {status}"
+        );
+    }
+}

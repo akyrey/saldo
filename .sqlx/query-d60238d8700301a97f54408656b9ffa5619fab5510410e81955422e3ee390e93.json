@@ -1,0 +1,81 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.group_id AS \"group_id!\", s.date AS \"date!\", s.description AS \"description!\",\n                  a.id AS \"account_id!\", a.currency_code AS \"currency!\",\n                  CASE WHEN s.destination_account_id = a.id THEN 1 ELSE -1 END\n                      * CASE WHEN s.foreign_currency_code = a.currency_code\n                             THEN s.foreign_amount_minor ELSE s.amount_minor END AS \"amount!: i64\"\n           FROM splits s\n           JOIN accounts a ON a.household_id = s.household_id\n                          AND a.id IN (s.source_account_id, s.destination_account_id)\n           WHERE s.household_id = ?1 AND s.date > ?3 AND s.date <= ?4\n             AND a.id IN (SELECT value FROM json_each(?2))\n           ORDER BY s.date, s.group_id, s.position",
+  "describe": {
+    "columns": [
+      {
+        "name": "group_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "date!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "description!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "currency!",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "amount!: i64",
+        "ordinal": 5,
+        "type_info": "Null",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "d60238d8700301a97f54408656b9ffa5619fab5510410e81955422e3ee390e93"
+}

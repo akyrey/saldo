@@ -392,7 +392,7 @@ async fn emit(
     Ok(())
 }
 
-async fn all_rows(
+pub(super) async fn all_rows(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
 ) -> Result<Vec<BillRow>, AppError> {
@@ -428,7 +428,7 @@ pub(crate) async fn all_periods_in(
     Ok(rows)
 }
 
-async fn period_rows(
+pub(super) async fn period_rows(
     conn: &mut SqliteConnection,
     bill_id: &str,
     status: Option<&str>,

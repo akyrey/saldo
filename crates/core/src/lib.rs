@@ -77,6 +77,7 @@ pub mod budget;
 pub mod carry;
 pub mod currency;
 pub mod error;
+pub mod forecast;
 pub mod ids;
 pub mod kind;
 pub mod lookup;
@@ -105,6 +106,7 @@ pub use currency::{Currency, CurrencyCode, MAX_DECIMAL_PLACES};
 pub use error::{
     CurrencyError, IdError, InvalidAccountPair, MoneyError, Reference, ValidationError,
 };
+pub use forecast::{BalancePoint, Planned, Projection, project};
 pub use ids::{
     AccountId, AttachmentId, BillId, BillPeriodId, BudgetId, CategoryId, GroupId, HouseholdId,
     SplitId, TagId, UserId,

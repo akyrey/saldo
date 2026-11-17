@@ -8,6 +8,8 @@
 
 mod budgets;
 mod flows;
+mod forecast;
+mod forecast_sources;
 mod net_worth;
 mod series;
 mod view;
@@ -23,6 +25,10 @@ use crate::error::{AppError, parse_stored};
 use crate::scope::Scope;
 use crate::{currencies, identity};
 
+pub use forecast::{
+    ForecastCurrency, ForecastItem, ForecastPoint, ForecastQuery, ForecastReport,
+    MAX_FORECAST_MONTHS,
+};
 pub use view::*;
 
 /// The most intervals one report may have (about 2.7 years of days).

@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT a.currency_code AS \"currency!\",\n                  SUM(CASE WHEN s.destination_account_id = a.id THEN 1 ELSE -1 END\n                      * CASE WHEN s.foreign_currency_code = a.currency_code\n                             THEN s.foreign_amount_minor ELSE s.amount_minor END) AS \"total!: i64\"\n           FROM splits s\n           JOIN accounts a ON a.household_id = s.household_id\n                          AND a.id IN (s.source_account_id, s.destination_account_id)\n           WHERE s.household_id = ?1 AND s.date <= ?3\n             AND a.id IN (SELECT value FROM json_each(?2))\n           GROUP BY a.currency_code",
+  "describe": {
+    "columns": [
+      {
+        "name": "currency!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "total!: i64",
+        "ordinal": 1,
+        "type_info": "Null",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "1dc8a121ae7ea7a88f9a8b35188d7684c1da92e9090d6c9f1307ffa6fe58c744"
+}

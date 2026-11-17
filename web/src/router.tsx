@@ -15,6 +15,7 @@ import { meQuery, setupStatusQuery } from "@/features/auth/queries";
 import { AppLayout } from "@/features/shell/AppLayout";
 import { RootLayout } from "@/features/shell/RootLayout";
 import { parseMonth } from "@/features/budgets/budget-model";
+import { parseForecastSearch } from "@/features/reports/forecast-model";
 import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
 import { parseNewTransactionSearch, parseTransactionSearch } from "@/features/transactions/search";
@@ -268,6 +269,13 @@ export const reportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/reports/ReportPage"), "ReportPage"),
 });
 
+export const forecastRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "forecast",
+  validateSearch: parseForecastSearch,
+  component: lazyRouteComponent(() => import("@/features/reports/ForecastPage"), "ForecastPage"),
+});
+
 const notificationsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "settings/notifications",
@@ -351,6 +359,7 @@ const routeTree = rootRoute.addChildren([
     budgetRoute,
     dashboardRoute,
     reportRoute,
+    forecastRoute,
     notificationsRoute,
     piggyBanksRoute,
     recurrencesRoute,
