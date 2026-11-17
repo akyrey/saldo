@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE external_refs SET local_id = ?\n         WHERE household_id = ? AND entity_type = 'tag' AND local_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "4a1494499e7e979e96fe2f4985e0c84b5a92f76aeb13390a28d1568c10073b29"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE tags SET description = coalesce(description, ?), updated_at = ?\n             WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "1455391437f5390db77e4ede8f16456e27b5ccd12d71a5e7e7f8a6fdc1ba38e5"
+}

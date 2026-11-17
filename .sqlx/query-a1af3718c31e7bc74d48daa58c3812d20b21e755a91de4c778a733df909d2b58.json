@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE attachments SET attachable_id = ?\n         WHERE household_id = ? AND attachable_type = 'tag' AND attachable_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a1af3718c31e7bc74d48daa58c3812d20b21e755a91de4c778a733df909d2b58"
+}

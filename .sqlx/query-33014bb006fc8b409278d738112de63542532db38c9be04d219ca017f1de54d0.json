@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE rule_actions SET value = ? WHERE kind IN ('add_tag', 'remove_tag') AND value = ?\n           AND rule_id IN (SELECT id FROM rules WHERE household_id = ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "33014bb006fc8b409278d738112de63542532db38c9be04d219ca017f1de54d0"
+}

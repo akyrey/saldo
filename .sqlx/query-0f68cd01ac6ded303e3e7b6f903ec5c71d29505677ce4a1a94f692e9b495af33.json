@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE recurrence_splits SET tags = (\n             SELECT json_group_array(DISTINCT CASE WHEN value = ? THEN ? ELSE value END)\n             FROM json_each(recurrence_splits.tags))\n         WHERE household_id = ?\n           AND EXISTS (SELECT 1 FROM json_each(recurrence_splits.tags) WHERE value = ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0f68cd01ac6ded303e3e7b6f903ec5c71d29505677ce4a1a94f692e9b495af33"
+}

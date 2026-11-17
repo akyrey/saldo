@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE rule_triggers SET value = ? WHERE kind = 'tag_is' AND value = ?\n           AND rule_id IN (SELECT id FROM rules WHERE household_id = ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "3c2909f9f693f7451a81354eadda3fbcf27ba7b30d558150e1f8f1eeb7c25254"
+}

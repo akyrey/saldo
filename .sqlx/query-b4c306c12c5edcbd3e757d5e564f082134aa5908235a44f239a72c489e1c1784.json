@@ -1,0 +1,57 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"id!\", t.name AS \"name!\", t.description,\n                      count(st.split_id) AS \"split_count!: i64\"\n               FROM tags t LEFT JOIN split_tags st ON st.tag_id = t.id\n               WHERE t.household_id = ?\n               GROUP BY t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tags",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tags",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tags",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "split_count!: i64",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "b4c306c12c5edcbd3e757d5e564f082134aa5908235a44f239a72c489e1c1784"
+}

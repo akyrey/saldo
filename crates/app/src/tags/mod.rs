@@ -1,4 +1,11 @@
-//! Tags: a name per household, optionally with a description.
+//! Tags: a name per household, optionally with a description. Names are
+//! unique ignoring case; [`merge`] folds duplicates left from older data.
+
+mod duplicates;
+mod merge;
+
+pub use duplicates::{TagDuplicateGroup, TagUsageView, name_key};
+pub use merge::TagMerge;
 
 use saldo_core::TagId;
 use serde::Serialize;
@@ -33,7 +40,7 @@ pub struct TagUpdate {
     pub description: Option<Option<String>>,
 }
 
-const DUPLICATE: &str = "a tag with this name exists";
+const DUPLICATE: &str = "a tag with this name exists (ignoring case)";
 
 #[derive(Clone)]
 pub struct TagService {
@@ -67,6 +74,7 @@ impl TagService {
         input: NewTag,
     ) -> Result<TagView, AppError> {
         let name = required("name", &input.name)?;
+        ensure_name_free(&mut *conn, ctx, &name, None).await?;
         let (id, household_id) = (
             new_id(&*self.clock).to_string(),
             ctx.household_id.to_string(),
@@ -122,8 +130,12 @@ impl TagService {
         let current = find(&mut *conn, ctx, &id).await?;
         let name = match update.name {
             Some(name) => required("name", &name)?,
-            None => current.name,
+            None => current.name.clone(),
         };
+        // Only a new name is checked, so old case duplicates stay editable.
+        if name != current.name {
+            ensure_name_free(&mut *conn, ctx, &name, Some(&id)).await?;
+        }
         let description = update.description.unwrap_or(current.description);
         let (household_id, now) = (
             ctx.household_id.to_string(),
@@ -231,7 +243,7 @@ impl TagService {
     }
 }
 
-async fn find(
+pub(crate) async fn find(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     id: &str,
@@ -264,7 +276,38 @@ pub(crate) async fn existing(
     Ok(ids)
 }
 
-/// Every tag of the household as name → ID (Firefly refers to tags by name).
+/// Fails with `Conflict` when another tag (not `except`) has `name`, ignoring case.
+async fn ensure_name_free(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    name: &str,
+    except: Option<&str>,
+) -> Result<(), AppError> {
+    let key = name_key(name);
+    let taken = all_in(conn, ctx)
+        .await?
+        .iter()
+        .any(|t| name_key(&t.name) == key && Some(t.id.as_str()) != except);
+    if taken {
+        return Err(AppError::Conflict(DUPLICATE.to_string()));
+    }
+    Ok(())
+}
+
+/// The tag named `name`, ignoring case and surrounding spaces (the first by
+/// name if old duplicates exist).
+pub async fn find_by_name_ignoring_case(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    name: &str,
+) -> Result<Option<TagView>, AppError> {
+    let key = name_key(name);
+    let tags = all_in(conn, ctx).await?;
+    Ok(tags.into_iter().find(|t| name_key(&t.name) == key))
+}
+
+/// Every tag of the household as lowercase name → ID (Firefly refers to tags
+/// by name; look up with [`name_key`]).
 pub async fn ids_by_name(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
@@ -276,7 +319,10 @@ pub async fn ids_by_name(
     )
     .fetch_all(&mut *conn)
     .await?;
-    Ok(rows.into_iter().map(|r| (r.name, r.id)).collect())
+    Ok(rows
+        .into_iter()
+        .map(|r| (name_key(&r.name), r.id))
+        .collect())
 }
 
 /// Every tag of the household (for export).

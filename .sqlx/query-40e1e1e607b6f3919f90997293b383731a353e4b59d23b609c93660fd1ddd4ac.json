@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO split_tags (split_id, tag_id)\n         SELECT split_id, ? FROM split_tags WHERE tag_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "40e1e1e607b6f3919f90997293b383731a353e4b59d23b609c93660fd1ddd4ac"
+}

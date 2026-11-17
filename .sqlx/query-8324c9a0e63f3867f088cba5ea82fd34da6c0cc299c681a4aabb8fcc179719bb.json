@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, splits FROM transaction_templates\n         WHERE household_id = ? AND instr(splits, ?) > 0",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_templates",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "splits",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_templates",
+            "name": "splits"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "8324c9a0e63f3867f088cba5ea82fd34da6c0cc299c681a4aabb8fcc179719bb"
+}

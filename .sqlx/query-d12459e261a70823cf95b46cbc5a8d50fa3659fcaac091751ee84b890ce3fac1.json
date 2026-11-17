@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE transaction_templates SET splits = ? WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d12459e261a70823cf95b46cbc5a8d50fa3659fcaac091751ee84b890ce3fac1"
+}
