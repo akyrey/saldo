@@ -4,6 +4,8 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-17
+
 ### Added
 
 - Merging tags: "Merge into…" on the tags page, and a "Case duplicates" page that merges groups of tags whose names differ only in case in one go (`GET /tags/duplicates`, `POST /tags/merge`). The kept tag takes over the others' transactions, recurring transactions, templates, rules and attachments.
