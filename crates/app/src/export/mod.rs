@@ -22,6 +22,7 @@ use crate::error::AppError;
 use crate::identity::{HouseholdView, MemberView, household_view, members_in};
 use crate::page::{MAX_PER_PAGE, PageRequest};
 use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
+use crate::reconciliations::{self, ReconciliationView};
 use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
 use crate::subscriptions::{self, SubscriptionDismissalView};
@@ -72,6 +73,8 @@ pub struct ExportDocument {
     pub templates: Vec<TransactionTemplateView>,
     /// Subscription suggestions the household dismissed (Phase 9).
     pub subscription_dismissals: Vec<SubscriptionDismissalView>,
+    /// Reconciliations with the splits they confirmed (Phase 9).
+    pub reconciliations: Vec<ReconciliationView>,
 }
 
 #[derive(Clone)]
@@ -128,6 +131,7 @@ impl ExportService {
             recurrences: recurrences::all_in(&mut tx, ctx).await?,
             templates: templates::all_in(&mut tx, ctx).await?,
             subscription_dismissals: subscriptions::dismissals_in(&mut tx, ctx).await?,
+            reconciliations: reconciliations::all_in(&mut tx, ctx).await?,
         };
         tx.rollback().await?;
         Ok(document)

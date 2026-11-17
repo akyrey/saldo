@@ -81,6 +81,9 @@ export function EditTransactionPage() {
   const queryClient = useQueryClient();
   const group = useQuery(transactionQuery(groupId));
   const [confirming, setConfirming] = useState(false);
+  const reconciledIds = new Set(
+    (group.data?.splits ?? []).filter((s) => s.reconciled).map((s) => s.id),
+  );
   const remove = useMutation({
     mutationFn: () =>
       call(api.DELETE("/api/v1/transactions/{id}", { params: { path: { id: groupId } } })),
@@ -117,7 +120,12 @@ export function EditTransactionPage() {
               disabled={remove.isPending || !group.data}
               onClick={() => (confirming ? remove.mutate() : setConfirming(true))}
             >
-              <Trash2 /> {confirming ? "Really delete?" : "Delete"}
+              <Trash2 />{" "}
+              {confirming
+                ? reconciledIds.size > 0
+                  ? "Reconciled; really delete?"
+                  : "Really delete?"
+                : "Delete"}
             </Button>
           </div>
         }
@@ -129,6 +137,7 @@ export function EditTransactionPage() {
           key={group.data.updated_at}
           initial={fromGroup(group.data)}
           submitLabel="Save changes"
+          reconciledIds={reconciledIds}
           save={(body) =>
             call(api.PUT("/api/v1/transactions/{id}", { params: { path: { id: groupId } }, body }))
           }

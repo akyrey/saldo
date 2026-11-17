@@ -22,6 +22,7 @@ pub mod import_runs;
 pub mod notifications;
 pub mod page;
 pub mod piggy_banks;
+pub mod reconciliations;
 pub mod recurrences;
 pub mod reports;
 pub mod rules;
@@ -48,6 +49,7 @@ use crate::export::ExportService;
 use crate::identity::IdentityService;
 use crate::notifications::NotificationService;
 use crate::piggy_banks::PiggyBankService;
+use crate::reconciliations::ReconciliationService;
 use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
@@ -83,6 +85,7 @@ pub struct App {
     pub recurrences: RecurrenceService,
     pub templates: TemplateService,
     pub subscriptions: SubscriptionService,
+    pub reconciliations: ReconciliationService,
 }
 
 impl App {
@@ -101,6 +104,11 @@ impl App {
             ),
             accounts,
             attachments,
+            reconciliations: ReconciliationService::new(
+                pool.clone(),
+                clock.clone(),
+                transactions.clone(),
+            ),
             subscriptions: SubscriptionService::new(
                 pool.clone(),
                 clock.clone(),

@@ -1,0 +1,93 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id AS \"id!\", s.group_id AS \"group_id!\", s.date AS \"date!\",\n                  s.description AS \"description!\", s.kind AS \"kind!\",\n                  s.reconciled AS \"reconciled!: bool\",\n                  CASE WHEN s.destination_account_id = a.id THEN 1 ELSE -1 END\n                      * CASE WHEN s.foreign_currency_code = a.currency_code\n                             THEN s.foreign_amount_minor ELSE s.amount_minor END AS \"amount_minor!: i64\"\n           FROM splits s\n           JOIN accounts a ON a.household_id = s.household_id\n                          AND a.id IN (s.source_account_id, s.destination_account_id)\n           WHERE s.household_id = ?1 AND a.id = ?2 AND s.date <= ?3\n           ORDER BY s.date, s.group_id, s.position",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "group_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "date!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "description!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "kind!",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "reconciled!: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "reconciled"
+          }
+        }
+      },
+      {
+        "name": "amount_minor!: i64",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d88dfd251055fb869cf696bb41df5519a433486d109c2aa61db38aa3fa688cc2"
+}

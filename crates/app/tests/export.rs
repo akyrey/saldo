@@ -371,6 +371,7 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
             "members.csv",
             "piggy_bank_events.csv",
             "piggy_banks.csv",
+            "reconciliations.csv",
             "recurrences.csv",
             "rule_groups.csv",
             "rules.csv",

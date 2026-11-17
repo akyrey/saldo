@@ -15,6 +15,7 @@ import { meQuery, setupStatusQuery } from "@/features/auth/queries";
 import { AppLayout } from "@/features/shell/AppLayout";
 import { RootLayout } from "@/features/shell/RootLayout";
 import { parseMonth } from "@/features/budgets/budget-model";
+import { parseReconcileSearch } from "@/features/reconciliations/reconcile-model";
 import { parseForecastSearch } from "@/features/reports/forecast-model";
 import { parseReportSearch } from "@/features/reports/report-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
@@ -269,6 +270,16 @@ export const reportRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/reports/ReportPage"), "ReportPage"),
 });
 
+export const reconcileRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "accounts/$accountId/reconcile",
+  validateSearch: parseReconcileSearch,
+  component: lazyRouteComponent(
+    () => import("@/features/reconciliations/ReconcilePage"),
+    "ReconcilePage",
+  ),
+});
+
 export const forecastRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "forecast",
@@ -339,6 +350,7 @@ const routeTree = rootRoute.addChildren([
     accountsRoute,
     newAccountRoute,
     accountRoute,
+    reconcileRoute,
     editAccountRoute,
     transactionsRoute,
     newTransactionRoute,

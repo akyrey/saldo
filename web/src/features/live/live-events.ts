@@ -52,6 +52,7 @@ const KEYS: Record<string, QueryKey[]> = {
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
   subscription_dismissal: [["subscriptions"]],
+  reconciliation: [["reconciliations"], ["transactions"], ["balances"], ["accounts"]],
 };
 
 /** The keys an entity type affects, or `"all"` when we do not know it. */

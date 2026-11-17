@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO reconciliation_splits (reconciliation_id, split_id) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "44b8d853b98d7aa72693e515082990acae7a154a5cf9f895dda37b10b07602dc"
+}

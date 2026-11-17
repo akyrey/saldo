@@ -49,6 +49,8 @@ pub struct TransactionQuery {
     pub kind: Option<String>,
     /// Text in a split description or the group title.
     pub q: Option<String>,
+    /// Only groups with a split the bank confirmed (`true`) or not yet (`false`).
+    pub reconciled: Option<bool>,
     /// `household` (default), `mine` or `user:<id>`.
     pub scope: Option<String>,
     pub page: Option<u32>,
@@ -74,6 +76,7 @@ pub async fn list_transactions(
         bill_id: query.bill_id.map(BillId),
         kind: query.kind,
         q: query.q,
+        reconciled: query.reconciled,
         scope: scope(query.scope.as_deref())?,
     };
     let result = state
@@ -113,8 +116,9 @@ pub struct SplitRequest {
     pub bill_id: Option<Uuid>,
     #[serde(default)]
     pub tag_ids: Vec<Uuid>,
-    #[serde(default)]
-    pub reconciled: bool,
+    /// Whether the bank confirmed the split. Left out: `false` for a new
+    /// split, the stored value for a split named by `id` in a `PUT`.
+    pub reconciled: Option<bool>,
     pub notes: Option<String>,
     /// Free-form extra fields.
     #[serde(default)]
@@ -141,7 +145,7 @@ impl From<TransactionRequest> for TransactionInput {
                 budget_id: split.budget_id.map(BudgetId),
                 bill_id: split.bill_id.map(BillId),
                 tag_ids: split.tag_ids.into_iter().map(TagId).collect(),
-                reconciled: split.reconciled,
+                reconciled: split.reconciled.unwrap_or(false),
                 notes: split.notes,
                 meta: split.meta,
             })
@@ -192,6 +196,7 @@ pub async fn replace_transaction(
     ApiPath(id): ApiPath<Uuid>,
     ApiJson(body): ApiJson<TransactionRequest>,
 ) -> Result<Json<Data<TransactionGroupView>>, ApiError> {
+    let body = keep_reconciled(&state, &auth.ctx, GroupId(id), body).await?;
     Ok(Json(Data::new(
         state
             .app
@@ -199,6 +204,34 @@ pub async fn replace_transaction(
             .replace(&auth.ctx, Origin::Api, GroupId(id), body.into())
             .await?,
     )))
+}
+
+/// Fills in `reconciled` for the named splits that leave it out with their
+/// stored value, so a client that does not know the flag (the web editor)
+/// does not clear it on every save.
+async fn keep_reconciled(
+    state: &AppState,
+    ctx: &saldo_app::ctx::HouseholdCtx,
+    id: GroupId,
+    mut body: TransactionRequest,
+) -> Result<TransactionRequest, ApiError> {
+    if body
+        .splits
+        .iter()
+        .all(|s| s.reconciled.is_some() || s.id.is_none())
+    {
+        return Ok(body);
+    }
+    let stored = state.app.transactions.get(ctx, id).await?;
+    for split in body.splits.iter_mut().filter(|s| s.reconciled.is_none()) {
+        let Some(split_id) = split.id else { continue };
+        split.reconciled = stored
+            .splits
+            .iter()
+            .find(|s| s.id == split_id.to_string())
+            .map(|s| s.reconciled);
+    }
+    Ok(body)
 }
 
 #[utoipa::path(delete, path = "/transactions/{id}", tag = "transactions", params(("id" = Uuid, Path)),

@@ -106,7 +106,7 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
 ### Track D: reconciliation
 
 - **Schema**:
-  - `reconciliations`: `id`, `household_id`, `account_id`, `statement_date`, `statement_balance_minor`, `currency_code`, `difference_group_id` (nullable, the reconciliation transaction), `created_by_user_id`, `created_at`, with a foreign key to `accounts`.
+  - `reconciliations`: `id`, `household_id`, `account_id`, `statement_date`, `statement_balance_minor`, `currency_code`, `difference_minor`, `difference_group_id` (nullable, the reconciliation transaction), `created_by_user_id`, `created_at`, with a foreign key to `accounts`.
   - `reconciliation_splits (reconciliation_id, split_id)`, cascading on both sides.
   - An account's "reconciled up to" date is its latest reconciliation's `statement_date`, derived, with no new column.
 - **Core**: `reconcile(statement_balance: Money, cleared: &[SignedAmount]) -> Result<Option<Money>, MoneyError>` returns the difference, or `None` when it is zero. Cleared means reconciled or selected splits dated on or before the statement date, plus every `opening_balance` split, which always counts as cleared. Signs follow ARCHITECTURE 4.2; the virtual balance is not part of it.

@@ -17,6 +17,7 @@ pub mod household;
 pub mod notifications;
 pub mod oidc;
 pub mod piggy_banks;
+pub mod reconciliations;
 pub mod recurrences;
 pub mod reports;
 pub mod rules;
@@ -61,6 +62,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(recurrences::router())
         .merge(templates::router())
         .merge(subscriptions::router())
+        .merge(reconciliations::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

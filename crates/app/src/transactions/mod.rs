@@ -76,6 +76,8 @@ pub struct TransactionFilter {
     pub kind: Option<String>,
     /// Text searched in split descriptions and the group title.
     pub q: Option<String>,
+    /// Only splits the bank confirmed (`true`) or not yet (`false`).
+    pub reconciled: Option<bool>,
     pub scope: Scope,
 }
 
@@ -240,6 +242,7 @@ impl TransactionService {
             return Err(AppError::NotFound);
         }
         let plan = split_ids::plan(&mut *conn, &household_id, &id, &input).await?;
+        let before = repo::confirmed_fields(&mut *conn, &household_id, &id).await?;
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let now = format_timestamp(self.clock.now());
         repo::update_group(&mut *conn, &household_id, &id, group.title(), &now).await?;
@@ -270,6 +273,7 @@ impl TransactionService {
             &now,
         )
         .await?;
+        unreconcile_changed(&mut *conn, &household_id, &id, &before).await?;
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "updated", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
@@ -357,6 +361,7 @@ impl TransactionService {
             kind: filter.kind.clone(),
             q: filter.q.clone().filter(|q| !q.trim().is_empty()),
             owner_user_id: filter.scope.owner(ctx),
+            reconciled: filter.reconciled,
             limit: page.limit(),
             offset: page.offset(),
         };
@@ -366,6 +371,34 @@ impl TransactionService {
         let items = view::load(&mut conn, &household_id, &ids).await?;
         Ok(Page::new(items, page, total))
     }
+}
+
+/// After a replace: a split that was reconciled and changed its date,
+/// amount or accounts no longer matches the statement, so it is
+/// un-reconciled; a split saved as not reconciled leaves its reconciliation.
+async fn unreconcile_changed(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    group_id: &str,
+    before: &[repo::ConfirmedFields],
+) -> Result<(), AppError> {
+    let after = repo::confirmed_fields(&mut *conn, household_id, group_id).await?;
+    for now in after {
+        let changed = before
+            .iter()
+            .find(|old| old.id == now.id)
+            .is_some_and(|old| {
+                old.reconciled
+                    && (old.date != now.date
+                        || old.amount_minor != now.amount_minor
+                        || old.source_account_id != now.source_account_id
+                        || old.destination_account_id != now.destination_account_id)
+            });
+        if changed || !now.reconciled {
+            repo::unreconcile(&mut *conn, household_id, &now.id).await?;
+        }
+    }
+    Ok(())
 }
 
 async fn load_one(

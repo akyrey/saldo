@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT r.split_id FROM reconciliation_splits r JOIN splits s ON s.id = r.split_id\n         WHERE r.reconciliation_id = ? ORDER BY s.date, s.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "split_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "reconciliation_splits",
+            "name": "split_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2024e2c6992b6df7f667a7bfaffca2fe495454e60872062240ab869f3ea76102"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO reconciliations (id, household_id, account_id, statement_date, statement_balance_minor,\n                                      currency_code, difference_minor, difference_group_id,\n                                      created_by_user_id, created_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "d792c5070115b98bccfec9c1ceaaeafd4ed0efdb26d63ec87194893b9e0dff99"
+}

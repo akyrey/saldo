@@ -29,6 +29,7 @@ import {
 } from "./editor-model";
 import type { TransactionRequest } from "./queries";
 import { SaveDraftAsTemplate } from "@/features/templates/SaveDraftAsTemplate";
+import { RECONCILED_CONFIRM, touchesReconciled } from "./reconciled-guard";
 import { SplitRowFields } from "./SplitRowFields";
 
 const NO_ERRORS: EditorErrors = { rows: {}, form: [] };
@@ -40,6 +41,8 @@ interface TransactionEditorProps {
   onSaved: () => void;
   /** Offer "Save as template" (new transactions only). */
   allowTemplate?: boolean;
+  /** Splits the bank confirmed: changing them asks first (editing only). */
+  reconciledIds?: ReadonlySet<string>;
 }
 
 /** The currency the amount of `row` is in: the asset or liability side's. */
@@ -108,9 +111,19 @@ export function TransactionEditor(props: TransactionEditorProps) {
       noValidate={false}
       onSubmit={(event) => {
         event.preventDefault();
+        const reconciled = props.reconciledIds;
+        if (reconciled && touchesReconciled(initial, state, reconciled)) {
+          if (!window.confirm(RECONCILED_CONFIRM)) return;
+        }
         mutation.mutate();
       }}
     >
+      {props.reconciledIds && props.reconciledIds.size > 0 ? (
+        <Alert className="border-primary/40 bg-primary/5 text-foreground">
+          Reconciled with a bank statement. Changing an amount, date or account of a reconciled
+          split takes it out of its reconciliation.
+        </Alert>
+      ) : null}
       <Field id="title" label="Title (optional, for groups with several splits)">
         <Input
           id="title"

@@ -84,6 +84,7 @@ pub mod lookup;
 pub mod money;
 pub mod period;
 pub mod piggy_bank;
+pub mod reconcile;
 pub mod recurrence;
 pub mod rules;
 pub mod subscriptions;
@@ -116,6 +117,7 @@ pub use kind::SplitKind;
 pub use lookup::AccountLookup;
 pub use money::Money;
 pub use period::{DateRange, PERIODS, Period};
+pub use reconcile::reconcile;
 pub use rules::{
     Action, Rule, RuleAction, RuleAmount, RuleError, RuleTrigger, SplitView as RuleSplit, Trigger,
 };

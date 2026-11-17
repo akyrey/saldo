@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage } from "@/api/errors";
@@ -11,6 +11,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { membersQuery } from "@/features/auth/queries";
+import { ReconciliationHistory } from "@/features/reconciliations/ReconciliationHistory";
 import { categoriesQuery } from "@/features/categories/queries";
 import { byId } from "@/features/shared/lookup";
 import { pageCount } from "@/features/shared/pagination";
@@ -61,6 +62,7 @@ export function AccountDetailPage() {
   if (!account.data) return <QueryState isPending={account.isPending} error={account.error} />;
   const data = account.data;
   const isEquity = data.type === "equity";
+  const canReconcile = data.type === "asset" || data.type === "liability";
 
   return (
     <div>
@@ -69,6 +71,13 @@ export function AccountDetailPage() {
         actions={
           isEquity ? null : (
             <>
+              {canReconcile ? (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/accounts/$accountId/reconcile" params={{ accountId }} search={{}}>
+                    <ListChecks /> Reconcile
+                  </Link>
+                </Button>
+              ) : null}
               <Button variant="outline" size="sm" asChild>
                 <Link to="/accounts/$accountId/edit" params={{ accountId }}>
                   <Pencil /> Edit
@@ -134,6 +143,7 @@ export function AccountDetailPage() {
           </div>
         ) : null}
       </dl>
+      {canReconcile ? <ReconciliationHistory accountId={accountId} /> : null}
       <h2 className="mb-2 font-semibold">Transactions</h2>
       <QueryState isPending={transactions.isPending} error={transactions.error} />
       {transactions.data ? (

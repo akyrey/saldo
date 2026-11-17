@@ -487,6 +487,216 @@
         ]
       }
     },
+    "/api/v1/accounts/{id}/reconciliations": {
+      "get": {
+        "tags": [
+          "reconciliations"
+        ],
+        "summary": "The account's reconciliations, latest statement first.",
+        "operationId": "list_reconciliations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ReconciliationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "reconciliations"
+        ],
+        "summary": "Marks the splits reconciled; with `book_difference`, books what the\nstatement has more (or less) as a reconciliation transaction.",
+        "operationId": "create_reconciliation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReconciliationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ReconciliationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/reconciliations/draft": {
+      "get": {
+        "tags": [
+          "reconciliations"
+        ],
+        "summary": "The cleared balance (reconciled splits and opening balances) up to the\nstatement date, and the splits up to it the bank has not confirmed yet.",
+        "operationId": "reconciliation_draft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "statement_date",
+            "in": "query",
+            "description": "The statement's date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ReconciliationDraftView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/attachments": {
       "get": {
         "tags": [
@@ -3589,6 +3799,55 @@
         ]
       }
     },
+    "/api/v1/reconciliations/{id}": {
+      "delete": {
+        "tags": [
+          "reconciliations"
+        ],
+        "summary": "Undoes the account's latest reconciliation (409 for an older one).",
+        "operationId": "delete_reconciliation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/recurrences": {
       "get": {
         "tags": [
@@ -5991,6 +6250,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "reconciled",
+            "in": "query",
+            "description": "Only groups with a split the bank confirmed (`true`) or not yet (`false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -8570,6 +8838,40 @@
           }
         }
       },
+      "CreateReconciliationRequest": {
+        "type": "object",
+        "required": [
+          "statement_date",
+          "statement_balance",
+          "split_ids"
+        ],
+        "properties": {
+          "book_difference": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Book a difference as a reconciliation transaction; otherwise a\ndifference is a 422 on `statement_balance`. Default `false`."
+          },
+          "split_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Unreconciled splits of the account dated on or before the statement."
+          },
+          "statement_balance": {
+            "type": "string",
+            "description": "The statement's closing balance in the account's currency (incoming\nminus outgoing: negative for money owed)."
+          },
+          "statement_date": {
+            "type": "string",
+            "format": "date",
+            "description": "`YYYY-MM-DD`; not before the account's last reconciliation."
+          }
+        }
+      },
       "CreateRuleGroupRequest": {
         "type": "object",
         "required": [
@@ -9896,6 +10198,121 @@
                 ]
               },
               "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_ReconciliationDraftView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "What reconciling up to a date starts from.",
+            "required": [
+              "account_id",
+              "currency",
+              "statement_date",
+              "cleared_balance",
+              "splits"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "cleared_balance": {
+                "type": "string",
+                "description": "Reconciled splits and opening balances up to the date."
+              },
+              "currency": {
+                "type": "string"
+              },
+              "reconciled_through": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The latest reconciliation's statement date, if any."
+              },
+              "splits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DraftSplitView"
+                },
+                "description": "The splits up to the date the bank has not confirmed yet, oldest first."
+              },
+              "statement_date": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_ReconciliationView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A finished reconciliation.",
+            "required": [
+              "id",
+              "account_id",
+              "statement_date",
+              "statement_balance",
+              "currency",
+              "difference",
+              "split_ids",
+              "created_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "created_by_user_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "currency": {
+                "type": "string"
+              },
+              "difference": {
+                "type": "string",
+                "description": "What the statement had more than the confirmed splits (\"0.00\" when\nthey agreed); booked as the `difference_group_id` transaction."
+              },
+              "difference_group_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "split_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The splits it confirmed, the difference's included."
+              },
+              "statement_balance": {
+                "type": "string"
+              },
+              "statement_date": {
                 "type": "string"
               }
             }
@@ -11367,6 +11784,34 @@
           }
         }
       },
+      "DraftSplitView": {
+        "type": "object",
+        "required": [
+          "id",
+          "group_id",
+          "date",
+          "description",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Positive when money came into the account."
+          },
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "group_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
       "ErrorBody": {
         "type": "object",
         "required": [
@@ -11522,7 +11967,8 @@
           "piggy_bank_events",
           "recurrences",
           "templates",
-          "subscription_dismissals"
+          "subscription_dismissals",
+          "reconciliations"
         ],
         "properties": {
           "accounts": {
@@ -11606,6 +12052,13 @@
             "items": {
               "$ref": "#/components/schemas/PiggyBankView"
             }
+          },
+          "reconciliations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationView"
+            },
+            "description": "Reconciliations with the splits they confirmed (Phase 9)."
           },
           "recurrences": {
             "type": "array",
@@ -12728,6 +13181,79 @@
           }
         }
       },
+      "List_ReconciliationView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A finished reconciliation.",
+              "required": [
+                "id",
+                "account_id",
+                "statement_date",
+                "statement_balance",
+                "currency",
+                "difference",
+                "split_ids",
+                "created_at"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "created_by_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "difference": {
+                  "type": "string",
+                  "description": "What the statement had more than the confirmed splits (\"0.00\" when\nthey agreed); booked as the `difference_group_id` transaction."
+                },
+                "difference_group_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "split_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The splits it confirmed, the difference's included."
+                },
+                "statement_balance": {
+                  "type": "string"
+                },
+                "statement_date": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
       "List_RecurrenceView": {
         "type": "object",
         "description": "A page of results.",
@@ -13495,6 +14021,103 @@
           }
         }
       },
+      "ReconciliationDraftView": {
+        "type": "object",
+        "description": "What reconciling up to a date starts from.",
+        "required": [
+          "account_id",
+          "currency",
+          "statement_date",
+          "cleared_balance",
+          "splits"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "cleared_balance": {
+            "type": "string",
+            "description": "Reconciled splits and opening balances up to the date."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "reconciled_through": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The latest reconciliation's statement date, if any."
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftSplitView"
+            },
+            "description": "The splits up to the date the bank has not confirmed yet, oldest first."
+          },
+          "statement_date": {
+            "type": "string"
+          }
+        }
+      },
+      "ReconciliationView": {
+        "type": "object",
+        "description": "A finished reconciliation.",
+        "required": [
+          "id",
+          "account_id",
+          "statement_date",
+          "statement_balance",
+          "currency",
+          "difference",
+          "split_ids",
+          "created_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string",
+            "description": "What the statement had more than the confirmed splits (\"0.00\" when\nthey agreed); booked as the `difference_group_id` transaction."
+          },
+          "difference_group_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "split_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The splits it confirmed, the difference's included."
+          },
+          "statement_balance": {
+            "type": "string"
+          },
+          "statement_date": {
+            "type": "string"
+          }
+        }
+      },
       "RecurrenceFiredView": {
         "type": "object",
         "description": "The result of firing, also the data of the `recurrence.fired` event.",
@@ -14187,7 +14810,11 @@
             ]
           },
           "reconciled": {
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the bank confirmed the split. Left out: `false` for a new\nsplit, the stored value for a split named by `id` in a `PUT`."
           },
           "source_id": {
             "type": "string",

@@ -235,6 +235,7 @@ pub(crate) struct ListFilter {
     pub kind: Option<String>,
     pub q: Option<String>,
     pub owner_user_id: Option<String>,
+    pub reconciled: Option<bool>,
     pub limit: i64,
     pub offset: i64,
 }
@@ -259,11 +260,12 @@ pub(crate) async fn list_ids(
                AND (?9 IS NULL OR s.kind = ?9)
                AND (?10 IS NULL OR s.description LIKE '%' || ?10 || '%' OR g.title LIKE '%' || ?10 || '%')
                AND (?11 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = g.household_id
-                     AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11)))
+                     AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11))
+               AND (?12 IS NULL OR s.reconciled = ?12))
            ORDER BY (SELECT max(s2.date) FROM splits s2 WHERE s2.group_id = g.id) DESC, g.id DESC
-           LIMIT ?12 OFFSET ?13"#,
+           LIMIT ?13 OFFSET ?14"#,
         household_id, f.from, f.to, f.account_id, f.category_id, f.tag_id, f.budget_id, f.bill_id,
-        f.kind, f.q, f.owner_user_id, f.limit, f.offset,
+        f.kind, f.q, f.owner_user_id, f.reconciled, f.limit, f.offset,
     )
     .fetch_all(&mut *conn)
     .await?;
@@ -279,11 +281,63 @@ pub(crate) async fn list_ids(
                AND (?9 IS NULL OR s.kind = ?9)
                AND (?10 IS NULL OR s.description LIKE '%' || ?10 || '%' OR g.title LIKE '%' || ?10 || '%')
                AND (?11 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = g.household_id
-                     AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11)))"#,
+                     AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11))
+               AND (?12 IS NULL OR s.reconciled = ?12))"#,
         household_id, f.from, f.to, f.account_id, f.category_id, f.tag_id, f.budget_id, f.bill_id,
-        f.kind, f.q, f.owner_user_id,
+        f.kind, f.q, f.owner_user_id, f.reconciled,
     )
     .fetch_one(&mut *conn)
     .await?;
     Ok((ids, total))
+}
+
+/// The fields of a group's splits that a reconciliation confirmed, by split ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ConfirmedFields {
+    pub id: String,
+    pub date: String,
+    pub amount_minor: i64,
+    pub source_account_id: String,
+    pub destination_account_id: String,
+    pub reconciled: bool,
+}
+
+pub(crate) async fn confirmed_fields(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    group_id: &str,
+) -> Result<Vec<ConfirmedFields>, AppError> {
+    let rows = sqlx::query_as!(
+        ConfirmedFields,
+        r#"SELECT id, date, amount_minor, source_account_id, destination_account_id,
+                  reconciled AS "reconciled: bool"
+           FROM splits WHERE household_id = ? AND group_id = ?"#,
+        household_id,
+        group_id,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows)
+}
+
+/// Un-reconciles a split: clears the flag and its reconciliation link.
+pub(crate) async fn unreconcile(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    split_id: &str,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "UPDATE splits SET reconciled = 0 WHERE household_id = ? AND id = ?",
+        household_id,
+        split_id,
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM reconciliation_splits WHERE split_id = ?",
+        split_id
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
 }

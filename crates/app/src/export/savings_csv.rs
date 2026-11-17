@@ -1,4 +1,5 @@
-//! CSV files for budgets, their limits, piggy banks and their events.
+//! CSV files for budgets, their limits, piggy banks and their events,
+//! subscription dismissals and reconciliations.
 
 use super::ExportDocument;
 use super::csv::{opt, table};
@@ -13,7 +14,44 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
         ("piggy_banks.csv", piggy_banks(doc)),
         ("piggy_bank_events.csv", piggy_bank_events(doc)),
         ("subscription_dismissals.csv", subscription_dismissals(doc)),
+        ("reconciliations.csv", reconciliations(doc)),
     ]
+}
+
+/// One row per reconciliation; the confirmed splits are in the JSON export.
+fn reconciliations(doc: &ExportDocument) -> String {
+    let account_names = names(
+        doc.accounts
+            .iter()
+            .map(|a| (a.id.as_str(), a.name.as_str())),
+    );
+    let header = [
+        "id",
+        "account",
+        "statement_date",
+        "statement_balance",
+        "currency",
+        "difference",
+        "splits",
+        "created_at",
+    ];
+    let rows = doc
+        .reconciliations
+        .iter()
+        .map(|r| {
+            vec![
+                r.id.clone(),
+                lookup(&account_names, &r.account_id),
+                r.statement_date.clone(),
+                r.statement_balance.clone(),
+                r.currency.clone(),
+                r.difference.clone(),
+                r.split_ids.len().to_string(),
+                r.created_at.clone(),
+            ]
+        })
+        .collect();
+    table(&header, rows)
 }
 
 fn subscription_dismissals(doc: &ExportDocument) -> String {

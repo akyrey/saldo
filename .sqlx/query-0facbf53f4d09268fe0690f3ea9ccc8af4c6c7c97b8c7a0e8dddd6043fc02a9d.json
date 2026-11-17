@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM reconciliations WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0facbf53f4d09268fe0690f3ea9ccc8af4c6c7c97b8c7a0e8dddd6043fc02a9d"
+}

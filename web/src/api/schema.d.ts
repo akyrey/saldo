@@ -74,6 +74,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/accounts/{id}/reconciliations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The account's reconciliations, latest statement first. */
+    get: operations["list_reconciliations"];
+    put?: never;
+    /**
+     * Marks the splits reconciled; with `book_difference`, books what the
+     *     statement has more (or less) as a reconciliation transaction.
+     */
+    post: operations["create_reconciliation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/reconciliations/draft": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The cleared balance (reconciled splits and opening balances) up to the
+     *     statement date, and the splits up to it the bank has not confirmed yet.
+     */
+    get: operations["reconciliation_draft"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/attachments": {
     parameters: {
       query?: never;
@@ -748,6 +789,23 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reconciliations/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Undoes the account's latest reconciliation (409 for an older one). */
+    delete: operations["delete_reconciliation"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1922,6 +1980,25 @@ export interface components {
       /** Format: date */
       target_date?: string | null;
     };
+    CreateReconciliationRequest: {
+      /**
+       * @description Book a difference as a reconciliation transaction; otherwise a
+       *     difference is a 422 on `statement_balance`. Default `false`.
+       */
+      book_difference?: boolean | null;
+      /** @description Unreconciled splits of the account dated on or before the statement. */
+      split_ids: string[];
+      /**
+       * @description The statement's closing balance in the account's currency (incoming
+       *     minus outgoing: negative for money owed).
+       */
+      statement_balance: string;
+      /**
+       * Format: date
+       * @description `YYYY-MM-DD`; not before the account's last reconciliation.
+       */
+      statement_date: string;
+    };
     CreateRuleGroupRequest: {
       active?: boolean;
       description?: string | null;
@@ -2317,6 +2394,42 @@ export interface components {
         target_amount?: string | null;
         target_date?: string | null;
         updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_ReconciliationDraftView: {
+      /** @description What reconciling up to a date starts from. */
+      data: {
+        account_id: string;
+        /** @description Reconciled splits and opening balances up to the date. */
+        cleared_balance: string;
+        currency: string;
+        /** @description The latest reconciliation's statement date, if any. */
+        reconciled_through?: string | null;
+        /** @description The splits up to the date the bank has not confirmed yet, oldest first. */
+        splits: components["schemas"]["DraftSplitView"][];
+        statement_date: string;
+      };
+    };
+    /** @description A single result. */
+    Data_ReconciliationView: {
+      /** @description A finished reconciliation. */
+      data: {
+        account_id: string;
+        created_at: string;
+        created_by_user_id?: string | null;
+        currency: string;
+        /**
+         * @description What the statement had more than the confirmed splits ("0.00" when
+         *     they agreed); booked as the `difference_group_id` transaction.
+         */
+        difference: string;
+        difference_group_id?: string | null;
+        id: string;
+        /** @description The splits it confirmed, the difference's included. */
+        split_ids: string[];
+        statement_balance: string;
+        statement_date: string;
       };
     };
     /** @description A single result. */
@@ -2745,6 +2858,14 @@ export interface components {
       account_id: string;
       currency: string;
     };
+    DraftSplitView: {
+      /** @description Positive when money came into the account. */
+      amount: string;
+      date: string;
+      description: string;
+      group_id: string;
+      id: string;
+    };
     ErrorBody: {
       /** @description Stable machine-readable code, for example `validation_failed`. */
       code: string;
@@ -2808,6 +2929,8 @@ export interface components {
       members: components["schemas"]["MemberView"][];
       piggy_bank_events: components["schemas"]["PiggyBankEventView"][];
       piggy_banks: components["schemas"]["PiggyBankView"][];
+      /** @description Reconciliations with the splits they confirmed (Phase 9). */
+      reconciliations: components["schemas"]["ReconciliationView"][];
       recurrences: components["schemas"]["RecurrenceView"][];
       rule_groups: components["schemas"]["RuleGroupView"][];
       rules: components["schemas"]["RuleView"][];
@@ -3112,6 +3235,27 @@ export interface components {
       meta: components["schemas"]["ListMeta"];
     };
     /** @description A page of results. */
+    List_ReconciliationView: {
+      data: {
+        account_id: string;
+        created_at: string;
+        created_by_user_id?: string | null;
+        currency: string;
+        /**
+         * @description What the statement had more than the confirmed splits ("0.00" when
+         *     they agreed); booked as the `difference_group_id` transaction.
+         */
+        difference: string;
+        difference_group_id?: string | null;
+        id: string;
+        /** @description The splits it confirmed, the difference's included. */
+        split_ids: string[];
+        statement_balance: string;
+        statement_date: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
     List_RecurrenceView: {
       data: {
         active: boolean;
@@ -3329,6 +3473,36 @@ export interface components {
       repeat_until?: string | null;
       repetitions: components["schemas"]["RepetitionRequest"][];
     };
+    /** @description What reconciling up to a date starts from. */
+    ReconciliationDraftView: {
+      account_id: string;
+      /** @description Reconciled splits and opening balances up to the date. */
+      cleared_balance: string;
+      currency: string;
+      /** @description The latest reconciliation's statement date, if any. */
+      reconciled_through?: string | null;
+      /** @description The splits up to the date the bank has not confirmed yet, oldest first. */
+      splits: components["schemas"]["DraftSplitView"][];
+      statement_date: string;
+    };
+    /** @description A finished reconciliation. */
+    ReconciliationView: {
+      account_id: string;
+      created_at: string;
+      created_by_user_id?: string | null;
+      currency: string;
+      /**
+       * @description What the statement had more than the confirmed splits ("0.00" when
+       *     they agreed); booked as the `difference_group_id` transaction.
+       */
+      difference: string;
+      difference_group_id?: string | null;
+      id: string;
+      /** @description The splits it confirmed, the difference's included. */
+      split_ids: string[];
+      statement_balance: string;
+      statement_date: string;
+    };
     /** @description The result of firing, also the data of the `recurrence.fired` event. */
     RecurrenceFiredView: {
       /** @description False when the recurrence had already fired on this date. */
@@ -3544,7 +3718,11 @@ export interface components {
       /** @description Free-form extra fields. */
       meta?: Record<string, never>;
       notes?: string | null;
-      reconciled?: boolean;
+      /**
+       * @description Whether the bank confirmed the split. Left out: `false` for a new
+       *     split, the stored value for a split named by `id` in a `PUT`.
+       */
+      reconciled?: boolean | null;
       /** Format: uuid */
       source_id: string;
       tag_ids?: string[];
@@ -4110,6 +4288,128 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_reconciliations: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_ReconciliationView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_reconciliation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateReconciliationRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ReconciliationView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  reconciliation_draft: {
+    parameters: {
+      query: {
+        /** @description The statement's date, `YYYY-MM-DD`. */
+        statement_date: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ReconciliationDraftView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -6134,6 +6434,41 @@ export interface operations {
       };
     };
   };
+  delete_reconciliation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   list_recurrences: {
     parameters: {
       query?: {
@@ -7579,6 +7914,8 @@ export interface operations {
         kind?: string;
         /** @description Text in a split description or the group title. */
         q?: string;
+        /** @description Only groups with a split the bank confirmed (`true`) or not yet (`false`). */
+        reconciled?: boolean;
         /** @description `household` (default), `mine` or `user:<id>`. */
         scope?: string;
         page?: number;

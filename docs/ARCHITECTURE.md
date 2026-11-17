@@ -182,6 +182,7 @@ Balance of an account = sum of amounts where it is the destination − sum where
 - **Budget maths**: spent per budget limit, available amount, the limits an auto-budget creates (always its base amount), and the carry-over (Phase 9): `carry::carried(limits, spends, Carry) -> Vec<Money>` gives what each limit receives from the previous one in its currency. A limit carries only into one that starts the day after it ends; `leftover` passes on a positive rest, `all` a negative one too, `none` nothing. Computed when limits are read, never stored, so editing an older transaction updates every later limit.
 - **Forecast** (Phase 9): `forecast::project(start, planned, intervals) -> Projection` adds planned amounts (dated, signed, one currency) to a starting balance and returns the balance at the end of each interval and the lowest end-of-day balance. Collecting the amounts is `app`'s job.
 - **Subscription detection** (Phase 9): `subscriptions::detect_subscriptions(payments, today) -> Vec<Candidate>` groups withdrawals by counterparty and currency, drops a group with any payment already on a bill, keeps payments within 20% of the latest amount, and tries weekly (±2 days, 3 payments), monthly (±4, 3), quarterly (±7, 3), half-year (±10, 2) and yearly (±15, 2), shortest first. Each payment is compared with the date the schedule expected (a miss restarts the schedule from that payment); at least 75% of gaps must fit, and the next due date plus the tolerance must not be past.
+- **Reconciliation** (Phase 9): `reconcile::reconcile(statement_balance, cleared) -> Option<Money>` is the statement balance minus the cleared signed amounts, `None` when they agree.
 
 ## 5. SQL schema
 
@@ -664,6 +665,34 @@ CREATE TABLE subscription_dismissals (
 ) STRICT;
 ```
 
+### 5.4c Reconciliation (Phase 9)
+
+```sql
+-- An account's "reconciled up to" date is its latest statement_date.
+CREATE TABLE reconciliations (
+    id                       TEXT PRIMARY KEY,
+    household_id             TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    account_id               TEXT NOT NULL,
+    statement_date           TEXT NOT NULL,
+    statement_balance_minor  INTEGER NOT NULL,
+    currency_code            TEXT NOT NULL REFERENCES currencies (code),
+    difference_minor         INTEGER NOT NULL DEFAULT 0,   -- statement minus cleared
+    difference_group_id      TEXT REFERENCES transaction_groups (id) ON DELETE SET NULL,
+    created_by_user_id       TEXT REFERENCES users (id) ON DELETE SET NULL,
+    created_at               TEXT NOT NULL,
+    UNIQUE (household_id, id),
+    FOREIGN KEY (household_id, account_id) REFERENCES accounts (household_id, id) ON DELETE CASCADE
+) STRICT;
+CREATE INDEX reconciliations_account ON reconciliations (account_id, statement_date);
+
+CREATE TABLE reconciliation_splits (
+    reconciliation_id  TEXT NOT NULL REFERENCES reconciliations (id) ON DELETE CASCADE,
+    split_id           TEXT NOT NULL REFERENCES splits (id) ON DELETE CASCADE,
+    PRIMARY KEY (reconciliation_id, split_id)
+) STRICT;
+CREATE INDEX reconciliation_splits_split ON reconciliation_splits (split_id);
+```
+
 ### 5.5 Events, webhooks, notifications
 
 ```sql
@@ -814,6 +843,7 @@ Conventions:
 | Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields | 6 |
 | Templates | `GET/POST /transaction-templates` (ordered by `sort_order`, then name), `GET/PATCH/DELETE /transaction-templates/{id}` (`PATCH` merges `name`, `kind`, `title`, `sort_order`; `splits` replaces them all), `POST /transactions/{id}/template` (`{ name }`; saves the group without its dates and reconciled flags; 422 for opening balances and reconciliations). Names are unique per household (409). A template is checked only for what it contains: its accounts, categories, budgets (withdrawals only), bills and tags belong to the household, amounts parse in their currency and are positive, and two given accounts form the template's kind. There is no instantiate endpoint: the web editor fills itself from the template and posts `POST /transactions` | 8 |
 | Subscriptions | `GET /subscription-candidates?scope=` (computed per request from the last 18 months of withdrawals, by next due date; unpaginated), `POST /subscription-candidates/accept` (`{ account_id, currency, name, frequency, amount_min, amount_max, split_ids }`, 201 with the bill: first due on the first payment; the payments get the bill, which pays their periods; open periods before the last payment are skipped; 422 on `split_ids` unless each is a withdrawal to the account in the currency without a bill), `POST /subscription-candidates/dismiss` (`{ account_id, currency }`, an expense account; twice is a no-op), `DELETE /subscription-dismissals/{account_id}/{currency}` (404 when not dismissed) | 9 |
+| Reconciliations | `GET /accounts/{id}/reconciliations` (latest statement first, paginated), `GET /accounts/{id}/reconciliations/draft?statement_date=` (`{ account_id, currency, statement_date, reconciled_through, cleared_balance, splits: [{ id, group_id, date, description, amount }] }`: cleared = reconciled splits and opening balances up to the date; `splits` = the rest up to the date, amounts signed for the account), `POST /accounts/{id}/reconciliations` (`{ statement_date, statement_balance, split_ids, book_difference? }`, 201: the splits must be the account's, unreconciled and dated on or before the statement, which must not be before the last reconciliation; a difference is a 422 on `statement_balance` unless `book_difference`, which books it as a reconciliation transaction against Equity(Reconciliation), dated on the statement and itself reconciled), `DELETE /reconciliations/{id}` (only the account's latest, otherwise 409: clears its splits' flags and deletes its difference transaction). Only asset and liability accounts (422 otherwise). `GET /transactions` takes `reconciled`. In `PUT /transactions/{id}`, a split named by `id` without `reconciled` keeps its stored flag (the web editor does not send it); a reconciled split whose date, amount or accounts change, or that is saved as not reconciled, leaves its reconciliation | 9 |
 
 Health: `GET /healthz` (no auth, checks the database): `{ status, app: "saldo", api: "v1", version }`, which the desktop app checks before connecting.
 
@@ -840,7 +870,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
 - `tag.merged`: one per source tag of a merge, with the source as entity and `{ source, into, splits }` as data; it stands for every reference the merge moved (no separate split, recurrence, template or rule events).
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
@@ -937,7 +967,7 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account. Rule triggers and actions read as `kind=value`.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them). Rule triggers and actions read as `kind=value`.
 - Left out (owner-approved): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 
