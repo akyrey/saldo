@@ -15,6 +15,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 6 Events | done | main / ee236b3 (part B), b1f1ca0 (part A) | Webhooks, SSE live updates, bill reminders, ntfy/Gotify/email/Web Push. Verified for real: signed webhook delivery and retry (local catcher, Go example), reminders to a local ntfy stand-in. Not verified: real ntfy, Gotify, SMTP, browser push |
 | 7 Clients | done (manual device checks open) | main / a2a45d0 | Tauri 2 desktop app (Saldo.app 11 MB, built on macOS; the .dmg step needs a GUI session or CI), PWA install banner and app badge, desktop bearer login + CORS, backup script. 477 Rust + 2 desktop tests, 177 Vitest, 12 Playwright flows. Not yet run by hand: the desktop app against a server, phone installs and push |
 | 8 Templates | done | main / 28865c2 | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
+| 9 Statements + forecast | in progress | main | Brief f54208c. Package 1 (clippy guard for `BEGIN IMMEDIATE`) done; tracks A to E not started |
 
 States: not started, in progress, blocked (say on what), done.
 
@@ -207,7 +208,6 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 
 ## Follow-ups the owner may want
 
-- SQLite write contention: services open deferred transactions (`BEGIN`), so a transaction that reads and then writes fails with `database is locked` (code 517) if another connection wrote in between. Seen once in the Phase 7 backup check (the webhook dispatcher retried and lost nothing). It can also hit API writes while the importer runs. Fix: start write transactions with `BEGIN IMMEDIATE` in one `db` helper.
 - Desktop: Developer ID signing and notarisation for macOS (builds are self-signed) and Windows signing (SignPath Foundation is free for open-source projects), Windows and Linux builds in CI, Tauri mobile, catching up on reminders missed while closed.
 - Web Push: deactivate a channel whose subscription is gone (HTTP 404/410).
 

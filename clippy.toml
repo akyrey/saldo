@@ -1,3 +1,11 @@
 # The workspace warns on unwrap()/expect(); tests may still use them.
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
+
+# Write transactions must take SQLite's write lock up front (BEGIN IMMEDIATE),
+# otherwise a read-then-write transaction fails with "database is locked".
+disallowed-methods = [
+    { path = "sqlx_core::pool::Pool::begin", reason = "use saldo_app::db::begin (BEGIN IMMEDIATE)" },
+    { path = "sqlx_core::connection::Connection::begin", reason = "use saldo_app::db::begin (BEGIN IMMEDIATE)" },
+    { path = "sqlx_core::acquire::Acquire::begin", reason = "use saldo_app::db::begin (BEGIN IMMEDIATE)" },
+]
