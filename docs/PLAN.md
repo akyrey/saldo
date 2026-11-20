@@ -1,6 +1,6 @@
 # Saldo plan
 
-Saldo is built in nine phases. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
+Saldo is built in twelve phases, numbered 0 to 11. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
 
 ## Phases
 
