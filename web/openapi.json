@@ -1778,6 +1778,63 @@
         ]
       }
     },
+    "/api/v1/bills/{id}/history": {
+      "get": {
+        "tags": [
+          "bills"
+        ],
+        "summary": "A bill's linked payments (newest first), its due dates over the bill's\nwhole duration (oldest first) and a summary of what was paid.",
+        "operationId": "bill_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BillHistoryView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/bills/{id}/periods": {
       "get": {
         "tags": [
@@ -8404,6 +8461,59 @@
           }
         }
       },
+      "BillHistoryView": {
+        "type": "object",
+        "description": "A bill's history as the API returns it.",
+        "required": [
+          "bill_id",
+          "currency",
+          "range",
+          "amount_min",
+          "amount_max",
+          "due_dates",
+          "payments",
+          "summary",
+          "truncated"
+        ],
+        "properties": {
+          "amount_max": {
+            "type": "string"
+          },
+          "amount_min": {
+            "type": "string"
+          },
+          "bill_id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "due_dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryDueDate"
+            },
+            "description": "Oldest first."
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryPayment"
+            },
+            "description": "Newest first."
+          },
+          "range": {
+            "$ref": "#/components/schemas/HistoryRange"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/HistorySummary"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether older due dates were left out (more than 2 000)."
+          }
+        }
+      },
       "BillPatch": {
         "type": "object",
         "description": "Fields to change; `null` clears `end_date` or `notes`. The currency is fixed.",
@@ -10303,6 +10413,68 @@
                   "string",
                   "null"
                 ]
+              }
+            }
+          }
+        }
+      },
+      "Data_BillHistoryView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A bill's history as the API returns it.",
+            "required": [
+              "bill_id",
+              "currency",
+              "range",
+              "amount_min",
+              "amount_max",
+              "due_dates",
+              "payments",
+              "summary",
+              "truncated"
+            ],
+            "properties": {
+              "amount_max": {
+                "type": "string"
+              },
+              "amount_min": {
+                "type": "string"
+              },
+              "bill_id": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "due_dates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HistoryDueDate"
+                },
+                "description": "Oldest first."
+              },
+              "payments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HistoryPayment"
+                },
+                "description": "Newest first."
+              },
+              "range": {
+                "$ref": "#/components/schemas/HistoryRange"
+              },
+              "summary": {
+                "$ref": "#/components/schemas/HistorySummary"
+              },
+              "truncated": {
+                "type": "boolean",
+                "description": "Whether older due dates were left out (more than 2 000)."
               }
             }
           }
@@ -13855,6 +14027,158 @@
           "version": {
             "type": "string",
             "description": "The server's version, for example `0.1.0`."
+          }
+        }
+      },
+      "HistoryAccount": {
+        "type": "object",
+        "description": "An account as a payment shows it.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "HistoryDueDate": {
+        "type": "object",
+        "description": "One due date in a bill's history.",
+        "required": [
+          "date",
+          "status"
+        ],
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "paid_split_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`paid`, `skipped`, `open`, `overdue` or `scheduled` (no period yet)."
+          }
+        }
+      },
+      "HistoryPayment": {
+        "type": "object",
+        "description": "A split linked to the bill, by `bill_id` or by paying one of its periods.",
+        "required": [
+          "split_id",
+          "group_id",
+          "date",
+          "description",
+          "amount",
+          "currency",
+          "source",
+          "destination"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "A decimal string in `currency`, which may differ from the bill's."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/HistoryAccount"
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The due date this split paid, if any."
+          },
+          "group_id": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/HistoryAccount"
+          },
+          "split_id": {
+            "type": "string"
+          }
+        }
+      },
+      "HistoryRange": {
+        "type": "object",
+        "description": "The dates a history covers, both included.",
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
+      "HistorySummary": {
+        "type": "object",
+        "description": "Payments in the bill's currency, summarised. Amounts are `null` without\nany such payment.",
+        "required": [
+          "count",
+          "other_currency_count"
+        ],
+        "properties": {
+          "average": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "min": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_currency_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Linked payments in another currency, left out of the figures above."
+          },
+          "total": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

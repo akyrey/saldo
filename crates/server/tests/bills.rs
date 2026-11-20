@@ -271,3 +271,63 @@ async fn rules_over_http_link_payments_to_bills() {
         StatusCode::NOT_FOUND
     );
 }
+
+#[tokio::test]
+async fn bill_history_over_http() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let checking = created(
+        &server,
+        &owner,
+        "/api/v1/accounts",
+        json!({ "name": "Checking", "type": "asset" }),
+    )
+    .await;
+    let gym = created(
+        &server,
+        &owner,
+        "/api/v1/accounts",
+        json!({ "name": "Gym", "type": "expense" }),
+    )
+    .await;
+    let bill = created(&server, &owner, "/api/v1/bills", json!({
+        "name": "Gym", "amount_min": "39", "amount_max": "45", "first_due_date": "2026-10-02", "repeat_freq": "monthly"
+    })).await;
+    let id = bill["id"].as_str().unwrap();
+    created(&server, &owner, "/api/v1/transactions", json!({ "splits": [{
+        "date": "2026-10-03", "description": "Gym", "source_id": checking["id"], "destination_id": gym["id"],
+        "amount": "42.5", "bill_id": id
+    }]})).await;
+
+    let response = server
+        .get(&format!("/api/v1/bills/{id}/history"), &owner)
+        .await;
+
+    assert_eq!(response.status, StatusCode::OK, "{}", response.body);
+    let data = &response.body["data"];
+    assert_eq!(data["bill_id"], id);
+    assert_eq!(data["currency"], "EUR");
+    assert_eq!(data["range"]["from"], "2026-10-02");
+    assert_eq!(data["due_dates"][0]["status"], "paid");
+    assert_eq!(data["payments"][0]["amount"], "42.50");
+    assert_eq!(data["payments"][0]["destination"]["name"], "Gym");
+    assert_eq!(data["payments"][0]["due_date"], "2026-10-02");
+    assert_eq!(data["summary"]["total"], "42.50");
+    assert_eq!(data["truncated"], false);
+
+    let missing = "00000000-0000-0000-0000-000000000001";
+    assert_eq!(
+        server
+            .get(&format!("/api/v1/bills/{missing}/history"), &owner)
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        server
+            .get(&format!("/api/v1/bills/{id}/history"), &Auth::None)
+            .await
+            .status,
+        StatusCode::UNAUTHORIZED
+    );
+}

@@ -416,6 +416,26 @@ export interface paths {
     patch: operations["update_bill"];
     trace?: never;
   };
+  "/api/v1/bills/{id}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A bill's linked payments (newest first), its due dates over the bill's
+     *     whole duration (oldest first) and a summary of what was paid.
+     */
+    get: operations["bill_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bills/{id}/periods": {
     parameters: {
       query?: never;
@@ -1776,6 +1796,21 @@ export interface components {
       currency: string;
       date?: string | null;
     };
+    /** @description A bill's history as the API returns it. */
+    BillHistoryView: {
+      amount_max: string;
+      amount_min: string;
+      bill_id: string;
+      currency: string;
+      /** @description Oldest first. */
+      due_dates: components["schemas"]["HistoryDueDate"][];
+      /** @description Newest first. */
+      payments: components["schemas"]["HistoryPayment"][];
+      range: components["schemas"]["HistoryRange"];
+      summary: components["schemas"]["HistorySummary"];
+      /** @description Whether older due dates were left out (more than 2 000). */
+      truncated: boolean;
+    };
     /** @description Fields to change; `null` clears `end_date` or `notes`. The currency is fixed. */
     BillPatch: {
       active?: boolean | null;
@@ -2355,6 +2390,24 @@ export interface components {
         balance: string;
         currency: string;
         date?: string | null;
+      };
+    };
+    /** @description A single result. */
+    Data_BillHistoryView: {
+      /** @description A bill's history as the API returns it. */
+      data: {
+        amount_max: string;
+        amount_min: string;
+        bill_id: string;
+        currency: string;
+        /** @description Oldest first. */
+        due_dates: components["schemas"]["HistoryDueDate"][];
+        /** @description Newest first. */
+        payments: components["schemas"]["HistoryPayment"][];
+        range: components["schemas"]["HistoryRange"];
+        summary: components["schemas"]["HistorySummary"];
+        /** @description Whether older due dates were left out (more than 2 000). */
+        truncated: boolean;
       };
     };
     /** @description A single result. */
@@ -3418,6 +3471,55 @@ export interface components {
       status: string;
       /** @description The server's version, for example `0.1.0`. */
       version: string;
+    };
+    /** @description An account as a payment shows it. */
+    HistoryAccount: {
+      id: string;
+      name: string;
+    };
+    /** @description One due date in a bill's history. */
+    HistoryDueDate: {
+      date: string;
+      paid_split_id?: string | null;
+      period_id?: string | null;
+      /** @description `paid`, `skipped`, `open`, `overdue` or `scheduled` (no period yet). */
+      status: string;
+    };
+    /** @description A split linked to the bill, by `bill_id` or by paying one of its periods. */
+    HistoryPayment: {
+      /** @description A decimal string in `currency`, which may differ from the bill's. */
+      amount: string;
+      currency: string;
+      date: string;
+      description: string;
+      destination: components["schemas"]["HistoryAccount"];
+      /** @description The due date this split paid, if any. */
+      due_date?: string | null;
+      group_id: string;
+      source: components["schemas"]["HistoryAccount"];
+      split_id: string;
+    };
+    /** @description The dates a history covers, both included. */
+    HistoryRange: {
+      from: string;
+      to: string;
+    };
+    /**
+     * @description Payments in the bill's currency, summarised. Amounts are `null` without
+     *     any such payment.
+     */
+    HistorySummary: {
+      average?: string | null;
+      /** Format: int64 */
+      count: number;
+      max?: string | null;
+      min?: string | null;
+      /**
+       * Format: int64
+       * @description Linked payments in another currency, left out of the figures above.
+       */
+      other_currency_count: number;
+      total?: string | null;
     };
     HouseholdPatch: {
       /**
@@ -5695,6 +5797,43 @@ export interface operations {
         };
       };
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  bill_history: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BillHistoryView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

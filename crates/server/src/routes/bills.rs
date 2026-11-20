@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use chrono::NaiveDate;
-use saldo_app::bills::{BillPeriodView, BillUpdate, BillView, NewBill};
+use saldo_app::bills::{BillHistoryView, BillPeriodView, BillUpdate, BillView, NewBill};
 use saldo_app::ctx::Origin;
 use saldo_core::{BillId, BillPeriodId, SplitId};
 use serde::Deserialize;
@@ -25,6 +25,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_bills, create_bill))
         .routes(routes!(get_bill, update_bill, delete_bill))
         .routes(routes!(bill_periods))
+        .routes(routes!(bill_history))
         .routes(routes!(pay_period))
         .routes(routes!(skip_period))
         .routes(routes!(reopen_period))
@@ -203,6 +204,21 @@ pub async fn bill_periods(
 ) -> Result<Json<Data<Vec<BillPeriodView>>>, ApiError> {
     Ok(Json(Data::new(
         state.app.bills.periods(&auth.ctx, BillId(id)).await?,
+    )))
+}
+
+/// A bill's linked payments (newest first), its due dates over the bill's
+/// whole duration (oldest first) and a summary of what was paid.
+#[utoipa::path(get, path = "/bills/{id}/history", tag = "bills", params(("id" = Uuid, Path)),
+    responses((status = 200, body = Data<BillHistoryView>), (status = 401, body = ErrorEnvelope), (status = 404, body = ErrorEnvelope)),
+    security(("bearer" = []), ("cookie" = [])))]
+pub async fn bill_history(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+    ApiPath(id): ApiPath<Uuid>,
+) -> Result<Json<Data<BillHistoryView>>, ApiError> {
+    Ok(Json(Data::new(
+        state.app.bills.history(&auth.ctx, BillId(id)).await?,
     )))
 }
 
