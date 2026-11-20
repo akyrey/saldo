@@ -20,7 +20,7 @@ pub const CURSOR: &str = "notifications";
 /// The first send plus three retries; then the notification is `failed`.
 pub const MAX_ATTEMPTS: i64 = 4;
 /// Longest stored error message.
-const MAX_ERROR: usize = 500;
+pub(super) const MAX_ERROR: usize = 500;
 
 /// A notification waiting to be sent.
 #[derive(Debug, Clone)]

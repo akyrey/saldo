@@ -218,7 +218,6 @@ Known gaps: 9 attachments are skipped because Firefly itself answers HTTP 500 fo
 ## Follow-ups the owner may want
 
 - Desktop: Developer ID signing and notarisation for macOS (builds are self-signed) and Windows signing (SignPath Foundation is free for open-source projects), Windows and Linux builds in CI, Tauri mobile, catching up on reminders missed while closed.
-- Web Push: deactivate a channel whose subscription is gone (HTTP 404/410).
 
 ## Open questions for the owner
 

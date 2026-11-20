@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE notifications SET status = 'failed', attempts = attempts + 1, last_error = ?\n             WHERE id = ? AND status = 'pending'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "cdfeae6a0449f38a3553448bf99887c204b0bfc0105e5d3843c333bd0f75505b"
+}

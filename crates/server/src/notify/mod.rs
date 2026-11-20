@@ -35,6 +35,10 @@ pub enum NotifyError {
     WrongKind(&'static str),
     #[error("the server answered HTTP {0}")]
     Status(u16),
+    /// The push service no longer knows the subscription (HTTP 404 or 410);
+    /// retrying cannot help.
+    #[error("the push subscription no longer exists (HTTP {0})")]
+    SubscriptionGone(u16),
     #[error("{0}")]
     Failed(String),
     #[error("timed out")]

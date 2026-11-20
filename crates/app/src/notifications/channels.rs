@@ -61,7 +61,7 @@ pub struct ChannelUpdate {
     pub event_types: Option<Vec<String>>,
 }
 
-struct Row {
+pub(super) struct Row {
     id: String,
     household_id: String,
     user_id: String,
@@ -86,7 +86,7 @@ impl Row {
         })
     }
 
-    fn view(&self) -> Result<ChannelView, AppError> {
+    pub(super) fn view(&self) -> Result<ChannelView, AppError> {
         Ok(ChannelView {
             id: self.id.clone(),
             user_id: self.user_id.clone(),
@@ -233,7 +233,7 @@ impl NotificationService {
         Ok(())
     }
 
-    async fn emit(
+    pub(super) async fn emit(
         &self,
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
@@ -273,7 +273,11 @@ fn event_types_json(types: &[String]) -> Result<String, AppError> {
     serde_json::to_string(&chosen).map_err(|e| AppError::Internal(e.to_string()))
 }
 
-async fn find(conn: &mut SqliteConnection, ctx: &HouseholdCtx, id: Uuid) -> Result<Row, AppError> {
+pub(super) async fn find(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    id: Uuid,
+) -> Result<Row, AppError> {
     let (id, household, user) = (
         id.to_string(),
         ctx.household_id.to_string(),

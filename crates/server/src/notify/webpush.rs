@@ -75,6 +75,14 @@ impl Notifier for WebPushNotifier {
             .post(endpoint)
             .headers(parts.headers)
             .body(body);
-        http::send(request).await
+        http::send(request).await.map_err(gone_when_unknown)
+    }
+}
+
+/// RFC 8030: 404 and 410 mean the subscription has expired or was removed.
+fn gone_when_unknown(error: NotifyError) -> NotifyError {
+    match error {
+        NotifyError::Status(status @ (404 | 410)) => NotifyError::SubscriptionGone(status),
+        other => other,
     }
 }

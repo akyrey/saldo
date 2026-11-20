@@ -180,7 +180,7 @@ async fn web_push_rejects_broken_subscriptions_and_reports_expired_ones() {
     });
     assert_eq!(
         sender.send(&gone, &message()).await,
-        Err(NotifyError::Status(410))
+        Err(NotifyError::SubscriptionGone(410))
     );
     let broken = channel(ChannelConfig::WebPush {
         endpoint,
@@ -189,6 +189,35 @@ async fn web_push_rejects_broken_subscriptions_and_reports_expired_ones() {
     });
     let error = sender.send(&broken, &message()).await.unwrap_err();
     assert!(error.to_string().contains("p256dh"));
+}
+
+#[tokio::test]
+async fn web_push_reports_an_unknown_subscription_as_gone_and_other_errors_as_status() {
+    let server = MockServer::start().await;
+    Mock::given(path("/push/unknown"))
+        .respond_with(ResponseTemplate::new(404))
+        .mount(&server)
+        .await;
+    Mock::given(path("/push/busy"))
+        .respond_with(ResponseTemplate::new(503))
+        .mount(&server)
+        .await;
+    let sender = WebPushNotifier::new(vapid());
+    let to = |name: &str| {
+        channel(ChannelConfig::WebPush {
+            endpoint: format!("{}/push/{name}", server.uri()),
+            p256dh: P256DH.into(),
+            auth: AUTH.into(),
+        })
+    };
+    assert_eq!(
+        sender.send(&to("unknown"), &message()).await,
+        Err(NotifyError::SubscriptionGone(404))
+    );
+    assert_eq!(
+        sender.send(&to("busy"), &message()).await,
+        Err(NotifyError::Status(503))
+    );
 }
 
 /// A minimal SMTP server that accepts one mail and hands back its DATA.

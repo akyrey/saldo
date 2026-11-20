@@ -979,7 +979,7 @@ A notifier task reads events after the `notifications` cursor. For each notifyin
 - `email`: SMTP, configured by `SALDO_SMTP_*`.
 - `webpush`: Web Push with VAPID keys; the channel `config` holds the browser's push subscription.
 
-Failed sends are retried three times (four attempts in all), one attempt per notifier run (every 60 s and after writes), then marked `failed`. The dedupe key is `<type>:<period id>:<reminder day>` for bill reminders, `<type>:<alert key>` for scheduler alerts, `transaction.large:<split id>`, `recurrence.fired:<recurrence id>:<date>`, else `<type>:<event id>`. Sending is at-least-once: a crash between a send and its bookkeeping sends that one notification again.
+Failed sends are retried three times (four attempts in all), one attempt per notifier run (every 60 s and after writes), then marked `failed`. A Web Push send that the push service answers with 404 or 410 (the subscription is gone) is not retried: the notification is `failed` at once and the channel is paused (`active = false`, `notification_channel.updated` with origin `system`, in the same transaction). The dedupe key is `<type>:<period id>:<reminder day>` for bill reminders, `<type>:<alert key>` for scheduler alerts, `transaction.large:<split id>`, `recurrence.fired:<recurrence id>:<date>`, else `<type>:<event id>`. Sending is at-least-once: a crash between a send and its bookkeeping sends that one notification again.
 
 ### 8.5 Background tasks
 

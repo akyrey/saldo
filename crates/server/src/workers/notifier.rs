@@ -36,7 +36,8 @@ pub fn spawn_notifier(workers: &mut Workers, state: &AppState) {
 
 /// One run: catch up with the event log, then try every pending
 /// notification once. A failing channel only records its own failure, so it
-/// never holds up the others; after four attempts it is `failed`.
+/// never holds up the others; after four attempts it is `failed`. A push
+/// subscription that is gone fails at once and pauses its channel.
 /// Restart-safe: progress is in the database (a crash between a send and its
 /// bookkeeping can repeat that one send).
 pub async fn run_notifier(app: &App, senders: &Senders) -> Result<(), AppError> {
@@ -51,6 +52,12 @@ pub async fn run_notifier(app: &App, senders: &Senders) -> Result<(), AppError> 
         };
         match result {
             Ok(()) => app.notifications.mark_sent(&pending.id).await?,
+            Err(error @ NotifyError::SubscriptionGone(_)) => {
+                warn!(notification = %pending.id, channel = %pending.channel.id, %error, "push subscription gone; channel paused");
+                app.notifications
+                    .pause_gone_channel(&pending.id, &pending.channel, &error.to_string())
+                    .await?;
+            }
             Err(error) => {
                 // The error text never holds secrets (see `NotifyError`).
                 warn!(notification = %pending.id, channel = %pending.channel.id, %error, "notification send failed");

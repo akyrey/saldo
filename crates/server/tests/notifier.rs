@@ -9,8 +9,10 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use saldo_app::bills::{NewBill, run_reminders};
 use saldo_app::ctx::{HouseholdCtx, Origin};
+use saldo_app::events::EventFilter;
 use saldo_app::identity::SetupInput;
 use saldo_app::notifications::{Channel, Message, NewChannel};
+use saldo_app::page::PageRequest;
 use saldo_server::notify::{Notifier, NotifyError, Senders};
 use saldo_server::workers::notifier::run_notifier;
 use serde_json::json;
@@ -35,6 +37,22 @@ impl Notifier for Fake {
         } else {
             Ok(())
         }
+    }
+}
+
+/// A push service that no longer knows the subscription (HTTP 410).
+struct GonePush {
+    sent: Arc<Mutex<Vec<String>>>,
+}
+
+#[async_trait]
+impl Notifier for GonePush {
+    async fn send(&self, channel: &Channel, message: &Message) -> Result<(), NotifyError> {
+        self.sent
+            .lock()
+            .unwrap()
+            .push(format!("{}: {}", channel.name, message.title));
+        Err(NotifyError::SubscriptionGone(410))
     }
 }
 
@@ -76,6 +94,13 @@ async fn household(server: &common::TestServer) -> HouseholdCtx {
 async fn channel(server: &common::TestServer, ctx: &HouseholdCtx, kind: &str, name: &str) {
     let config = match kind {
         "ntfy" => json!({ "server_url": "https://ntfy.example.com", "topic": "bills" }),
+        "webpush" => json!({
+            "endpoint": "https://push.example.com/send/abc",
+            "keys": {
+                "p256dh": "BLn9b-VR0ca83knDNZ32dCHGyjJp-1riX9ZTN40MqV8K_LpQmLqxC_DoHvqvFXO_nGdAB4W9dogZb_sM-uV4JbY",
+                "auth": "_ordMnz7uTCmrpBTeUV4Bw"
+            }
+        }),
         _ => json!({ "server_url": "https://gotify.example.com", "token": "tk" }),
     };
     let input = NewChannel {
@@ -219,4 +244,41 @@ async fn channels_without_a_configured_sender_fail_and_events_without_text_are_s
         .await
         .unwrap();
     assert!(error.0.contains("not configured"), "{}", error.0);
+}
+
+#[tokio::test]
+async fn a_push_subscription_that_is_gone_pauses_its_channel_at_once() {
+    let server = common::server().await;
+    let ctx = household(&server).await;
+    channel(&server, &ctx, "webpush", "A old laptop").await;
+    channel(&server, &ctx, "ntfy", "B phone").await;
+    reminder(&server, &ctx).await;
+    let (mut senders, sent) = fake_senders();
+    senders.webpush = Some(Box::new(GonePush { sent: sent.clone() }));
+
+    run_notifier(&server.app, &senders).await.unwrap();
+    // Later runs do not try the dead subscription again.
+    run_notifier(&server.app, &senders).await.unwrap();
+
+    assert_eq!(sent.lock().unwrap().len(), 2, "one try each");
+    assert_eq!(
+        statuses(&server).await,
+        [("failed".to_string(), 1), ("sent".to_string(), 1)]
+    );
+    let channels = server.app.notifications.list_channels(&ctx).await.unwrap();
+    let active: Vec<(&str, bool)> = channels
+        .iter()
+        .map(|c| (c.name.as_str(), c.active))
+        .collect();
+    assert!(active.contains(&("A old laptop", false)), "{active:?}");
+    assert!(active.contains(&("B phone", true)), "{active:?}");
+    let filter = EventFilter {
+        event_type: Some("notification_channel.updated".into()),
+        ..EventFilter::default()
+    };
+    let page = PageRequest::new(None, Some(10)).unwrap();
+    let events = server.app.events.list(&ctx, &filter, page).await.unwrap();
+    assert_eq!(events.items.len(), 1);
+    assert_eq!(events.items[0].origin, "system");
+    assert_eq!(events.items[0].payload["data"]["active"], false);
 }
