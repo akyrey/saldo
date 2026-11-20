@@ -26,6 +26,7 @@ pub mod reconciliations;
 pub mod recurrences;
 pub mod reports;
 pub mod rules;
+pub mod saved_views;
 pub mod scope;
 pub mod subscriptions;
 pub mod tags;
@@ -53,6 +54,7 @@ use crate::reconciliations::ReconciliationService;
 use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
+use crate::saved_views::SavedViewService;
 use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
 use crate::templates::TemplateService;
@@ -86,6 +88,7 @@ pub struct App {
     pub templates: TemplateService,
     pub subscriptions: SubscriptionService,
     pub reconciliations: ReconciliationService,
+    pub saved_views: SavedViewService,
 }
 
 impl App {
@@ -122,6 +125,7 @@ impl App {
             identity: IdentityService::new(pool.clone(), clock.clone()),
             notifications: NotificationService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
+            saved_views: SavedViewService::new(pool.clone(), clock.clone()),
             rules: RuleService::new(pool.clone(), clock.clone(), transactions.clone()),
             webhooks: WebhookService::new(pool.clone(), clock.clone()),
             budgets: BudgetService::new(pool.clone(), clock.clone()),

@@ -1,6 +1,7 @@
 //! Transaction groups: always written as a whole (create, replace, delete).
 
 mod input;
+mod list;
 mod prepare;
 pub(crate) mod recurring;
 mod repo;
@@ -18,10 +19,9 @@ use crate::clock::{SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
-use crate::page::{Page, PageRequest};
-use crate::scope::Scope;
 
 pub use input::input_from_view;
+pub use list::TransactionFilter;
 pub use view::{SplitView, TransactionGroupView};
 
 pub const KINDS: [&str; 5] = [
@@ -61,24 +61,6 @@ pub struct SplitInput {
     pub reconciled: bool,
     pub notes: Option<String>,
     pub meta: Map<String, Value>,
-}
-
-/// Filters for listing groups; a group matches if any split matches.
-#[derive(Debug, Clone, Default)]
-pub struct TransactionFilter {
-    pub from: Option<NaiveDate>,
-    pub to: Option<NaiveDate>,
-    pub account_id: Option<AccountId>,
-    pub category_id: Option<CategoryId>,
-    pub tag_id: Option<TagId>,
-    pub budget_id: Option<BudgetId>,
-    pub bill_id: Option<BillId>,
-    pub kind: Option<String>,
-    /// Text searched in split descriptions and the group title.
-    pub q: Option<String>,
-    /// Only splits the bank confirmed (`true`) or not yet (`false`).
-    pub reconciled: Option<bool>,
-    pub scope: Scope,
 }
 
 #[derive(Clone)]
@@ -331,45 +313,6 @@ impl TransactionService {
         id: GroupId,
     ) -> Result<TransactionGroupView, AppError> {
         load_one(conn, ctx, &id.to_string()).await
-    }
-
-    /// Groups with a matching split, newest first.
-    pub async fn list(
-        &self,
-        ctx: &HouseholdCtx,
-        filter: &TransactionFilter,
-        page: PageRequest,
-    ) -> Result<Page<TransactionGroupView>, AppError> {
-        if filter
-            .kind
-            .as_ref()
-            .is_some_and(|k| !KINDS.contains(&k.as_str()))
-        {
-            return Err(AppError::invalid(
-                "kind",
-                format!("must be one of {}", KINDS.join(", ")),
-            ));
-        }
-        let repo_filter = repo::ListFilter {
-            from: filter.from.map(|d| d.to_string()),
-            to: filter.to.map(|d| d.to_string()),
-            account_id: filter.account_id.map(|id| id.to_string()),
-            category_id: filter.category_id.map(|id| id.to_string()),
-            tag_id: filter.tag_id.map(|id| id.to_string()),
-            budget_id: filter.budget_id.map(|id| id.to_string()),
-            bill_id: filter.bill_id.map(|id| id.to_string()),
-            kind: filter.kind.clone(),
-            q: filter.q.clone().filter(|q| !q.trim().is_empty()),
-            owner_user_id: filter.scope.owner(ctx),
-            reconciled: filter.reconciled,
-            limit: page.limit(),
-            offset: page.offset(),
-        };
-        let household_id = ctx.household_id.to_string();
-        let mut conn = self.pool.acquire().await?;
-        let (ids, total) = repo::list_ids(&mut conn, &household_id, &repo_filter).await?;
-        let items = view::load(&mut conn, &household_id, &ids).await?;
-        Ok(Page::new(items, page, total))
     }
 }
 

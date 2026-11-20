@@ -89,6 +89,20 @@ async fn seeded() -> (TestApp, saldo_app::identity::SetupResult) {
         .await
         .unwrap();
     test.app
+        .saved_views
+        .create(
+            &setup.ctx,
+            Origin::Api,
+            saldo_app::saved_views::NewSavedView {
+                name: "Inbox".into(),
+                page: "transactions".into(),
+                filters: serde_json::json!({ "category_id": "none" }),
+                sort_order: 0,
+            },
+        )
+        .await
+        .unwrap();
+    test.app
         .transactions
         .create(
             &setup.ctx,
@@ -338,6 +352,8 @@ async fn json_export_contains_every_row_of_the_household() {
     assert_eq!(doc.recurrences[0].splits.len(), 1);
     assert_eq!(doc.templates.len(), rows("transaction_templates").await);
     assert_eq!(doc.templates[0].splits.len(), 2);
+    assert_eq!(doc.saved_views.len(), rows("saved_views").await);
+    assert_eq!(doc.saved_views[0].filters["category_id"], "none");
     assert_eq!(
         doc.currencies.len(),
         count(&test, "currencies").await as usize
@@ -375,6 +391,7 @@ async fn csv_zip_has_one_file_per_entity_and_one_row_per_split() {
             "recurrences.csv",
             "rule_groups.csv",
             "rules.csv",
+            "saved_views.csv",
             "subscription_dismissals.csv",
             "tags.csv",
             "templates.csv",

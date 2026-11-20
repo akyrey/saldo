@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE saved_views SET name = ?, filters = ?, sort_order = ?, updated_at = ?\n             WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "96357535e73d25710ec146825e9461325a0ebd62c17ce2747d90515eb18fd4bd"
+}

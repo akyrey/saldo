@@ -333,6 +333,20 @@ async fn transactions_filter_replace_and_delete() {
         1
     );
     assert_eq!(total(format!("account_id={checking}")).await, 2);
+    assert_eq!(total("category_id=none".into()).await, 1);
+    assert_eq!(total("budget_id=none".into()).await, 1);
+    assert_eq!(total("amount_min=100".into()).await, 1);
+    assert_eq!(
+        total("amount_min=10&amount_max=30&currency=EUR".into()).await,
+        1
+    );
+    assert_eq!(total("has_attachments=true".into()).await, 0);
+    for bad in ["category_id=nothing", "amount_min=5&amount_max=1"] {
+        let response = server
+            .get(&format!("/api/v1/transactions?{bad}"), &owner)
+            .await;
+        assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY, "{bad}");
+    }
 
     let path = format!("/api/v1/transactions/{}", group["id"].as_str().unwrap());
     let replaced = server.send(Method::PUT, &path, Some(json!({ "title": "Fixed", "splits": [split("2026-11-06", &checking, &food, "31")] })), &owner).await;

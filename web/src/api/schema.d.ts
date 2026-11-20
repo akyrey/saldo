@@ -1100,6 +1100,39 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/saved-views": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The page's views, by `sort_order`, then name (unpaginated). */
+    get: operations["list_saved_views"];
+    put?: never;
+    post: operations["create_saved_view"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-views/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["delete_saved_view"];
+    options?: never;
+    head?: never;
+    patch: operations["update_saved_view"];
+    trace?: never;
+  };
   "/api/v1/setup": {
     parameters: {
       query?: never;
@@ -2006,6 +2039,15 @@ export interface components {
       sort_order?: number;
       title: string;
     };
+    CreateSavedViewRequest: {
+      /** @description A flat object of strings, numbers and booleans: at most 30 keys and 2 KB. */
+      filters: Record<string, never>;
+      name: string;
+      /** @description Default `transactions`. */
+      page?: string | null;
+      /** Format: int64 */
+      sort_order?: number;
+    };
     CreateTagRequest: {
       description?: string | null;
       name: string;
@@ -2521,6 +2563,20 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_SavedViewView: {
+      data: {
+        created_at: string;
+        /** @description The page's filters, as the client stored them. */
+        filters: Record<string, never>;
+        id: string;
+        name: string;
+        page: string;
+        /** Format: int64 */
+        sort_order: number;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
     Data_SetupResponse: {
       data: {
         household: components["schemas"]["HouseholdView"];
@@ -2712,6 +2768,20 @@ export interface components {
         /** @description `create`, `update` or `manual`. */
         trigger_on: string;
         triggers: components["schemas"]["TriggerView"][];
+        updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_SavedViewView: {
+      data: {
+        created_at: string;
+        /** @description The page's filters, as the client stored them. */
+        filters: Record<string, never>;
+        id: string;
+        name: string;
+        page: string;
+        /** Format: int64 */
+        sort_order: number;
         updated_at: string;
       }[];
     };
@@ -2934,6 +3004,8 @@ export interface components {
       recurrences: components["schemas"]["RecurrenceView"][];
       rule_groups: components["schemas"]["RuleGroupView"][];
       rules: components["schemas"]["RuleView"][];
+      /** @description Saved list filters (Phase 10). */
+      saved_views: components["schemas"]["SavedViewView"][];
       /** @description Subscription suggestions the household dismissed (Phase 9). */
       subscription_dismissals: components["schemas"]["SubscriptionDismissalView"][];
       tags: components["schemas"]["TagView"][];
@@ -3668,6 +3740,24 @@ export interface components {
     SaveAsTemplateRequest: {
       /** @description Unique in the household. */
       name: string;
+    };
+    SavedViewPatch: {
+      /** @description Replaces the stored filters. */
+      filters?: Record<string, never> | null;
+      name?: string | null;
+      /** Format: int64 */
+      sort_order?: number | null;
+    };
+    SavedViewView: {
+      created_at: string;
+      /** @description The page's filters, as the client stored them. */
+      filters: Record<string, never>;
+      id: string;
+      name: string;
+      page: string;
+      /** Format: int64 */
+      sort_order: number;
+      updated_at: string;
     };
     SetupRequest: {
       display_name: string;
@@ -7304,6 +7394,151 @@ export interface operations {
       };
     };
   };
+  list_saved_views: {
+    parameters: {
+      query?: {
+        /** @description The list page; only `transactions` for now (the default). */
+        page?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_SavedViewView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_saved_view: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSavedViewRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_SavedViewView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_saved_view: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_saved_view: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedViewPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_SavedViewView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   setup_status: {
     parameters: {
       query?: never;
@@ -7906,8 +8141,10 @@ export interface operations {
         /** @description Last date, `YYYY-MM-DD`. */
         to?: string;
         account_id?: string;
+        /** @description A category ID, or `none` for withdrawals and deposits without one. */
         category_id?: string;
         tag_id?: string;
+        /** @description A budget ID, or `none` for withdrawals without one. */
         budget_id?: string;
         bill_id?: string;
         /** @description `withdrawal`, `deposit`, `transfer`, `opening_balance` or `reconciliation`. */
@@ -7916,6 +8153,17 @@ export interface operations {
         q?: string;
         /** @description Only groups with a split the bank confirmed (`true`) or not yet (`false`). */
         reconciled?: boolean;
+        /** @description Smallest split amount, a decimal string such as `"12.50"`. */
+        amount_min?: string;
+        /** @description Largest split amount, a decimal string. */
+        amount_max?: string;
+        /**
+         * @description The currency of `amount_min`/`amount_max` (default: the household's
+         *     primary currency). Only splits in it match an amount range.
+         */
+        currency?: string;
+        /** @description Splits with (`true`) or without (`false`) an attachment. */
+        has_attachments?: boolean;
         /** @description `household` (default), `mine` or `user:<id>`. */
         scope?: string;
         page?: number;

@@ -21,6 +21,7 @@ pub mod reconciliations;
 pub mod recurrences;
 pub mod reports;
 pub mod rules;
+pub mod saved_views;
 pub mod setup;
 pub mod subscriptions;
 pub mod tags;
@@ -63,6 +64,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(templates::router())
         .merge(subscriptions::router())
         .merge(reconciliations::router())
+        .merge(saved_views::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

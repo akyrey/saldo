@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use saldo_app::ctx::Origin;
+use saldo_app::error::AppError;
 use saldo_app::transactions::{
     SplitInput, TransactionFilter, TransactionGroupView, TransactionInput,
 };
@@ -41,9 +42,11 @@ pub struct TransactionQuery {
     /// Last date, `YYYY-MM-DD`.
     pub to: Option<NaiveDate>,
     pub account_id: Option<Uuid>,
-    pub category_id: Option<Uuid>,
+    /// A category ID, or `none` for withdrawals and deposits without one.
+    pub category_id: Option<String>,
     pub tag_id: Option<Uuid>,
-    pub budget_id: Option<Uuid>,
+    /// A budget ID, or `none` for withdrawals without one.
+    pub budget_id: Option<String>,
     pub bill_id: Option<Uuid>,
     /// `withdrawal`, `deposit`, `transfer`, `opening_balance` or `reconciliation`.
     pub kind: Option<String>,
@@ -51,6 +54,15 @@ pub struct TransactionQuery {
     pub q: Option<String>,
     /// Only groups with a split the bank confirmed (`true`) or not yet (`false`).
     pub reconciled: Option<bool>,
+    /// Smallest split amount, a decimal string such as `"12.50"`.
+    pub amount_min: Option<String>,
+    /// Largest split amount, a decimal string.
+    pub amount_max: Option<String>,
+    /// The currency of `amount_min`/`amount_max` (default: the household's
+    /// primary currency). Only splits in it match an amount range.
+    pub currency: Option<String>,
+    /// Splits with (`true`) or without (`false`) an attachment.
+    pub has_attachments: Option<bool>,
     /// `household` (default), `mine` or `user:<id>`.
     pub scope: Option<String>,
     pub page: Option<u32>,
@@ -66,17 +78,25 @@ pub async fn list_transactions(
     Auth(auth): Auth,
     ApiQuery(query): ApiQuery<TransactionQuery>,
 ) -> Result<Json<List<TransactionGroupView>>, ApiError> {
+    let (category_id, no_category) = id_or_none("category_id", query.category_id.as_deref())?;
+    let (budget_id, no_budget) = id_or_none("budget_id", query.budget_id.as_deref())?;
     let filter = TransactionFilter {
         from: query.from,
         to: query.to,
         account_id: query.account_id.map(AccountId),
-        category_id: query.category_id.map(CategoryId),
+        category_id: category_id.map(CategoryId),
+        no_category,
         tag_id: query.tag_id.map(TagId),
-        budget_id: query.budget_id.map(BudgetId),
+        budget_id: budget_id.map(BudgetId),
+        no_budget,
         bill_id: query.bill_id.map(BillId),
         kind: query.kind,
         q: query.q,
         reconciled: query.reconciled,
+        amount_min: query.amount_min,
+        amount_max: query.amount_max,
+        currency: query.currency,
+        has_attachments: query.has_attachments,
         scope: scope(query.scope.as_deref())?,
     };
     let result = state
@@ -85,6 +105,19 @@ pub async fn list_transactions(
         .list(&auth.ctx, &filter, page(query.page, query.per_page)?)
         .await?;
     Ok(Json(result.into()))
+}
+
+/// Reads a filter that is either an ID or `none` ("has no such link"):
+/// `(Some(id), false)`, `(None, true)`, or `(None, false)` when absent.
+fn id_or_none(field: &str, text: Option<&str>) -> Result<(Option<Uuid>, bool), ApiError> {
+    match text.map(str::trim) {
+        None | Some("") => Ok((None, false)),
+        Some("none") => Ok((None, true)),
+        Some(id) => id
+            .parse()
+            .map(|id| (Some(id), false))
+            .map_err(|_| AppError::invalid(field, "must be an ID or none").into()),
+    }
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

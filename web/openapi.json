@@ -5271,6 +5271,219 @@
         ]
       }
     },
+    "/api/v1/saved-views": {
+      "get": {
+        "tags": [
+          "saved-views"
+        ],
+        "summary": "The page's views, by `sort_order`, then name (unpaginated).",
+        "operationId": "list_saved_views",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The list page; only `transactions` for now (the default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_SavedViewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "saved-views"
+        ],
+        "operationId": "create_saved_view",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSavedViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_SavedViewView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/saved-views/{id}": {
+      "delete": {
+        "tags": [
+          "saved-views"
+        ],
+        "operationId": "delete_saved_view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "saved-views"
+        ],
+        "operationId": "update_saved_view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_SavedViewView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/setup": {
       "get": {
         "tags": [
@@ -6201,10 +6414,10 @@
           {
             "name": "category_id",
             "in": "query",
+            "description": "A category ID, or `none` for withdrawals and deposits without one.",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
@@ -6219,10 +6432,10 @@
           {
             "name": "budget_id",
             "in": "query",
+            "description": "A budget ID, or `none` for withdrawals without one.",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
@@ -6256,6 +6469,42 @@
             "name": "reconciled",
             "in": "query",
             "description": "Only groups with a split the bank confirmed (`true`) or not yet (`false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "amount_min",
+            "in": "query",
+            "description": "Smallest split amount, a decimal string such as `\"12.50\"`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "amount_max",
+            "in": "query",
+            "description": "Largest split amount, a decimal string.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "The currency of `amount_min`/`amount_max` (default: the household's\nprimary currency). Only splits in it match an amount range.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "has_attachments",
+            "in": "query",
+            "description": "Splits with (`true`) or without (`false`) an attachment.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -8896,6 +9145,33 @@
           }
         }
       },
+      "CreateSavedViewRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "filters"
+        ],
+        "properties": {
+          "filters": {
+            "type": "object",
+            "description": "A flat object of strings, numbers and booleans: at most 30 keys and 2 KB."
+          },
+          "name": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default `transactions`."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "CreateTagRequest": {
         "type": "object",
         "required": [
@@ -10636,6 +10912,52 @@
           }
         }
       },
+      "Data_SavedViewView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "page",
+              "filters",
+              "sort_order",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string"
+              },
+              "filters": {
+                "type": "object",
+                "description": "The page's filters, as the client stored them."
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "page": {
+                "type": "string"
+              },
+              "sort_order": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_SetupResponse": {
         "type": "object",
         "description": "A single result.",
@@ -11317,6 +11639,55 @@
           }
         }
       },
+      "Data_Vec_SavedViewView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "page",
+                "filters",
+                "sort_order",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string"
+                },
+                "filters": {
+                  "type": "object",
+                  "description": "The page's filters, as the client stored them."
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": "string"
+                },
+                "sort_order": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_String": {
         "type": "object",
         "description": "A single result.",
@@ -11968,7 +12339,8 @@
           "recurrences",
           "templates",
           "subscription_dismissals",
-          "reconciliations"
+          "reconciliations",
+          "saved_views"
         ],
         "properties": {
           "accounts": {
@@ -12077,6 +12449,13 @@
             "items": {
               "$ref": "#/components/schemas/RuleView"
             }
+          },
+          "saved_views": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedViewView"
+            },
+            "description": "Saved list filters (Phase 10)."
           },
           "subscription_dismissals": {
             "type": "array",
@@ -14665,6 +15044,68 @@
           "name": {
             "type": "string",
             "description": "Unique in the household."
+          }
+        }
+      },
+      "SavedViewPatch": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Replaces the stored filters."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "SavedViewView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "page",
+          "filters",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "object",
+            "description": "The page's filters, as the client stored them."
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       },

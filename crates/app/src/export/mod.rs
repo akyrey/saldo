@@ -6,6 +6,7 @@ mod planning_csv;
 mod recurrence_csv;
 mod savings_csv;
 mod templates_csv;
+mod views_csv;
 
 use serde::Serialize;
 use sqlx::{SqliteConnection, SqlitePool};
@@ -25,6 +26,7 @@ use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
 use crate::reconciliations::{self, ReconciliationView};
 use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
+use crate::saved_views::{self, SavedViewView};
 use crate::subscriptions::{self, SubscriptionDismissalView};
 use crate::tags::{self, TagView};
 use crate::templates::{self, TransactionTemplateView};
@@ -75,6 +77,8 @@ pub struct ExportDocument {
     pub subscription_dismissals: Vec<SubscriptionDismissalView>,
     /// Reconciliations with the splits they confirmed (Phase 9).
     pub reconciliations: Vec<ReconciliationView>,
+    /// Saved list filters (Phase 10).
+    pub saved_views: Vec<SavedViewView>,
 }
 
 #[derive(Clone)]
@@ -132,6 +136,7 @@ impl ExportService {
             templates: templates::all_in(&mut tx, ctx).await?,
             subscription_dismissals: subscriptions::dismissals_in(&mut tx, ctx).await?,
             reconciliations: reconciliations::all_in(&mut tx, ctx).await?,
+            saved_views: saved_views::all_in(&mut tx, ctx).await?,
         };
         tx.rollback().await?;
         Ok(document)

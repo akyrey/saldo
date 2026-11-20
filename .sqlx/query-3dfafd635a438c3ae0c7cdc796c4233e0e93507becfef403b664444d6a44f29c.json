@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO saved_views (id, household_id, name, page, filters, sort_order, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "3dfafd635a438c3ae0c7cdc796c4233e0e93507becfef403b664444d6a44f29c"
+}

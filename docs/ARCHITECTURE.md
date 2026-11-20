@@ -693,6 +693,24 @@ CREATE TABLE reconciliation_splits (
 CREATE INDEX reconciliation_splits_split ON reconciliation_splits (split_id);
 ```
 
+### 5.4d Saved views (Phase 10)
+
+Named filters for a list page, shared by the household like templates. `filters` is the page's URL filters as a flat JSON object (strings, numbers and booleans, at most 30 keys and 2 KB); the server stores it without interpreting the keys, and the web app validates it on load as it would a hand-edited URL.
+
+```sql
+CREATE TABLE saved_views (
+    id            TEXT PRIMARY KEY,
+    household_id  TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    page          TEXT NOT NULL CHECK (page IN ('transactions')),
+    filters       TEXT NOT NULL CHECK (json_valid(filters)),
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (household_id, page, name)
+) STRICT;
+```
+
 ### 5.5 Events, webhooks, notifications
 
 ```sql
@@ -827,7 +845,8 @@ Conventions:
 | Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}` | 2 |
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts` (`GET` filters: `type`, `active`, `scope`, `q` for part of the name ignoring case, added 2026-11-16), `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
-| Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q` | 2 |
+| Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q`. Phase 10 adds `category_id=none` (withdrawals and deposits without a category), `budget_id=none` (withdrawals without a budget), `amount_min`/`amount_max` (decimal strings compared with the split amount; only splits in `currency`, default the primary currency, match; 422 when `amount_min > amount_max`) and `has_attachments` | 2, 10 |
+| Saved views | `GET /saved-views?page=transactions` (by `sort_order`, then name; unpaginated), `POST /saved-views` (`{ name, page?, filters, sort_order? }`; 409 on a duplicate name per page), `PATCH/DELETE /saved-views/{id}` | 10 |
 | Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags`. A category has an optional `color` from a fixed palette (422 otherwise; `PATCH` with `null` clears it) | 2 |
 | Tag merging | Tag names are unique per household ignoring case (Unicode lowercase, checked in the service: 409 on create, and on update when the name changes). `GET /tags/duplicates` lists groups of tags whose names differ only in case, ordered by lowercase name, each tag with its `split_count`, most used first. `POST /tags/merge` `{ merges: [{ into, sources: [...] }] }` runs every merge in one transaction (404 for an unknown tag, 422 for no merges, no sources or a tag named twice) and returns the kept tags: every reference to a source (`split_tags`, recurrence and template splits, `tag_is`/`add_tag`/`remove_tag` rule values, attachments, import references) moves to the target, the target keeps its name and takes a source's description if it has none, and the source is deleted | after 8 |
 | Events | `GET /events?after_seq=&type=`, `GET /events/stream` (SSE; resumes from `Last-Event-ID` or `?after_seq=`, otherwise starts at the newest event; keep-alive every 15 s) | 2 list, 6 stream |
@@ -870,7 +889,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*` (Phase 10), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
 - `tag.merged`: one per source tag of a merge, with the source as entity and `{ source, into, splits }` as data; it stands for every reference the merge moved (no separate split, recurrence, template or rule events).
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
@@ -967,7 +986,7 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them). Rule triggers and actions read as `kind=value`.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them); `saved_views.csv` (Phase 10) has the stored filters as JSON. Rule triggers and actions read as `kind=value`.
 - Left out (owner-approved): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 
