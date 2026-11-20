@@ -73,6 +73,7 @@
 pub mod account;
 pub mod alerts;
 pub mod balance;
+pub mod bill_history;
 pub mod bills;
 pub mod budget;
 pub mod carry;
