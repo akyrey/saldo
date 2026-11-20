@@ -20,6 +20,7 @@ use crate::clock::{SharedClock, format_timestamp};
 use crate::ctx::HouseholdCtx;
 use crate::currencies::{self, CurrencyView};
 use crate::error::AppError;
+use crate::goals::{self, NetWorthGoalView};
 use crate::identity::{HouseholdView, MemberView, household_view, members_in};
 use crate::page::{MAX_PER_PAGE, PageRequest};
 use crate::piggy_banks::{self, PiggyBankEventView, PiggyBankView};
@@ -79,6 +80,8 @@ pub struct ExportDocument {
     pub reconciliations: Vec<ReconciliationView>,
     /// Saved list filters (Phase 10).
     pub saved_views: Vec<SavedViewView>,
+    /// Net worth goals with their progress on the export day (Phase 10).
+    pub net_worth_goals: Vec<NetWorthGoalView>,
 }
 
 #[derive(Clone)]
@@ -111,6 +114,7 @@ impl ExportService {
         let (rule_groups, rules) = rules::all_in(&mut tx, ctx).await?;
         let (budgets, budget_limits) = budgets::all_in(&mut tx, ctx).await?;
         let (piggy_banks, piggy_bank_events) = piggy_banks::all_in(&mut tx, ctx).await?;
+        let today = crate::identity::today_in(&mut tx, ctx, &*self.clock).await?;
         let document = ExportDocument {
             format: FORMAT.to_string(),
             version: VERSION,
@@ -137,6 +141,7 @@ impl ExportService {
             subscription_dismissals: subscriptions::dismissals_in(&mut tx, ctx).await?,
             reconciliations: reconciliations::all_in(&mut tx, ctx).await?,
             saved_views: saved_views::all_in(&mut tx, ctx).await?,
+            net_worth_goals: goals::all_in(&mut tx, ctx, today).await?,
         };
         tx.rollback().await?;
         Ok(document)

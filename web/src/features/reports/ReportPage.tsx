@@ -28,6 +28,8 @@ import {
   takesSpan,
 } from "./report-model";
 import { BreakdownView, BudgetView, CashFlowView, NetWorthView } from "./ReportViews";
+import { GoalManager } from "@/features/goals/GoalManager";
+import { goalsQuery } from "@/features/goals/queries";
 import { TrendControls } from "./TrendControls";
 import type { Metric } from "./trend-model";
 import { CategoryAveragesView, SavingsRateView, YearOverYearView } from "./TrendViews";
@@ -73,6 +75,7 @@ function ReportBody({ kind, params }: { kind: ReportKind; params: ReportParams }
     enabled: kind === "cash-flow" || kind === "savings-rate",
   });
   const netWorth = useQuery({ ...netWorthQuery(params), enabled: kind === "net-worth" });
+  const goals = useQuery({ ...goalsQuery, enabled: kind === "net-worth" });
   const byCategory = useQuery({ ...byCategoryQuery(params), enabled: kind === "by-category" });
   const byTag = useQuery({ ...byTagQuery(params), enabled: kind === "by-tag" });
   const byCounterparty = useQuery({
@@ -100,7 +103,18 @@ function ReportBody({ kind, params }: { kind: ReportKind; params: ReportParams }
   if (kind === "by-counterparty" && byCounterparty.data)
     return <BreakdownView report={byCounterparty.data} currencies={currencies} />;
   if (kind === "net-worth" && netWorth.data)
-    return <NetWorthView report={netWorth.data} currencies={currencies} />;
+    return (
+      <>
+        <NetWorthView
+          report={netWorth.data}
+          currencies={currencies}
+          targets={(goals.data ?? [])
+            .filter((g) => g.active)
+            .map((g) => ({ currency: g.currency, amount: g.target_amount, label: g.name }))}
+        />
+        <GoalManager />
+      </>
+    );
   if (kind === "by-category" && byCategory.data)
     return <BreakdownView report={byCategory.data} currencies={currencies} />;
   if (kind === "by-tag" && byTag.data)

@@ -35,6 +35,7 @@ const KEYS: Record<string, QueryKey[]> = {
     ["bills"],
     ["reports"],
     ["subscriptions"],
+    ["goals"],
   ],
   category: [["categories"], ["transactions"], ["reports"]],
   tag: [["tags"], ["transactions"], ["reports"]],
@@ -52,6 +53,7 @@ const KEYS: Record<string, QueryKey[]> = {
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
   saved_view: [["saved-views"]],
+  net_worth_goal: [["goals"]],
   // Alerts change nothing on screen; known here so they do not refetch everything.
   forecast: [],
   digest: [],

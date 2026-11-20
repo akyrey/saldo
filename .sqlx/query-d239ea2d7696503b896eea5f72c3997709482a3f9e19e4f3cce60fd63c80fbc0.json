@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, owner_user_id, target_amount_minor, start_amount_minor, currency_code,\n                      target_date, reached_on, active AS \"active: bool\", notes, created_at, updated_at\n               FROM net_worth_goals WHERE household_id = ? AND (? IS NULL OR active = ?)\n               ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "owner_user_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "owner_user_id"
+          }
+        }
+      },
+      {
+        "name": "target_amount_minor",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "target_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "start_amount_minor",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "start_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "target_date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "target_date"
+          }
+        }
+      },
+      {
+        "name": "reached_on",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "reached_on"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "net_worth_goals",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d239ea2d7696503b896eea5f72c3997709482a3f9e19e4f3cce60fd63c80fbc0"
+}

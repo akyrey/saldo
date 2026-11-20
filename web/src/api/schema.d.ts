@@ -674,6 +674,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/net-worth-goals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every goal, by name, with its progress today (unpaginated). */
+    get: operations["list_goals"];
+    put?: never;
+    /** Creates a goal starting from today's net worth. */
+    post: operations["create_goal"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/net-worth-goals/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_goal"];
+    put?: never;
+    post?: never;
+    delete: operations["delete_goal"];
+    options?: never;
+    head?: never;
+    patch: operations["update_goal"];
+    trace?: never;
+  };
   "/api/v1/notification-channels": {
     parameters: {
       query?: never;
@@ -1045,6 +1079,27 @@ export interface paths {
      *     interval, per account currency.
      */
     get: operations["net_worth"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/safe-to-spend": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * This month's income (received and planned) minus what was spent and what
+     *     is committed: bills, planned withdrawals, what budgets have left, piggy
+     *     bank targets and transfers into savings. Primary currency only.
+     */
+    get: operations["safe_to_spend"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2111,6 +2166,24 @@ export interface components {
       kind: string;
       name: string;
     };
+    CreateGoalRequest: {
+      /** @description Default: the household's primary currency. */
+      currency?: string | null;
+      name: string;
+      notes?: string | null;
+      /**
+       * Format: uuid
+       * @description Count one member's accounts only; default the whole household.
+       */
+      owner_user_id?: string | null;
+      /** @description A decimal string; below today's net worth for paying debt off. */
+      target_amount: string;
+      /**
+       * Format: date
+       * @description `YYYY-MM-DD`.
+       */
+      target_date?: string | null;
+    };
     CreateLimitRequest: {
       /** @description Decimal string, greater than zero. */
       amount: string;
@@ -2543,6 +2616,27 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_NetWorthGoalView: {
+      data: {
+        active: boolean;
+        created_at: string;
+        currency: string;
+        id: string;
+        name: string;
+        notes?: string | null;
+        /** @description The member whose accounts count; `null` for the whole household. */
+        owner_user_id?: string | null;
+        progress: components["schemas"]["GoalProgressView"];
+        /** @description The day the alert scheduler saw it reached. */
+        reached_on?: string | null;
+        /** @description Net worth when the goal was created. */
+        start_amount: string;
+        target_amount: string;
+        target_date?: string | null;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
     Data_NetWorthReport: {
       /**
        * @description The sum of the asset and liability balances counted in net worth, at the
@@ -2713,6 +2807,28 @@ export interface components {
         trigger_on: string;
         triggers: components["schemas"]["TriggerView"][];
         updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_SafeToSpendView: {
+      data: {
+        /** @description The household's primary currency; other currencies are left out. */
+        currency: string;
+        /** Format: int64 */
+        days_left: number;
+        /** @description The first and last day of the current month (household time). */
+        from: string;
+        /**
+         * @description What each part is made of (not `income_received` and `spent`, which
+         *     are this month's cash flow).
+         */
+        items: components["schemas"]["SafeToSpendItem"][];
+        parts: components["schemas"]["SafeToSpendParts"];
+        /** @description `safe_to_spend` over the days left, today included, rounded down. */
+        per_day: string;
+        /** @description Income (received and planned) minus everything spent or committed. */
+        safe_to_spend: string;
+        to: string;
       };
     };
     /** @description A single result. */
@@ -2891,6 +3007,27 @@ export interface components {
         joined_at: string;
         role: components["schemas"]["Role"];
         user_id: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_NetWorthGoalView: {
+      data: {
+        active: boolean;
+        created_at: string;
+        currency: string;
+        id: string;
+        name: string;
+        notes?: string | null;
+        /** @description The member whose accounts count; `null` for the whole household. */
+        owner_user_id?: string | null;
+        progress: components["schemas"]["GoalProgressView"];
+        /** @description The day the alert scheduler saw it reached. */
+        reached_on?: string | null;
+        /** @description Net worth when the goal was created. */
+        start_amount: string;
+        target_amount: string;
+        target_date?: string | null;
+        updated_at: string;
       }[];
     };
     /** @description A single result. */
@@ -3175,6 +3312,8 @@ export interface components {
       format: string;
       household: components["schemas"]["HouseholdView"];
       members: components["schemas"]["MemberView"][];
+      /** @description Net worth goals with their progress on the export day (Phase 10). */
+      net_worth_goals: components["schemas"]["NetWorthGoalView"][];
       piggy_bank_events: components["schemas"]["PiggyBankEventView"][];
       piggy_banks: components["schemas"]["PiggyBankView"][];
       /** @description Reconciliations with the splits they confirmed (Phase 9). */
@@ -3238,6 +3377,37 @@ export interface components {
     ForecastReport: {
       currencies: components["schemas"]["ForecastCurrency"][];
       range: components["schemas"]["ReportRange"];
+    };
+    GoalPatch: {
+      active?: boolean | null;
+      name?: string | null;
+      /** @description `null` clears the notes. */
+      notes?: string | null;
+      /** @description A new target makes the goal able to alert again. */
+      target_amount?: string | null;
+      /**
+       * Format: date
+       * @description `null` removes the target date.
+       */
+      target_date?: string | null;
+    };
+    GoalProgressView: {
+      /** @description The average monthly change over the last 12 complete months. */
+      average_monthly_change: string;
+      /** @description Net worth today (the goal's scope and currency). */
+      current: string;
+      on_track: boolean;
+      /**
+       * Format: int64
+       * @description 0 to 10 000 (100%).
+       */
+      progress_bp: number;
+      /** @description When that average would reach the target; `null` when it does not. */
+      projected_date?: string | null;
+      reached: boolean;
+      remaining: string;
+      /** @description What each month until the target date must add; `null` without one. */
+      required_monthly?: string | null;
     };
     Health: {
       /** @description The API version clients speak (`v1`). */
@@ -3622,6 +3792,24 @@ export interface components {
       /** @description Net worth at the end of the day before `from`. */
       opening: string;
     };
+    NetWorthGoalView: {
+      active: boolean;
+      created_at: string;
+      currency: string;
+      id: string;
+      name: string;
+      notes?: string | null;
+      /** @description The member whose accounts count; `null` for the whole household. */
+      owner_user_id?: string | null;
+      progress: components["schemas"]["GoalProgressView"];
+      /** @description The day the alert scheduler saw it reached. */
+      reached_on?: string | null;
+      /** @description Net worth when the goal was created. */
+      start_amount: string;
+      target_amount: string;
+      target_date?: string | null;
+      updated_at: string;
+    };
     NetWorthInterval: {
       /** @description The change during the interval. */
       change: string;
@@ -3930,6 +4118,64 @@ export interface components {
       trigger_on: string;
       triggers: components["schemas"]["TriggerView"][];
       updated_at: string;
+    };
+    SafeToSpendItem: {
+      /** @description Always positive: the formula gives the sign. */
+      amount: string;
+      date?: string | null;
+      /** @description The part it belongs to, as named in `parts`. */
+      part: string;
+      /** @description `transaction`, `recurrence`, `bill`, `budget` or `piggy_bank`. */
+      source: string;
+      source_id: string;
+      title: string;
+    };
+    /**
+     * @description Every part is zero or more; the formula adds the first two and
+     *     subtracts the rest.
+     */
+    SafeToSpendParts: {
+      /** @description Bills still due this month (open and overdue), at their highest amount. */
+      bills: string;
+      /**
+       * @description What budgets have left for the rest of the month (prorated by days
+       *     for limits running past it).
+       */
+      budgets: string;
+      /**
+       * @description Deposits planned for the rest of the month (recurrences, transactions
+       *     dated later).
+       */
+      income_planned: string;
+      /** @description Deposits from the 1st of the month to today. */
+      income_received: string;
+      /** @description What piggy banks with a target date need this month. */
+      piggy_banks: string;
+      /** @description Other withdrawals planned for the rest of the month. */
+      planned: string;
+      /** @description Planned transfers into savings accounts. */
+      savings_transfers: string;
+      /** @description Withdrawals from the 1st of the month to today. */
+      spent: string;
+    };
+    SafeToSpendView: {
+      /** @description The household's primary currency; other currencies are left out. */
+      currency: string;
+      /** Format: int64 */
+      days_left: number;
+      /** @description The first and last day of the current month (household time). */
+      from: string;
+      /**
+       * @description What each part is made of (not `income_received` and `spent`, which
+       *     are this month's cash flow).
+       */
+      items: components["schemas"]["SafeToSpendItem"][];
+      parts: components["schemas"]["SafeToSpendParts"];
+      /** @description `safe_to_spend` over the days left, today included, rounded down. */
+      per_day: string;
+      /** @description Income (received and planned) minus everything spent or committed. */
+      safe_to_spend: string;
+      to: string;
     };
     SaveAsTemplateRequest: {
       /** @description Unique in the household. */
@@ -6311,6 +6557,179 @@ export interface operations {
       };
     };
   };
+  list_goals: {
+    parameters: {
+      query?: {
+        active?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_NetWorthGoalView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  create_goal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateGoalRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_NetWorthGoalView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_goal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_NetWorthGoalView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_goal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_goal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GoalPatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_NetWorthGoalView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   list_channels: {
     parameters: {
       query?: never;
@@ -7326,6 +7745,36 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Data_NetWorthReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  safe_to_spend: {
+    parameters: {
+      query?: {
+        /** @description `household` (default), `mine` or `user:<id>`. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_SafeToSpendView"];
         };
       };
       422: {

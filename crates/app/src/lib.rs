@@ -18,6 +18,7 @@ pub mod error;
 pub mod events;
 pub mod export;
 pub mod external_refs;
+pub mod goals;
 pub mod identity;
 pub mod import_runs;
 pub mod notifications;
@@ -27,6 +28,7 @@ pub mod reconciliations;
 pub mod recurrences;
 pub mod reports;
 pub mod rules;
+pub mod safe_to_spend;
 pub mod saved_views;
 pub mod scope;
 pub mod subscriptions;
@@ -49,6 +51,7 @@ use crate::clock::SharedClock;
 use crate::currencies::CurrencyService;
 use crate::events::EventService;
 use crate::export::ExportService;
+use crate::goals::GoalService;
 use crate::identity::IdentityService;
 use crate::notifications::NotificationService;
 use crate::piggy_banks::PiggyBankService;
@@ -56,6 +59,7 @@ use crate::reconciliations::ReconciliationService;
 use crate::recurrences::RecurrenceService;
 use crate::reports::ReportService;
 use crate::rules::RuleService;
+use crate::safe_to_spend::SafeToSpendService;
 use crate::saved_views::SavedViewService;
 use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
@@ -92,11 +96,14 @@ pub struct App {
     pub reconciliations: ReconciliationService,
     pub saved_views: SavedViewService,
     pub alerts: AlertService,
+    pub goals: GoalService,
+    pub safe_to_spend: SafeToSpendService,
 }
 
 impl App {
     pub fn new(pool: SqlitePool, clock: SharedClock) -> Self {
         let accounts = AccountService::new(pool.clone(), clock.clone());
+        let goals = GoalService::new(pool.clone(), clock.clone());
         let transactions = TransactionService::new(pool.clone(), clock.clone());
         let bills = BillService::new(pool.clone(), clock.clone());
         let attachments =
@@ -129,11 +136,19 @@ impl App {
             notifications: NotificationService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             saved_views: SavedViewService::new(pool.clone(), clock.clone()),
+            goals: goals.clone(),
+            safe_to_spend: SafeToSpendService::new(
+                pool.clone(),
+                clock.clone(),
+                BudgetService::new(pool.clone(), clock.clone()),
+                ReportService::new(pool.clone()),
+            ),
             alerts: AlertService::new(
                 pool.clone(),
                 clock.clone(),
                 BudgetService::new(pool.clone(), clock.clone()),
                 ReportService::new(pool.clone()),
+                goals,
             ),
             rules: RuleService::new(pool.clone(), clock.clone(), transactions.clone()),
             webhooks: WebhookService::new(pool.clone(), clock.clone()),

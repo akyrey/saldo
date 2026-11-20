@@ -711,6 +711,29 @@ CREATE TABLE saved_views (
 ) STRICT;
 ```
 
+### 5.4e Net worth goals (Phase 10)
+
+A target net worth for the household or one member (`owner_user_id`), in one currency, optionally by a date. `start_amount_minor` is the net worth (in the goal's scope and currency) on the day the goal was created, so progress runs from start to target; a target below the start (paying debt off) works the same way. Progress is computed when read (`core::goal::progress`): current net worth, what remains, progress in basis points (clamped 0–10 000), the monthly amount needed until the target date (rounded up), the average monthly change over the last 12 complete months, the date that pace would reach the target, and whether it is on track. The alert scheduler sets `reached_on` the first time it sees the goal reached (8.6); changing the target clears it.
+
+```sql
+CREATE TABLE net_worth_goals (
+    id                   TEXT PRIMARY KEY,
+    household_id         TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    name                 TEXT NOT NULL,
+    owner_user_id        TEXT REFERENCES users (id) ON DELETE CASCADE,
+    target_amount_minor  INTEGER NOT NULL,
+    start_amount_minor   INTEGER NOT NULL,
+    currency_code        TEXT NOT NULL REFERENCES currencies (code),
+    target_date          TEXT,
+    reached_on           TEXT,
+    active               INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+    notes                TEXT,
+    created_at           TEXT NOT NULL,
+    updated_at           TEXT NOT NULL,
+    UNIQUE (household_id, name)
+) STRICT;
+```
+
 ### 5.5 Events, webhooks, notifications
 
 ```sql
@@ -858,6 +881,8 @@ Conventions:
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts` (`GET` filters: `type`, `active`, `scope`, `q` for part of the name ignoring case, added 2026-11-16), `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
 | Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q`. Phase 10 adds `category_id=none` (withdrawals and deposits without a category), `budget_id=none` (withdrawals without a budget), `amount_min`/`amount_max` (decimal strings compared with the split amount; only splits in `currency`, default the primary currency, match; 422 when `amount_min > amount_max`) and `has_attachments` | 2, 10 |
+| Net worth goals | `GET /net-worth-goals?active=` (by name, unpaginated, each with `progress`), `POST /net-worth-goals` (`{ name, target_amount, currency?, target_date?, owner_user_id?, notes? }`; 409 on a duplicate name, 422 for an owner who is not a member), `GET/PATCH/DELETE /net-worth-goals/{id}` (`PATCH` takes `name`, `target_amount`, `target_date` (`null` clears), `active`, `notes`) | 10 |
+| Safe to spend | `GET /reports/safe-to-spend?scope=`: for the current month (household time), in the primary currency only, `income_received` + `income_planned` − `spent` − `bills` − `planned` − `budgets` − `piggy_banks` − `savings_transfers`, with `per_day` (over the days left, today included, rounded down) and the items behind each part. Received and spent come from the month's cash flow; planned income, bills, planned withdrawals and transfers into `savings` asset accounts from the forecast items after today (a planned transfer between counted accounts nets to zero and counts only as a savings transfer); budgets are what active limits have left, prorated by days when they run past the month end; piggy banks with a target amount and date need `(target − saved before this month) / months left (rounded up) − added this month`. Known limits: a planned withdrawal or bill that also belongs to a budget is counted in both, and auto-budget periods not created yet count nothing | 10 |
 | Saved views | `GET /saved-views?page=transactions` (by `sort_order`, then name; unpaginated), `POST /saved-views` (`{ name, page?, filters, sort_order? }`; 409 on a duplicate name per page), `PATCH/DELETE /saved-views/{id}` | 10 |
 | Categories, tags | `GET/POST /categories`, `GET/PATCH/DELETE /categories/{id}`; same for `/tags`. A category has an optional `color` from a fixed palette (422 otherwise; `PATCH` with `null` clears it) | 2 |
 | Tag merging | Tag names are unique per household ignoring case (Unicode lowercase, checked in the service: 409 on create, and on update when the name changes). `GET /tags/duplicates` lists groups of tags whose names differ only in case, ordered by lowercase name, each tag with its `split_count`, most used first. `POST /tags/merge` `{ merges: [{ into, sources: [...] }] }` runs every merge in one transaction (404 for an unknown tag, 422 for no merges, no sources or a tag named twice) and returns the kept tags: every reference to a source (`split_tags`, recurrence and template splits, `tag_is`/`add_tag`/`remove_tag` rule values, attachments, import references) moves to the target, the target keeps its name and takes a source's description if it has none, and the source is deleted | after 8 |
@@ -901,7 +926,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*` (Phase 10), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*`, `net_worth_goal.*` (Phase 10), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
 - `tag.merged`: one per source tag of a merge, with the source as entity and `{ source, into, splits }` as data; it stands for every reference the merge moved (no separate split, recurrence, template or rule events).
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
@@ -1009,7 +1034,7 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them); `saved_views.csv` (Phase 10) has the stored filters as JSON. Rule triggers and actions read as `kind=value`.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them); `saved_views.csv` (Phase 10) has the stored filters as JSON; `net_worth_goals.csv` (Phase 10) has each goal with its net worth on the export day. Rule triggers and actions read as `kind=value`.
 - Left out (owner-approved): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 

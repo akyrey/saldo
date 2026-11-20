@@ -12,6 +12,7 @@ pub mod currencies;
 pub mod event_stream;
 pub mod events;
 pub mod export;
+pub mod goals;
 pub mod health;
 pub mod household;
 pub mod notifications;
@@ -67,6 +68,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(subscriptions::router())
         .merge(reconciliations::router())
         .merge(saved_views::router())
+        .merge(goals::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

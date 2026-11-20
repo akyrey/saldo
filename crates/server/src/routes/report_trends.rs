@@ -7,6 +7,7 @@ use saldo_app::reports::{
     BreakdownReport, CategoryAveragesReport, DEFAULT_AVERAGE_MONTHS, Metric, YearOverYearQuery,
     YearOverYearReport,
 };
+use saldo_app::safe_to_spend::SafeToSpendView;
 use serde::Deserialize;
 use utoipa::IntoParams;
 use utoipa_axum::router::OpenApiRouter;
@@ -26,6 +27,32 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(by_counterparty))
         .routes(routes!(year_over_year))
         .routes(routes!(category_averages))
+        .routes(routes!(safe_to_spend))
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct SafeToSpendParams {
+    /// `household` (default), `mine` or `user:<id>`.
+    pub scope: Option<String>,
+}
+
+/// This month's income (received and planned) minus what was spent and what
+/// is committed: bills, planned withdrawals, what budgets have left, piggy
+/// bank targets and transfers into savings. Primary currency only.
+#[utoipa::path(get, path = "/reports/safe-to-spend", tag = "reports", params(SafeToSpendParams),
+    responses((status = 200, body = Data<SafeToSpendView>), (status = 422, body = ErrorEnvelope)), security(("bearer" = []), ("cookie" = [])))]
+pub async fn safe_to_spend(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+    ApiQuery(params): ApiQuery<SafeToSpendParams>,
+) -> Result<Json<Data<SafeToSpendView>>, ApiError> {
+    let view = state
+        .app
+        .safe_to_spend
+        .current(&auth.ctx, scope(params.scope.as_deref())?)
+        .await?;
+    Ok(Json(Data::new(view)))
 }
 
 /// Expenses per expense account and income per revenue account.

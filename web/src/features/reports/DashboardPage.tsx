@@ -8,6 +8,8 @@ import { currenciesQuery, placesOf } from "@/features/accounts/queries";
 import { monthOf, monthRange } from "@/features/budgets/budget-model";
 import { todayIso } from "@/lib/dates";
 import { PairedBars, ValueLine } from "./charts";
+import { GoalsCard } from "@/features/goals/GoalsCard";
+import { SafeToSpendCard } from "@/features/goals/SafeToSpendCard";
 import { candidatesQuery } from "@/features/subscriptions/queries";
 import { forecastSpan, isBelowZero } from "./forecast-model";
 import {
@@ -55,6 +57,10 @@ export function DashboardPage() {
           </Link>
         </p>
       ) : null}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SafeToSpendCard scope={scope} />
+        <GoalsCard />
+      </div>
       <nav aria-label="Reports" className="flex flex-wrap gap-2">
         {REPORTS.map((r) => (
           <Link

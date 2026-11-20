@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE net_worth_goals SET reached_on = ? WHERE household_id = ? AND id = ? AND reached_on IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ff5f1363496eae71e4600fc80d5cd90a512b527dd74e51da7ba17195726c55eb"
+}

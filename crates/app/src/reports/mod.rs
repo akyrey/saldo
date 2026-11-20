@@ -32,6 +32,7 @@ pub use forecast::{
     ForecastCurrency, ForecastItem, ForecastPoint, ForecastQuery, ForecastReport,
     MAX_FORECAST_MONTHS,
 };
+pub(crate) use net_worth::net_worth_in;
 pub use view::*;
 pub use yoy::{CategoryFilter, MAX_YEARS, MIN_YEARS, Metric, YearOverYearQuery};
 

@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS (SELECT 1 FROM household_members WHERE household_id = ? AND user_id = ?) AS \"member!: bool\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "member!: bool",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "329c8f73478c6b11cf5c79d0941af64504e25d0fe266e4278e9302839c28933f"
+}

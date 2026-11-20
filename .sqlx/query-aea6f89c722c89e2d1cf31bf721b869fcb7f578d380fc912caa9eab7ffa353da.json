@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO net_worth_goals (id, household_id, name, owner_user_id, target_amount_minor,\n                start_amount_minor, currency_code, target_date, notes, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "aea6f89c722c89e2d1cf31bf721b869fcb7f578d380fc912caa9eab7ffa353da"
+}

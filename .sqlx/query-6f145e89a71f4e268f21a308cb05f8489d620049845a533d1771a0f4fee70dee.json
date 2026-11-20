@@ -1,0 +1,76 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.id AS \"id!\", p.name AS \"name!\", p.target_amount_minor AS \"target!: i64\",\n                  p.target_date AS \"target_date!\",\n                  COALESCE(SUM(e.amount_minor), 0) AS \"saved!: i64\",\n                  COALESCE(SUM(CASE WHEN e.date >= ?2 THEN e.amount_minor ELSE 0 END), 0) AS \"added!: i64\"\n           FROM piggy_banks p\n           LEFT JOIN piggy_bank_events e ON e.piggy_bank_id = p.id AND e.household_id = p.household_id\n           WHERE p.household_id = ?1 AND p.active = 1 AND p.currency_code = ?4\n             AND p.target_amount_minor IS NOT NULL AND p.target_date IS NOT NULL\n             AND p.target_date >= ?3\n           GROUP BY p.id ORDER BY p.sort_order, p.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_banks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_banks",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "target!: i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "piggy_banks",
+            "name": "target_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "target_date!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "piggy_banks",
+            "name": "target_date"
+          }
+        }
+      },
+      {
+        "name": "saved!: i64",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "added!: i64",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "6f145e89a71f4e268f21a308cb05f8489d620049845a533d1771a0f4fee70dee"
+}

@@ -42,6 +42,7 @@ Types are `<entity>.<verb>`.
 | Test | `webhook.test` | `{ "webhook": ..., "message": "Test delivery from Saldo" }` |
 | Import | `import.completed` | the import summary |
 | Saved view | `saved_view.created`, `saved_view.updated`, `saved_view.deleted` | the saved view |
+| Net worth goal | `net_worth_goal.created`, `net_worth_goal.updated`, `net_worth_goal.deleted` | the goal with its progress |
 | Alerts | `budget.threshold_reached`, `forecast.below_zero`, `digest.weekly`, `net_worth_goal.reached` | what the alert is about, plus `alert_key` (see ARCHITECTURE.md 8.6) |
 | Large transaction | `transaction.large` | `{ group, split_id, threshold }`: the whole group and the split at or above the household's amount |
 

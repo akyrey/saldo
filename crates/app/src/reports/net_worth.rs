@@ -22,38 +22,48 @@ impl ReportService {
         ctx: &HouseholdCtx,
         query: &ReportQuery,
     ) -> Result<NetWorthReport, AppError> {
-        let intervals = query.intervals()?;
         let mut conn = self.pool.acquire().await?;
-        let changes = changes(&mut conn, ctx, query, &intervals).await?;
-        let fmt = Formatter::load(&mut conn, ctx, changes.keys()).await?;
-        let overflow = || AppError::Internal("net worth too large".to_string());
-        let mut currencies = Vec::new();
-        for code in fmt.order(changes.keys().cloned().collect()) {
-            let Some((opening, deltas)) = changes.get(&code) else {
-                continue;
-            };
-            let mut value = *opening;
-            let mut rows = Vec::with_capacity(intervals.len());
-            for (range, &change) in intervals.iter().zip(deltas) {
-                value = value.checked_add(change).ok_or_else(overflow)?;
-                rows.push(NetWorthInterval {
-                    start: range.start.to_string(),
-                    end: range.end.to_string(),
-                    value: fmt.format(&code, value)?,
-                    change: fmt.format(&code, change)?,
-                });
-            }
-            currencies.push(NetWorthCurrency {
-                opening: fmt.format(&code, *opening)?,
-                intervals: rows,
-                currency: code.clone(),
+        net_worth_in(&mut conn, ctx, query).await
+    }
+}
+
+/// [`ReportService::net_worth`] on the caller's connection (goals read it
+/// inside their own transaction).
+pub(crate) async fn net_worth_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    query: &ReportQuery,
+) -> Result<NetWorthReport, AppError> {
+    let intervals = query.intervals()?;
+    let changes = changes(&mut *conn, ctx, query, &intervals).await?;
+    let fmt = Formatter::load(&mut *conn, ctx, changes.keys()).await?;
+    let overflow = || AppError::Internal("net worth too large".to_string());
+    let mut currencies = Vec::new();
+    for code in fmt.order(changes.keys().cloned().collect()) {
+        let Some((opening, deltas)) = changes.get(&code) else {
+            continue;
+        };
+        let mut value = *opening;
+        let mut rows = Vec::with_capacity(intervals.len());
+        for (range, &change) in intervals.iter().zip(deltas) {
+            value = value.checked_add(change).ok_or_else(overflow)?;
+            rows.push(NetWorthInterval {
+                start: range.start.to_string(),
+                end: range.end.to_string(),
+                value: fmt.format(&code, value)?,
+                change: fmt.format(&code, change)?,
             });
         }
-        Ok(NetWorthReport {
-            range: query.range(),
-            currencies,
-        })
+        currencies.push(NetWorthCurrency {
+            opening: fmt.format(&code, *opening)?,
+            intervals: rows,
+            currency: code.clone(),
+        });
     }
+    Ok(NetWorthReport {
+        range: query.range(),
+        currencies,
+    })
 }
 
 async fn changes(

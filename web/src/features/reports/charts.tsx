@@ -7,6 +7,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -91,8 +92,20 @@ export function PairedBars({ rows, currency, names, label }: ChartProps) {
   );
 }
 
+/** A horizontal line across a chart, such as a goal's target. */
+export interface ChartReference {
+  value: number;
+  label: string;
+}
+
 /** One value over time (net worth). The title names the series. */
-export function ValueLine({ rows, currency, names, label }: ChartProps) {
+export function ValueLine({
+  rows,
+  currency,
+  names,
+  label,
+  references = [],
+}: ChartProps & { references?: readonly ChartReference[] }) {
   return (
     <div role="img" aria-label={label} className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -111,6 +124,16 @@ export function ValueLine({ rows, currency, names, label }: ChartProps) {
             dot={{ r: 4 }}
             isAnimationActive={false}
           />
+          {references.map((r) => (
+            <ReferenceLine
+              key={r.label}
+              y={r.value}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              label={{ value: r.label, position: "insideTopLeft", fill: "var(--muted-foreground)" }}
+              ifOverflow="extendDomain"
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>

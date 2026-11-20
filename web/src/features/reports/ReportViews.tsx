@@ -9,6 +9,7 @@ import {
   cashFlowRows,
   intervalLabel,
   netWorthRows,
+  plotValue,
   type Interval,
 } from "./report-model";
 import { ReportTable } from "./ReportTable";
@@ -62,7 +63,18 @@ export function CashFlowView({ report, currencies }: ViewProps<CashFlowReport>) 
   ));
 }
 
-export function NetWorthView({ report, currencies }: ViewProps<NetWorthReport>) {
+/** A goal's target, drawn across the net worth chart of its currency. */
+export interface NetWorthTarget {
+  currency: string;
+  amount: string;
+  label: string;
+}
+
+export function NetWorthView({
+  report,
+  currencies,
+  targets = [],
+}: ViewProps<NetWorthReport> & { targets?: readonly NetWorthTarget[] }) {
   const interval = report.range.interval as Interval;
   if (report.currencies.length === 0) return <Empty />;
   return report.currencies.map((c) => (
@@ -72,6 +84,12 @@ export function NetWorthView({ report, currencies }: ViewProps<NetWorthReport>) 
         currency={c.currency}
         names={["Net worth", "Change"]}
         label={`Net worth in ${c.currency} at the end of each ${interval}`}
+        references={targets
+          .filter((t) => t.currency === c.currency)
+          .map((t) => ({
+            value: plotValue(t.amount, placesOf(currencies, c.currency)),
+            label: t.label,
+          }))}
       />
       <ReportTable
         caption={`Net worth in ${c.currency}`}

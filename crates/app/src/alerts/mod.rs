@@ -9,6 +9,7 @@
 mod budgets;
 mod digest;
 mod forecast;
+mod goals;
 
 use std::collections::BTreeSet;
 
@@ -21,6 +22,7 @@ use crate::clock::{SharedClock, format_timestamp};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
+use crate::goals::{GoalService, mark_reached};
 use crate::identity::now_in;
 use crate::reports::ReportService;
 
@@ -44,6 +46,7 @@ pub struct AlertService {
     clock: SharedClock,
     budgets: BudgetService,
     reports: ReportService,
+    goals: GoalService,
 }
 
 impl AlertService {
@@ -52,12 +55,14 @@ impl AlertService {
         clock: SharedClock,
         budgets: BudgetService,
         reports: ReportService,
+        goals: GoalService,
     ) -> Self {
         Self {
             pool,
             clock,
             budgets,
             reports,
+            goals,
         }
     }
 
@@ -73,6 +78,7 @@ impl AlertService {
         let (mut conditions, over) =
             budgets::conditions(&self.pool, &self.budgets, ctx, today).await?;
         conditions.extend(forecast::conditions(&self.pool, &self.reports, ctx, today).await?);
+        conditions.extend(goals::conditions(&self.goals, ctx).await?);
         let digest = match digest_due(now) {
             Some((key, week)) if !self.has_state(ctx, &key).await? => Some(
                 digest::condition(&self.pool, &self.reports, ctx, key, week, today, &over).await?,
@@ -81,7 +87,7 @@ impl AlertService {
         };
 
         let mut tx = crate::db::begin(&self.pool).await?;
-        let mut appended = self.apply(&mut tx, ctx, &conditions).await?;
+        let mut appended = self.apply(&mut tx, ctx, &conditions, today).await?;
         if let Some(digest) = digest {
             // Only this week's key matters; older ones are dropped.
             let household_id = ctx.household_id.to_string();
@@ -105,6 +111,7 @@ impl AlertService {
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
         conditions: &[Condition],
+        today: chrono::NaiveDate,
     ) -> Result<usize, AppError> {
         let household_id = ctx.household_id.to_string();
         let held: BTreeSet<String> = sqlx::query_scalar!(
@@ -129,6 +136,9 @@ impl AlertService {
         let mut appended = 0;
         for condition in conditions.iter().filter(|c| started.contains(&c.key)) {
             appended += self.start(&mut *conn, ctx, condition).await?;
+            if condition.entity_type == goals::ENTITY {
+                mark_reached(&mut *conn, ctx, &condition.entity_id, today).await?;
+            }
         }
         Ok(appended)
     }

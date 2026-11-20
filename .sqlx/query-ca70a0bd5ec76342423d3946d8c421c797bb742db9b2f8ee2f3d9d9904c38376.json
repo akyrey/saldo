@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM net_worth_goals WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ca70a0bd5ec76342423d3946d8c421c797bb742db9b2f8ee2f3d9d9904c38376"
+}

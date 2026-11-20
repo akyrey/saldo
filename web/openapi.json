@@ -3109,6 +3109,264 @@
         ]
       }
     },
+    "/api/v1/net-worth-goals": {
+      "get": {
+        "tags": [
+          "goals"
+        ],
+        "summary": "Every goal, by name, with its progress today (unpaginated).",
+        "operationId": "list_goals",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_NetWorthGoalView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "goals"
+        ],
+        "summary": "Creates a goal starting from today's net worth.",
+        "operationId": "create_goal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_NetWorthGoalView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/net-worth-goals/{id}": {
+      "get": {
+        "tags": [
+          "goals"
+        ],
+        "operationId": "get_goal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_NetWorthGoalView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "goals"
+        ],
+        "operationId": "delete_goal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "goals"
+        ],
+        "operationId": "update_goal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_NetWorthGoalView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/notification-channels": {
       "get": {
         "tags": [
@@ -4844,6 +5102,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Data_NetWorthReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/safe-to-spend": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "This month's income (received and planned) minus what was spent and what\nis committed: bills, planned withdrawals, what budgets have left, piggy\nbank targets and transfers into savings. Primary currency only.",
+        "operationId": "safe_to_spend",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_SafeToSpendView"
                 }
               }
             }
@@ -9373,6 +9679,51 @@
           }
         }
       },
+      "CreateGoalRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "target_amount"
+        ],
+        "properties": {
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default: the household's primary currency."
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Count one member's accounts only; default the whole household."
+          },
+          "target_amount": {
+            "type": "string",
+            "description": "A decimal string; below today's net worth for paying debt off."
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "`YYYY-MM-DD`."
+          }
+        }
+      },
       "CreateLimitRequest": {
         "type": "object",
         "required": [
@@ -10758,6 +11109,85 @@
           }
         }
       },
+      "Data_NetWorthGoalView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "target_amount",
+              "start_amount",
+              "currency",
+              "active",
+              "progress",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "owner_user_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The member whose accounts count; `null` for the whole household."
+              },
+              "progress": {
+                "$ref": "#/components/schemas/GoalProgressView"
+              },
+              "reached_on": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The day the alert scheduler saw it reached."
+              },
+              "start_amount": {
+                "type": "string",
+                "description": "Net worth when the goal was created."
+              },
+              "target_amount": {
+                "type": "string"
+              },
+              "target_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_NetWorthReport": {
         "type": "object",
         "description": "A single result.",
@@ -11353,6 +11783,63 @@
                 }
               },
               "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_SafeToSpendView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "from",
+              "to",
+              "currency",
+              "safe_to_spend",
+              "per_day",
+              "days_left",
+              "parts",
+              "items"
+            ],
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "The household's primary currency; other currencies are left out."
+              },
+              "days_left": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "from": {
+                "type": "string",
+                "description": "The first and last day of the current month (household time)."
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SafeToSpendItem"
+                },
+                "description": "What each part is made of (not `income_received` and `spent`, which\nare this month's cash flow)."
+              },
+              "parts": {
+                "$ref": "#/components/schemas/SafeToSpendParts"
+              },
+              "per_day": {
+                "type": "string",
+                "description": "`safe_to_spend` over the days left, today included, rounded down."
+              },
+              "safe_to_spend": {
+                "type": "string",
+                "description": "Income (received and planned) minus everything spent or committed."
+              },
+              "to": {
                 "type": "string"
               }
             }
@@ -11958,6 +12445,88 @@
                   "$ref": "#/components/schemas/Role"
                 },
                 "user_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_NetWorthGoalView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "target_amount",
+                "start_amount",
+                "currency",
+                "active",
+                "progress",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "owner_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The member whose accounts count; `null` for the whole household."
+                },
+                "progress": {
+                  "$ref": "#/components/schemas/GoalProgressView"
+                },
+                "reached_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The day the alert scheduler saw it reached."
+                },
+                "start_amount": {
+                  "type": "string",
+                  "description": "Net worth when the goal was created."
+                },
+                "target_amount": {
+                  "type": "string"
+                },
+                "target_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updated_at": {
                   "type": "string"
                 }
               }
@@ -12871,7 +13440,8 @@
           "templates",
           "subscription_dismissals",
           "reconciliations",
-          "saved_views"
+          "saved_views",
+          "net_worth_goals"
         ],
         "properties": {
           "accounts": {
@@ -12943,6 +13513,13 @@
             "items": {
               "$ref": "#/components/schemas/MemberView"
             }
+          },
+          "net_worth_goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetWorthGoalView"
+            },
+            "description": "Net worth goals with their progress on the export day (Phase 10)."
           },
           "piggy_bank_events": {
             "type": "array",
@@ -13163,6 +13740,94 @@
           },
           "range": {
             "$ref": "#/components/schemas/ReportRange"
+          }
+        }
+      },
+      "GoalPatch": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` clears the notes."
+          },
+          "target_amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new target makes the goal able to alert again."
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "`null` removes the target date."
+          }
+        }
+      },
+      "GoalProgressView": {
+        "type": "object",
+        "required": [
+          "current",
+          "remaining",
+          "progress_bp",
+          "average_monthly_change",
+          "on_track",
+          "reached"
+        ],
+        "properties": {
+          "average_monthly_change": {
+            "type": "string",
+            "description": "The average monthly change over the last 12 complete months."
+          },
+          "current": {
+            "type": "string",
+            "description": "Net worth today (the goal's scope and currency)."
+          },
+          "on_track": {
+            "type": "boolean"
+          },
+          "progress_bp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "0 to 10 000 (100%)."
+          },
+          "projected_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When that average would reach the target; `null` when it does not."
+          },
+          "reached": {
+            "type": "boolean"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "required_monthly": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What each month until the target date must add; `null` without one."
           }
         }
       },
@@ -14581,6 +15246,76 @@
           }
         }
       },
+      "NetWorthGoalView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "target_amount",
+          "start_amount",
+          "currency",
+          "active",
+          "progress",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member whose accounts count; `null` for the whole household."
+          },
+          "progress": {
+            "$ref": "#/components/schemas/GoalProgressView"
+          },
+          "reached_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day the alert scheduler saw it reached."
+          },
+          "start_amount": {
+            "type": "string",
+            "description": "Net worth when the goal was created."
+          },
+          "target_amount": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
       "NetWorthInterval": {
         "type": "object",
         "required": [
@@ -15596,6 +16331,138 @@
             }
           },
           "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "SafeToSpendItem": {
+        "type": "object",
+        "required": [
+          "part",
+          "source",
+          "source_id",
+          "title",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Always positive: the formula gives the sign."
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "part": {
+            "type": "string",
+            "description": "The part it belongs to, as named in `parts`."
+          },
+          "source": {
+            "type": "string",
+            "description": "`transaction`, `recurrence`, `bill`, `budget` or `piggy_bank`."
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "SafeToSpendParts": {
+        "type": "object",
+        "description": "Every part is zero or more; the formula adds the first two and\nsubtracts the rest.",
+        "required": [
+          "income_received",
+          "income_planned",
+          "spent",
+          "bills",
+          "planned",
+          "budgets",
+          "piggy_banks",
+          "savings_transfers"
+        ],
+        "properties": {
+          "bills": {
+            "type": "string",
+            "description": "Bills still due this month (open and overdue), at their highest amount."
+          },
+          "budgets": {
+            "type": "string",
+            "description": "What budgets have left for the rest of the month (prorated by days\nfor limits running past it)."
+          },
+          "income_planned": {
+            "type": "string",
+            "description": "Deposits planned for the rest of the month (recurrences, transactions\ndated later)."
+          },
+          "income_received": {
+            "type": "string",
+            "description": "Deposits from the 1st of the month to today."
+          },
+          "piggy_banks": {
+            "type": "string",
+            "description": "What piggy banks with a target date need this month."
+          },
+          "planned": {
+            "type": "string",
+            "description": "Other withdrawals planned for the rest of the month."
+          },
+          "savings_transfers": {
+            "type": "string",
+            "description": "Planned transfers into savings accounts."
+          },
+          "spent": {
+            "type": "string",
+            "description": "Withdrawals from the 1st of the month to today."
+          }
+        }
+      },
+      "SafeToSpendView": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "currency",
+          "safe_to_spend",
+          "per_day",
+          "days_left",
+          "parts",
+          "items"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "The household's primary currency; other currencies are left out."
+          },
+          "days_left": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "from": {
+            "type": "string",
+            "description": "The first and last day of the current month (household time)."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SafeToSpendItem"
+            },
+            "description": "What each part is made of (not `income_received` and `spent`, which\nare this month's cash flow)."
+          },
+          "parts": {
+            "$ref": "#/components/schemas/SafeToSpendParts"
+          },
+          "per_day": {
+            "type": "string",
+            "description": "`safe_to_spend` over the days left, today included, rounded down."
+          },
+          "safe_to_spend": {
+            "type": "string",
+            "description": "Income (received and planned) minus everything spent or committed."
+          },
+          "to": {
             "type": "string"
           }
         }
