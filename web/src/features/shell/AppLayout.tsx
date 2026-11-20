@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-rout
 import { Bell, LogOut } from "lucide-react";
 import { api, call } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { CommandCenter } from "@/features/commands/CommandCenter";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
 import { UpdateBanner } from "@/features/updates/UpdateBanner";
 import { useAppUpdate } from "@/features/updates/useAppUpdate";
@@ -56,6 +57,7 @@ export function AppLayout() {
               {me.user.display_name} · {me.household.name}
             </span>
             <ScopeSwitch currentUserId={me.user.id} />
+            <CommandCenter />
             <Button variant="ghost" size="icon" asChild>
               <Link to="/settings/notifications" aria-label="Notifications" title="Notifications">
                 <Bell />

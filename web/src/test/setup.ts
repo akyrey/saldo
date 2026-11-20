@@ -6,6 +6,15 @@ afterEach(() => {
   cleanup();
 });
 
+// jsdom has no layout: cmdk (the command palette) observes its list's size
+// and scrolls the selected item into view. Neither matters in a test.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+
 // Uploads in tests: Vitest's jsdom bridge turns a jsdom FormData into Node's
 // FormData, with each jsdom File as a Node Blob. From Node 26, Node's FormData
 // wraps a Blob (when sending) and each parsed part (in `request.formData()`)
