@@ -4,6 +4,12 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-20
+
+### Added
+
+- Bill history on a bill's page: a chart of every payment over the bill's whole duration, with the expected amount range, each due date marked paid, skipped, open, overdue or scheduled, and today; a summary (payments, total, average, lowest, highest); and the list of linked transactions, including those linked with "Mark paid" (`GET /bills/{id}/history`).
+
 ## [0.8.0] - 2026-11-20
 
 ### Added
