@@ -37,6 +37,15 @@ const BILL = {
   updated_at: "",
 };
 
+/** The periods table (the only one with a Status column), once its rows have loaded. */
+async function periodsCard(): Promise<HTMLElement> {
+  const header = await screen.findByRole("columnheader", { name: "Status" });
+  const table = header.closest<HTMLElement>("table");
+  if (!table) throw new Error("no periods table");
+  await within(table).findByText("2026-11-02");
+  return table;
+}
+
 const GYM = { ...BILL, id: "b2", name: "Gym", active: false, next_due_date: null };
 
 function period(id: string, due: string, status: string) {
@@ -54,8 +63,56 @@ function period(id: string, due: string, status: string) {
   };
 }
 
-function api() {
+function payment(n: number) {
+  const day = String((n % 28) + 1).padStart(2, "0");
+  return {
+    split_id: `ls${n}`,
+    group_id: `lg${n}`,
+    date: `2025-01-${day}`,
+    description: `Rent payment ${n}`,
+    amount: "800.00",
+    currency: "EUR",
+    source: { id: "a1", name: "Checking" },
+    destination: { id: "a2", name: "Landlord" },
+    due_date: null,
+  };
+}
+
+const HISTORY = {
+  bill_id: "b1",
+  currency: "EUR",
+  range: { from: "2026-10-02", to: "2026-12-02" },
+  amount_min: "800.00",
+  amount_max: "800.00",
+  due_dates: [
+    { date: "2026-10-02", status: "paid", period_id: "p1", paid_split_id: "s0" },
+    { date: "2026-11-02", status: "open", period_id: "p2", paid_split_id: null },
+  ],
+  payments: [
+    {
+      ...payment(0),
+      split_id: "s0",
+      group_id: "g0",
+      date: "2026-10-03",
+      description: "October rent",
+      due_date: "2026-10-02",
+    },
+    { ...payment(1), currency: "USD", amount: "5.00", description: "Wire fee" },
+  ],
+  summary: {
+    count: 1,
+    total: "800.00",
+    average: "800.00",
+    min: "800.00",
+    max: "800.00",
+    other_currency_count: 1,
+  },
+  truncated: false,
+};
+
+function api(history: unknown = HISTORY) {
   return fakeApi({
+    "GET /api/v1/bills/b1/history": { data: history },
     "GET /api/v1/auth/me": ME,
     "GET /api/v1/household/members": MEMBERS,
     "GET /api/v1/currencies": CURRENCIES,
@@ -120,7 +177,7 @@ describe("bill pages", () => {
   it("skips a period and marks one paid by picking a transaction", async () => {
     const seen = api();
     renderApp("/bills/b1");
-    const open = rowOf(await screen.findByText("2026-11-02"), "tr");
+    const open = rowOf(within(await periodsCard()).getByText("2026-11-02"), "tr");
     await userEvent.click(within(open).getByRole("button", { name: "Skip" }));
     await waitFor(() =>
       expect(seen.some((r) => new URL(r.url).pathname === "/api/v1/bill-periods/p2/skip")).toBe(
@@ -146,7 +203,7 @@ describe("bill pages", () => {
   it("shows the paid period as paid", async () => {
     api();
     renderApp("/bills/b1");
-    const paid = rowOf(await screen.findByText("2026-10-02"), "tr");
+    const paid = rowOf(within(await periodsCard()).getByText("2026-10-02"), "tr");
     expect(within(paid).getByText("paid")).toBeInTheDocument();
     expect(within(paid).getByRole("button", { name: "Reopen" })).toBeInTheDocument();
   });
@@ -159,5 +216,58 @@ describe("bill pages", () => {
     const query = seen.find((r) => new URL(r.url).pathname === "/api/v1/attachments");
     const params = new URL(query?.url ?? "http://x").searchParams;
     expect([params.get("attachable_type"), params.get("attachable_id")]).toEqual(["bill", "b1"]);
+  });
+
+  it("summarises and lists the linked transactions", async () => {
+    api();
+    renderApp("/bills/b1");
+    const summary = (await screen.findByText("Total paid")).closest("dl") as HTMLElement;
+    expect(within(summary).getAllByText(/800\.00/)).toHaveLength(4);
+    expect(
+      screen.getByText(/1 payment\(s\) in another currency are listed below/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: /Payments from 2026-10-02 to 2026-12-02: 1 in EUR/ }),
+    ).toBeInTheDocument();
+    const october = rowOf(screen.getByRole("link", { name: "October rent" }), "tr");
+    expect(screen.getByRole("link", { name: "October rent" })).toHaveAttribute(
+      "href",
+      "/transactions/g0/edit",
+    );
+    expect(within(october).getByText("Checking → Landlord")).toBeInTheDocument();
+    expect(within(october).getByText("2026-10-02")).toBeInTheDocument();
+    const fee = rowOf(screen.getByRole("link", { name: "Wire fee" }), "tr");
+    expect(within(fee).getByText("Not matched to a due date")).toBeInTheDocument();
+    expect(within(fee).getByText(/5\.00/)).toBeInTheDocument();
+  });
+
+  it("shows 25 linked transactions, then more on request", async () => {
+    const payments = Array.from({ length: 30 }, (_, n) => payment(n));
+    api({ ...HISTORY, payments });
+    renderApp("/bills/b1");
+    await screen.findByRole("link", { name: "Rent payment 0" });
+    expect(screen.queryByRole("link", { name: "Rent payment 25" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Show more (5 left)" }));
+    expect(screen.getByRole("link", { name: "Rent payment 29" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
+  });
+
+  it("says when nothing is linked yet", async () => {
+    api({
+      ...HISTORY,
+      payments: [],
+      summary: {
+        ...HISTORY.summary,
+        count: 0,
+        total: null,
+        average: null,
+        min: null,
+        max: null,
+        other_currency_count: 0,
+      },
+    });
+    renderApp("/bills/b1");
+    expect(await screen.findAllByText("No transactions linked to this bill yet.")).toHaveLength(2);
+    expect(screen.getByText("Payment history")).toBeInTheDocument();
   });
 });

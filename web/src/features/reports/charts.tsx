@@ -1,19 +1,28 @@
 // The only module that imports Recharts. It is reached through lazily loaded
-// report pages, so the chart library never weighs on the first screen.
+// report and bill pages, so the chart library never weighs on the first screen.
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { formatMoney } from "@/api/money";
+import type {
+  DuePoint,
+  DueStatus,
+  HistoryChart,
+  PaymentPoint,
+} from "@/features/bills/history-model";
 import type { ChartRow } from "./report-model";
 
 /** Series colours: the validated blue/orange pair from `index.css`. */
@@ -218,6 +227,154 @@ export function YearLines({
             />
           ))}
         </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Colour and marker per due-date status; the shape tells them apart without colour. */
+const DUE_STYLE: Record<
+  DueStatus,
+  { label: string; fill: string; shape: "circle" | "cross" | "diamond" | "triangle" }
+> = {
+  paid: { label: "Paid", fill: "var(--kind-deposit)", shape: "circle" },
+  skipped: { label: "Skipped", fill: "var(--muted-foreground)", shape: "cross" },
+  open: { label: "Open", fill: SECOND, shape: "diamond" },
+  overdue: { label: "Overdue", fill: "var(--destructive)", shape: "triangle" },
+  scheduled: { label: "Scheduled", fill: "var(--border)", shape: "circle" },
+};
+
+const MONTH_TICK = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  year: "2-digit",
+  timeZone: "UTC",
+});
+const YEAR_TICK = new Intl.DateTimeFormat(undefined, { year: "numeric", timeZone: "UTC" });
+
+/** A payment's or a due date's details, with the exact decimal strings. */
+function HistoryTooltip({
+  active,
+  payload,
+  currency,
+}: {
+  active?: boolean;
+  payload?: readonly { payload?: unknown }[];
+  currency: string;
+}) {
+  const point = payload?.[0]?.payload as PaymentPoint | DuePoint | undefined;
+  if (!active || !point) return null;
+  return (
+    <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-sm">
+      <p className="mb-1 font-medium">{point.date}</p>
+      {"amount" in point ? (
+        <>
+          <p>{point.description}</p>
+          <p>{formatMoney(point.amount, currency)}</p>
+          <p className="text-muted-foreground">
+            {point.dueDate ? `Paid the bill due ${point.dueDate}` : "Not matched to a due date"}
+          </p>
+        </>
+      ) : (
+        <p>Due date: {DUE_STYLE[point.status].label.toLowerCase()}</p>
+      )}
+    </div>
+  );
+}
+
+/** A bill's payments over its whole duration, with the expected range and its due dates. */
+export function PaymentHistoryChart({
+  chart,
+  currency,
+  label,
+}: {
+  chart: HistoryChart;
+  currency: string;
+  label: string;
+}) {
+  const tick = (value: number) =>
+    (chart.tickUnit === "year" ? YEAR_TICK : MONTH_TICK).format(new Date(value));
+  return (
+    <div role="img" aria-label={label} className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" />
+          <XAxis
+            dataKey="x"
+            type="number"
+            scale="time"
+            domain={chart.domain}
+            ticks={chart.ticks}
+            tickFormatter={tick}
+            tick={AXIS}
+            tickLine={false}
+            axisLine={false}
+            allowDataOverflow
+          />
+          <YAxis
+            dataKey="y"
+            type="number"
+            domain={[0, "auto"]}
+            tick={AXIS}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={compact}
+            width={48}
+          />
+          <Tooltip
+            cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "4 4" }}
+            content={(props) => <HistoryTooltip {...props} currency={currency} />}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {chart.band.min === chart.band.max ? (
+            <ReferenceLine
+              y={chart.band.max}
+              stroke="var(--muted-foreground)"
+              strokeOpacity={0.5}
+            />
+          ) : (
+            <ReferenceArea
+              y1={chart.band.min}
+              y2={chart.band.max}
+              fill="var(--muted)"
+              fillOpacity={0.8}
+              stroke="var(--muted-foreground)"
+              strokeOpacity={0.3}
+              ifOverflow="extendDomain"
+            />
+          )}
+          {chart.today === null ? null : (
+            <ReferenceLine
+              x={chart.today}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              label={{
+                value: "Today",
+                position: "insideTopRight",
+                fill: "var(--muted-foreground)",
+                fontSize: 12,
+              }}
+            />
+          )}
+          <Line
+            data={chart.payments}
+            dataKey="y"
+            name="Payments"
+            stroke={FIRST}
+            strokeWidth={2}
+            dot={{ r: 4 }}
+            isAnimationActive={false}
+          />
+          {chart.dues.map((series) => (
+            <Scatter
+              key={series.status}
+              data={series.points}
+              name={DUE_STYLE[series.status].label}
+              fill={DUE_STYLE[series.status].fill}
+              shape={DUE_STYLE[series.status].shape}
+              isAnimationActive={false}
+            />
+          ))}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

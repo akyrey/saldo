@@ -22,7 +22,9 @@ import {
 } from "@/components/ui/table";
 import { AttachmentsPanel } from "@/features/attachments/AttachmentsPanel";
 import { amountRange, shiftDate, type BillPeriod } from "./bill-form";
-import { billQuery, periodsQuery } from "./queries";
+import { BillSummary, PaymentHistory } from "./BillHistory";
+import { LinkedTransactions } from "./LinkedTransactions";
+import { billQuery, historyQuery, periodsQuery } from "./queries";
 
 type Action = "skip" | "reopen";
 
@@ -88,6 +90,7 @@ export function BillDetailPage() {
   const queryClient = useQueryClient();
   const bill = useQuery(billQuery(billId));
   const periods = useQuery(periodsQuery(billId));
+  const history = useQuery(historyQuery(billId));
   const [paying, setPaying] = useState<string | null>(null);
   const change = useMutation({
     mutationFn: ({ id, action }: { id: string; action: Action }) =>
@@ -118,6 +121,14 @@ export function BillDetailPage() {
         </p>
       ) : null}
       {change.error ? <Alert className="mb-4">{errorMessage(change.error)}</Alert> : null}
+      {history.error ? <Alert className="mb-4">{errorMessage(history.error)}</Alert> : null}
+      {history.data ? (
+        <>
+          <BillSummary history={history.data} />
+          <PaymentHistory history={history.data} />
+          <LinkedTransactions payments={history.data.payments} />
+        </>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Periods</CardTitle>

@@ -25,7 +25,8 @@ const BATCH_MS = 250;
 
 /** Query keys (prefixes) per entity type. Add new features here. */
 const KEYS: Record<string, QueryKey[]> = {
-  account: [["accounts"], ["balances"], ["reports"]],
+  // Bill histories show account names.
+  account: [["accounts"], ["balances"], ["reports"], ["bills"]],
   // A transaction moves balances, budget spending, bill periods and reports.
   transaction: [
     ["transactions"],

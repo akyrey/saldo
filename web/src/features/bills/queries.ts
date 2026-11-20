@@ -28,3 +28,12 @@ export function periodsQuery(id: string) {
       (await call(api.GET("/api/v1/bills/{id}/periods", { params: { path: { id } } }))).data,
   });
 }
+
+/** Linked payments, due dates over the bill's duration and a summary. */
+export function historyQuery(id: string) {
+  return queryOptions({
+    queryKey: ["bills", "history", id],
+    queryFn: async () =>
+      (await call(api.GET("/api/v1/bills/{id}/history", { params: { path: { id } } }))).data,
+  });
+}
