@@ -34,6 +34,7 @@ function fakeDesktop(serverUrl = "", token: string | null = null) {
       result: Promise.resolve({ code: "one-time" }),
     }),
     checkForUpdate: async () => null,
+    setTheme: async () => {},
   };
   setPlatformForTests(fake);
   return { fake, state };

@@ -6,6 +6,7 @@ import { setUnauthorizedListener } from "@/api/client";
 import { createQueryClient } from "@/lib/query-client";
 import { initPlatform, platform } from "@/platform";
 import { createAppRouter } from "@/router";
+import { ThemeProvider } from "@/features/theme/ThemeProvider";
 import "./index.css";
 
 const queryClient = createQueryClient();
@@ -33,9 +34,11 @@ async function start(): Promise<void> {
   }
   createRoot(root).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </ThemeProvider>
     </StrictMode>,
   );
 }

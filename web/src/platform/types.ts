@@ -44,4 +44,6 @@ export interface Platform {
   waitForLoginCallback(): Promise<{ port: number; result: Promise<LoginCallback> }>;
   /** Desktop: asks the release feed for a newer version. Browser: always `null`. */
   checkForUpdate(): Promise<AppUpdate | null>;
+  /** Desktop: matches the window frame to the theme (`null`: follow the OS). Browser: nothing. */
+  setTheme(theme: "light" | "dark" | null): Promise<void>;
 }

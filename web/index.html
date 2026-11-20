@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f766e" />
+    <script>
+      // Applies the theme before the first paint (src/features/theme/theme.ts
+      // has the same rules and takes over once the app runs).
+      (function () {
+        var choice = "system";
+        try {
+          choice = localStorage.getItem("saldo.theme") || "system";
+        } catch (e) {}
+        var dark =
+          choice === "dark" ||
+          (choice !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        if (dark) document.querySelector('meta[name="theme-color"]').content = "#0a0a0a";
+      })();
+    </script>
     <meta name="description" content="Self-hosted personal finance" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

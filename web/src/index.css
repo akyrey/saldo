@@ -30,6 +30,9 @@
   --kind-transfer: oklch(0.52 0.15 255);
   --kind-opening: oklch(0.5 0.17 295);
   --kind-reconciliation: oklch(0.56 0.12 70);
+  /* Status text (succeeded, waiting). */
+  --status-ok: oklch(0.52 0.13 150);
+  --status-warn: oklch(0.55 0.13 70);
   /* Category colours (names from saldo_app::categories::CATEGORY_COLORS). */
   --cat-red: oklch(0.6 0.2 25);
   --cat-orange: oklch(0.67 0.17 50);
@@ -44,43 +47,45 @@
   --cat-gray: oklch(0.6 0.01 260);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --chart-1: #3987e5;
-    --chart-2: #d95926;
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.7 0.11 182);
-    --primary-foreground: oklch(0.145 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 18%);
-    --ring: oklch(0.7 0.11 182);
-    --kind-withdrawal: oklch(0.72 0.16 22);
-    --kind-deposit: oklch(0.76 0.14 150);
-    --kind-transfer: oklch(0.73 0.12 250);
-    --kind-opening: oklch(0.74 0.13 295);
-    --kind-reconciliation: oklch(0.79 0.12 75);
-    --cat-red: oklch(0.7 0.17 25);
-    --cat-orange: oklch(0.75 0.15 50);
-    --cat-amber: oklch(0.8 0.14 80);
-    --cat-lime: oklch(0.8 0.16 130);
-    --cat-green: oklch(0.72 0.14 150);
-    --cat-teal: oklch(0.72 0.1 185);
-    --cat-sky: oklch(0.75 0.12 230);
-    --cat-blue: oklch(0.7 0.14 260);
-    --cat-violet: oklch(0.7 0.15 295);
-    --cat-pink: oklch(0.74 0.16 350);
-    --cat-gray: oklch(0.7 0.01 260);
-  }
+/* Dark tokens hang on the `dark` class, set before the first paint by the
+   script in index.html and kept by ThemeProvider (system, light or dark). */
+:root.dark {
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.7 0.11 182);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.7 0.11 182);
+  --kind-withdrawal: oklch(0.72 0.16 22);
+  --kind-deposit: oklch(0.76 0.14 150);
+  --kind-transfer: oklch(0.73 0.12 250);
+  --kind-opening: oklch(0.74 0.13 295);
+  --kind-reconciliation: oklch(0.79 0.12 75);
+  --status-ok: oklch(0.76 0.14 150);
+  --status-warn: oklch(0.8 0.13 80);
+  --cat-red: oklch(0.7 0.17 25);
+  --cat-orange: oklch(0.75 0.15 50);
+  --cat-amber: oklch(0.8 0.14 80);
+  --cat-lime: oklch(0.8 0.16 130);
+  --cat-green: oklch(0.72 0.14 150);
+  --cat-teal: oklch(0.72 0.1 185);
+  --cat-sky: oklch(0.75 0.12 230);
+  --cat-blue: oklch(0.7 0.14 260);
+  --cat-violet: oklch(0.7 0.15 295);
+  --cat-pink: oklch(0.74 0.16 350);
+  --cat-gray: oklch(0.7 0.01 260);
 }
 
 @theme inline {
@@ -108,6 +113,8 @@
   --color-kind-transfer: var(--kind-transfer);
   --color-kind-opening: var(--kind-opening);
   --color-kind-reconciliation: var(--kind-reconciliation);
+  --color-status-ok: var(--status-ok);
+  --color-status-warn: var(--status-warn);
   --color-cat-red: var(--cat-red);
   --color-cat-orange: var(--cat-orange);
   --color-cat-amber: var(--cat-amber);

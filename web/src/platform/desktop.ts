@@ -4,6 +4,7 @@
 // browser bundle never contains it.
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   isPermissionGranted,
   requestPermission,
@@ -92,5 +93,6 @@ export async function createDesktopPlatform(): Promise<Platform> {
     openExternal: (url) => openUrl(url),
     waitForLoginCallback,
     checkForUpdate,
+    setTheme: (theme) => getCurrentWindow().setTheme(theme),
   };
 }

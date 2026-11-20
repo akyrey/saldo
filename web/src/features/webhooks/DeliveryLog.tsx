@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 import { DELIVERIES_PER_PAGE, deliveriesQuery, redeliver, type Delivery } from "./queries";
 
 const STATUS_CLASS: Record<string, string> = {
-  succeeded: "border-green-600/40 text-green-700 dark:text-green-400",
-  pending: "border-amber-600/40 text-amber-700 dark:text-amber-400",
+  succeeded: "border-status-ok/40 text-status-ok",
+  pending: "border-status-warn/40 text-status-warn",
   dead: "border-destructive/40 text-destructive",
 };
 

@@ -34,6 +34,7 @@ function desktop(checkForUpdate: Platform["checkForUpdate"]) {
     serverUrl: () => "https://money.example.com",
     token: () => "desktop-token",
     checkForUpdate: vi.fn(checkForUpdate),
+    setTheme: async () => {},
   };
   setPlatformForTests(fake);
   return fake;

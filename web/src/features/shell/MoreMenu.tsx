@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Ellipsis, RefreshCw } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { ThemeSwitch } from "@/features/theme/ThemeSwitch";
 import type { NavItem } from "./nav";
 
 interface MoreMenuProps {
@@ -86,6 +87,9 @@ export function MoreMenu({ items, variant, onCheckForUpdates }: MoreMenuProps) {
               </button>
             </li>
           ) : null}
+          <li className={bar ? "col-span-2 border-t pt-1" : "border-t pt-1"}>
+            <ThemeSwitch />
+          </li>
         </ul>
       ) : null}
     </div>
