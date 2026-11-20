@@ -1,5 +1,5 @@
 // The colour theme: what the person chose (per device) and what it resolves
-// to. `index.html` runs the same logic inline before the first paint, so the
+// to. `public/theme-init.js` runs the same logic before the first paint, so the
 // page never flashes the wrong theme; keep the two in step.
 
 export type ThemeChoice = "system" | "light" | "dark";

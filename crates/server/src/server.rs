@@ -34,6 +34,7 @@ pub fn build_router(state: AppState) -> Router {
         get(move || async move { Json(document.as_ref().clone()) }),
     );
     let router = crate::spa::with_web_app(router);
+    let router = crate::hardening::protect(router, state.config.public_url.starts_with("https://"));
     // CORS wraps everything, so a preflight is answered before any auth check.
     let router = match cors(&state.config.allowed_origins) {
         Some(layer) => router.layer(layer),

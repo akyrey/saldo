@@ -48,7 +48,7 @@
 }
 
 /* Dark tokens hang on the `dark` class, set before the first paint by the
-   script in index.html and kept by ThemeProvider (system, light or dark). */
+   script public/theme-init.js and kept by ThemeProvider (system, light or dark). */
 :root.dark {
   --chart-1: #3987e5;
   --chart-2: #d95926;
