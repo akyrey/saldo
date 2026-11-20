@@ -150,3 +150,36 @@ async fn the_forecast_projects_from_today() {
         );
     }
 }
+
+#[tokio::test]
+async fn trend_reports_answer_and_check_their_parameters() {
+    let server = server().await;
+    let auth = Auth::Bearer(server.setup_and_login().await);
+    let ok = [
+        "/api/v1/reports/by-counterparty?from=2026-01-01&to=2026-12-31",
+        "/api/v1/reports/year-over-year",
+        "/api/v1/reports/year-over-year?years=5&metric=savings&category_id=none",
+        "/api/v1/reports/category-averages?months=6",
+    ];
+    for path in ok {
+        let response = server.get(path, &auth).await;
+        assert_eq!(response.status, StatusCode::OK, "{path}: {}", response.body);
+    }
+    let cash_flow = server
+        .get(
+            "/api/v1/reports/cash-flow?from=2026-01-01&to=2026-01-31",
+            &auth,
+        )
+        .await;
+    assert!(cash_flow.body["data"]["currencies"].is_array());
+    let bad = [
+        "/api/v1/reports/year-over-year?years=9",
+        "/api/v1/reports/year-over-year?metric=profit",
+        "/api/v1/reports/year-over-year?category_id=food",
+        "/api/v1/reports/category-averages?months=1",
+    ];
+    for path in bad {
+        let response = server.get(path, &auth).await;
+        assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY, "{path}");
+    }
+}

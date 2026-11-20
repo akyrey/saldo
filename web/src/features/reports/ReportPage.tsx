@@ -11,31 +11,94 @@ import { todayIso } from "@/lib/dates";
 import {
   budgetReportQuery,
   byCategoryQuery,
+  byCounterpartyQuery,
   byTagQuery,
   cashFlowQuery,
+  categoryAveragesQuery,
   netWorthQuery,
   type ReportParams,
+  yearOverYearQuery,
 } from "./queries";
-import { defaultSpan, INTERVALS, isReportKind, REPORTS, type ReportKind } from "./report-model";
+import {
+  defaultSpan,
+  INTERVALS,
+  isReportKind,
+  REPORTS,
+  type ReportKind,
+  takesSpan,
+} from "./report-model";
 import { BreakdownView, BudgetView, CashFlowView, NetWorthView } from "./ReportViews";
+import { TrendControls } from "./TrendControls";
+import type { Metric } from "./trend-model";
+import { CategoryAveragesView, SavingsRateView, YearOverYearView } from "./TrendViews";
+
+interface TrendParams {
+  years: number;
+  metric: Metric;
+  category_id?: string;
+  months: number;
+}
+
+/** Year over year and averages: their own parameters, no date span. */
+function TrendBody({
+  kind,
+  trend,
+  scope,
+}: {
+  kind: "year-over-year" | "category-averages";
+  trend: TrendParams;
+  scope?: string;
+}) {
+  const currencies = useQuery(currenciesQuery).data;
+  const yoy = useQuery({
+    ...yearOverYearQuery({ ...trend, scope }),
+    enabled: kind === "year-over-year",
+  });
+  const averages = useQuery({
+    ...categoryAveragesQuery(trend.months, scope),
+    enabled: kind === "category-averages",
+  });
+  const active = kind === "year-over-year" ? yoy : averages;
+  if (!active.data) return <QueryState isPending={active.isPending} error={active.error} />;
+  if (kind === "year-over-year" && yoy.data)
+    return <YearOverYearView report={yoy.data} currencies={currencies} />;
+  if (averages.data) return <CategoryAveragesView report={averages.data} currencies={currencies} />;
+  return null;
+}
 
 function ReportBody({ kind, params }: { kind: ReportKind; params: ReportParams }) {
   const currencies = useQuery(currenciesQuery).data;
-  const cashFlow = useQuery({ ...cashFlowQuery(params), enabled: kind === "cash-flow" });
+  const cashFlow = useQuery({
+    ...cashFlowQuery(params),
+    enabled: kind === "cash-flow" || kind === "savings-rate",
+  });
   const netWorth = useQuery({ ...netWorthQuery(params), enabled: kind === "net-worth" });
   const byCategory = useQuery({ ...byCategoryQuery(params), enabled: kind === "by-category" });
   const byTag = useQuery({ ...byTagQuery(params), enabled: kind === "by-tag" });
+  const byCounterparty = useQuery({
+    ...byCounterpartyQuery(params),
+    enabled: kind === "by-counterparty",
+  });
   const budgets = useQuery({ ...budgetReportQuery(params), enabled: kind === "budget-vs-actual" });
   const active = {
     "cash-flow": cashFlow,
+    "savings-rate": cashFlow,
     "net-worth": netWorth,
     "by-category": byCategory,
+    "by-counterparty": byCounterparty,
     "by-tag": byTag,
     "budget-vs-actual": budgets,
+    // Rendered by TrendBody; never reached here.
+    "year-over-year": cashFlow,
+    "category-averages": cashFlow,
   }[kind];
   if (!active.data) return <QueryState isPending={active.isPending} error={active.error} />;
   if (kind === "cash-flow" && cashFlow.data)
     return <CashFlowView report={cashFlow.data} currencies={currencies} />;
+  if (kind === "savings-rate" && cashFlow.data)
+    return <SavingsRateView report={cashFlow.data} currencies={currencies} />;
+  if (kind === "by-counterparty" && byCounterparty.data)
+    return <BreakdownView report={byCounterparty.data} currencies={currencies} />;
   if (kind === "net-worth" && netWorth.data)
     return <NetWorthView report={netWorth.data} currencies={currencies} />;
   if (kind === "by-category" && byCategory.data)
@@ -60,8 +123,18 @@ export function ReportPage() {
     scope,
   };
   const info = REPORTS.find((r) => r.kind === report);
+  const trend: TrendParams = {
+    years: search.years ?? 3,
+    metric: search.metric ?? "expenses",
+    category_id: search.category_id,
+    months: search.months ?? 12,
+  };
   const set = (changes: Partial<Pick<ReportParams, "from" | "to" | "interval">>) =>
     void navigate({ search: (prev) => ({ ...prev, ...changes }) });
+  const setTrend = (changes: Partial<TrendParams>) =>
+    void navigate({ search: (prev) => ({ ...prev, ...changes }) });
+  const kind = isReportKind(report) ? report : null;
+  const trendKind = kind === "year-over-year" || kind === "category-averages" ? kind : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,7 +167,8 @@ export function ReportPage() {
           Forecast
         </Link>
       </nav>
-      <div className="grid gap-3 sm:grid-cols-3">
+      {trendKind ? <TrendControls kind={trendKind} value={trend} onChange={setTrend} /> : null}
+      <div className="grid gap-3 sm:grid-cols-3" hidden={!(kind && takesSpan(kind))}>
         <Field id="report-from" label="From">
           <DatePicker
             id="report-from"
@@ -123,8 +197,10 @@ export function ReportPage() {
           </NativeSelect>
         </Field>
       </div>
-      {isReportKind(report) ? (
-        <ReportBody kind={report} params={params} />
+      {trendKind ? (
+        <TrendBody kind={trendKind} trend={trend} scope={scope} />
+      ) : kind ? (
+        <ReportBody kind={kind} params={params} />
       ) : (
         <p className="text-sm text-muted-foreground">Unknown report.</p>
       )}

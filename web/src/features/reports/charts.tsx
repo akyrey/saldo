@@ -154,3 +154,48 @@ export function RankedBars({ rows, currency, names, label }: ChartProps) {
     </div>
   );
 }
+
+/**
+ * One line per year over January to December. The newest year is the
+ * first series colour, the year before the second; older years are thin
+ * grey lines, so the two that matter stand out.
+ */
+export function YearLines({
+  rows,
+  years,
+  label,
+}: {
+  rows: readonly Record<string, unknown>[];
+  years: readonly number[];
+  label: string;
+}) {
+  const newest = years.length - 1;
+  const stroke = (index: number) =>
+    index === newest ? FIRST : index === newest - 1 ? SECOND : "var(--muted-foreground)";
+  return (
+    <div role="img" aria-label={label} className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={[...rows]} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" />
+          <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
+          <YAxis tick={AXIS} tickLine={false} axisLine={false} tickFormatter={compact} width={48} />
+          <Tooltip />
+          <Legend />
+          {years.map((year, index) => (
+            <Line
+              key={year}
+              dataKey={String(year)}
+              name={String(year)}
+              stroke={stroke(index)}
+              strokeWidth={index >= newest - 1 ? 2 : 1}
+              strokeDasharray={index >= newest - 1 ? undefined : "4 4"}
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

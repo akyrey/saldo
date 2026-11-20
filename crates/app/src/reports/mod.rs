@@ -6,6 +6,7 @@
 //! household's own accounts (and opening balances and reconciliations) are
 //! neither. Each currency is reported separately, without conversion.
 
+mod averages;
 mod budgets;
 mod flows;
 mod forecast;
@@ -13,6 +14,7 @@ mod forecast_sources;
 mod net_worth;
 mod series;
 mod view;
+mod yoy;
 
 use std::collections::HashMap;
 
@@ -25,11 +27,13 @@ use crate::error::{AppError, parse_stored};
 use crate::scope::Scope;
 use crate::{currencies, identity};
 
+pub use averages::{DEFAULT_AVERAGE_MONTHS, MAX_AVERAGE_MONTHS, MIN_AVERAGE_MONTHS};
 pub use forecast::{
     ForecastCurrency, ForecastItem, ForecastPoint, ForecastQuery, ForecastReport,
     MAX_FORECAST_MONTHS,
 };
 pub use view::*;
+pub use yoy::{CategoryFilter, MAX_YEARS, MIN_YEARS, Metric, YearOverYearQuery};
 
 /// The most intervals one report may have (about 2.7 years of days).
 pub const MAX_INTERVALS: u64 = 1000;

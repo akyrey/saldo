@@ -85,6 +85,7 @@ pub mod lookup;
 pub mod money;
 pub mod period;
 pub mod piggy_bank;
+pub mod ratios;
 pub mod reconcile;
 pub mod recurrence;
 pub mod rules;

@@ -68,3 +68,35 @@ export const forecastQuery = (p: ForecastParams) =>
     queryFn: async () =>
       (await call(api.GET("/api/v1/reports/forecast", { params: { query: p } }))).data,
   });
+
+export const byCounterpartyQuery = (p: ReportParams) =>
+  queryOptions({
+    queryKey: key("by-counterparty", p),
+    queryFn: async () =>
+      (await call(api.GET("/api/v1/reports/by-counterparty", { params: { query: p } }))).data,
+  });
+
+export interface YearOverYearParams {
+  years: number;
+  metric: "expenses" | "income" | "savings";
+  category_id?: string;
+  scope?: string;
+}
+
+export const yearOverYearQuery = (p: YearOverYearParams) =>
+  queryOptions({
+    queryKey: ["reports", "year-over-year", p.years, p.metric, p.category_id ?? "", p.scope ?? ""],
+    queryFn: async () =>
+      (await call(api.GET("/api/v1/reports/year-over-year", { params: { query: p } }))).data,
+  });
+
+export const categoryAveragesQuery = (months: number, scope?: string) =>
+  queryOptions({
+    queryKey: ["reports", "category-averages", months, scope ?? "household"],
+    queryFn: async () =>
+      (
+        await call(
+          api.GET("/api/v1/reports/category-averages", { params: { query: { months, scope } } }),
+        )
+      ).data,
+  });

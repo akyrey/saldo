@@ -937,6 +937,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reports/by-counterparty": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Expenses per expense account and income per revenue account. */
+    get: operations["by_counterparty"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/reports/by-tag": {
     parameters: {
       query?: never;
@@ -966,6 +983,26 @@ export interface paths {
      *     transfers between own accounts are neither.
      */
     get: operations["cash_flow"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/category-averages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Average, smallest and largest monthly spending per category, and this
+     *     month so far against the average.
+     */
+    get: operations["category_averages"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1008,6 +1045,26 @@ export interface paths {
      *     interval, per account currency.
      */
     get: operations["net_worth"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/year-over-year": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One amount per month for each of the last few years, with the change
+     *     against the same months a year earlier.
+     */
+    get: operations["year_over_year"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1836,14 +1893,22 @@ export interface components {
       expenses: string;
       income: string;
       intervals: components["schemas"]["CashFlowInterval"][];
-      /** @description Income minus expenses. */
+      /** @description Income minus expenses: what was saved. */
       net: string;
+      /**
+       * Format: int64
+       * @description `net / income` in basis points (2500 = 25%); negative when spending
+       *     was larger, `null` without income.
+       */
+      savings_rate_bp?: number | null;
     };
     CashFlowInterval: {
       end: string;
       expenses: string;
       income: string;
       net: string;
+      /** Format: int64 */
+      savings_rate_bp?: number | null;
       start: string;
     };
     /**
@@ -1853,6 +1918,41 @@ export interface components {
     CashFlowReport: {
       currencies: components["schemas"]["CashFlowCurrency"][];
       range: components["schemas"]["ReportRange"];
+    };
+    CategoryAverageItem: {
+      /** @description Months without spending count as zero. */
+      average: string;
+      /** @description `null`: withdrawals without a category. */
+      id?: string | null;
+      max: string;
+      min: string;
+      name?: string | null;
+      this_month: string;
+      /**
+       * Format: int64
+       * @description `(this_month - average) / average`; `null` when the average is zero.
+       */
+      this_month_vs_average_bp?: number | null;
+    };
+    CategoryAveragesCurrency: {
+      currency: string;
+      /** @description Largest average first. */
+      items: components["schemas"]["CategoryAverageItem"][];
+    };
+    /**
+     * @description Average monthly spending per category over complete months, against this
+     *     month so far.
+     */
+    CategoryAveragesReport: {
+      currencies: components["schemas"]["CategoryAveragesCurrency"][];
+      /** @description The first and last day of those months. */
+      from: string;
+      /**
+       * Format: int32
+       * @description How many complete months the averages cover.
+       */
+      months: number;
+      to: string;
     };
     CategoryPatch: {
       /** @description A palette colour name (see `POST /categories`); `null` clears it. */
@@ -2310,6 +2410,24 @@ export interface components {
       data: {
         currencies: components["schemas"]["CashFlowCurrency"][];
         range: components["schemas"]["ReportRange"];
+      };
+    };
+    /** @description A single result. */
+    Data_CategoryAveragesReport: {
+      /**
+       * @description Average monthly spending per category over complete months, against this
+       *     month so far.
+       */
+      data: {
+        currencies: components["schemas"]["CategoryAveragesCurrency"][];
+        /** @description The first and last day of those months. */
+        from: string;
+        /**
+         * Format: int32
+         * @description How many complete months the averages cover.
+         */
+        months: number;
+        to: string;
       };
     };
     /** @description A single result. */
@@ -2942,6 +3060,17 @@ export interface components {
         /** @description The HMAC key. Store it now: it is never shown again. */
         secret: string;
         webhook: components["schemas"]["WebhookView"];
+      };
+    };
+    /** @description A single result. */
+    Data_YearOverYearReport: {
+      /** @description One amount per month for several years, to compare like with like. */
+      data: {
+        /** @description The category it is limited to (`none`: without a category). */
+        category_id?: string | null;
+        currencies: components["schemas"]["YearOverYearCurrency"][];
+        /** @description `expenses`, `income` or `savings` (income minus expenses). */
+        metric: string;
       };
     };
     /** @description One delivery attempt record, as `GET /webhooks/{id}/deliveries` lists it. */
@@ -4184,6 +4313,36 @@ export interface components {
       /** @description The HMAC key. Store it now: it is never shown again. */
       secret: string;
       webhook: components["schemas"]["WebhookView"];
+    };
+    YearOverYearCurrency: {
+      currency: string;
+      /** @description Oldest year first. */
+      years: components["schemas"]["YearOverYearYear"][];
+    };
+    /** @description One amount per month for several years, to compare like with like. */
+    YearOverYearReport: {
+      /** @description The category it is limited to (`none`: without a category). */
+      category_id?: string | null;
+      currencies: components["schemas"]["YearOverYearCurrency"][];
+      /** @description `expenses`, `income` or `savings` (income minus expenses). */
+      metric: string;
+    };
+    YearOverYearYear: {
+      /** @description `total` minus the previous year's total over the same months. */
+      change?: string | null;
+      /** Format: int64 */
+      change_bp?: number | null;
+      /**
+       * @description Each month against the same month a year earlier, in basis points;
+       *     `null` for months to come, the first year, or nothing a year earlier.
+       */
+      month_change_bp: (number | null)[];
+      /** @description January to December; `null` for months still to come. */
+      months: (string | null)[];
+      /** @description The sum of the months so far. */
+      total: string;
+      /** Format: int32 */
+      year: number;
     };
   };
   responses: never;
@@ -6967,6 +7126,42 @@ export interface operations {
       };
     };
   };
+  by_counterparty: {
+    parameters: {
+      query: {
+        /** @description First date, `YYYY-MM-DD`. */
+        from: string;
+        /** @description Last date (inclusive), `YYYY-MM-DD`. */
+        to: string;
+        /** @description `day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals. */
+        interval?: string;
+        /** @description `household` (default), `mine` or `user:<id>`: filters by account owner. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_BreakdownReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   by_tag: {
     parameters: {
       query: {
@@ -7039,6 +7234,38 @@ export interface operations {
       };
     };
   };
+  category_averages: {
+    parameters: {
+      query?: {
+        /** @description Complete months before the current one: 3 to 24 (default 12). */
+        months?: number;
+        /** @description `household` (default), `mine` or `user:<id>`. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CategoryAveragesReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
   forecast: {
     parameters: {
       query: {
@@ -7099,6 +7326,42 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Data_NetWorthReport"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  year_over_year: {
+    parameters: {
+      query?: {
+        /** @description 2 to 5 (default 3), ending with the current year. */
+        years?: number;
+        /** @description `expenses` (default), `income` or `savings`. */
+        metric?: string;
+        /** @description One category, or `none` for splits without one. */
+        category_id?: string;
+        /** @description `household` (default), `mine` or `user:<id>`. */
+        scope?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_YearOverYearReport"];
         };
       };
       422: {

@@ -46,7 +46,7 @@ pub struct ReportParams {
 }
 
 impl ReportParams {
-    fn query(&self) -> Result<ReportQuery, ApiError> {
+    pub(crate) fn query(&self) -> Result<ReportQuery, ApiError> {
         Ok(ReportQuery {
             from: self.from,
             to: self.to,

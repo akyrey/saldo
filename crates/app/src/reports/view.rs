@@ -25,8 +25,11 @@ pub struct CashFlowCurrency {
     pub currency: String,
     pub income: String,
     pub expenses: String,
-    /// Income minus expenses.
+    /// Income minus expenses: what was saved.
     pub net: String,
+    /// `net / income` in basis points (2500 = 25%); negative when spending
+    /// was larger, `null` without income.
+    pub savings_rate_bp: Option<i64>,
     pub intervals: Vec<CashFlowInterval>,
 }
 
@@ -37,6 +40,7 @@ pub struct CashFlowInterval {
     pub income: String,
     pub expenses: String,
     pub net: String,
+    pub savings_rate_bp: Option<i64>,
 }
 
 /// Income and expenses per category or per tag. A split with several tags
@@ -128,4 +132,69 @@ pub struct NetWorthInterval {
     pub value: String,
     /// The change during the interval.
     pub change: String,
+}
+
+/// One amount per month for several years, to compare like with like.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct YearOverYearReport {
+    /// `expenses`, `income` or `savings` (income minus expenses).
+    pub metric: String,
+    /// The category it is limited to (`none`: without a category).
+    pub category_id: Option<String>,
+    pub currencies: Vec<YearOverYearCurrency>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct YearOverYearCurrency {
+    pub currency: String,
+    /// Oldest year first.
+    pub years: Vec<YearOverYearYear>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct YearOverYearYear {
+    pub year: i32,
+    /// January to December; `null` for months still to come.
+    pub months: Vec<Option<String>>,
+    /// Each month against the same month a year earlier, in basis points;
+    /// `null` for months to come, the first year, or nothing a year earlier.
+    pub month_change_bp: Vec<Option<i64>>,
+    /// The sum of the months so far.
+    pub total: String,
+    /// `total` minus the previous year's total over the same months.
+    pub change: Option<String>,
+    pub change_bp: Option<i64>,
+}
+
+/// Average monthly spending per category over complete months, against this
+/// month so far.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct CategoryAveragesReport {
+    /// How many complete months the averages cover.
+    pub months: u32,
+    /// The first and last day of those months.
+    pub from: String,
+    pub to: String,
+    pub currencies: Vec<CategoryAveragesCurrency>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct CategoryAveragesCurrency {
+    pub currency: String,
+    /// Largest average first.
+    pub items: Vec<CategoryAverageItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct CategoryAverageItem {
+    /// `null`: withdrawals without a category.
+    pub id: Option<String>,
+    pub name: Option<String>,
+    /// Months without spending count as zero.
+    pub average: String,
+    pub min: String,
+    pub max: String,
+    pub this_month: String,
+    /// `(this_month - average) / average`; `null` when the average is zero.
+    pub this_month_vs_average_bp: Option<i64>,
 }

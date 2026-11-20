@@ -18,6 +18,7 @@ import { parseMonth } from "@/features/budgets/budget-model";
 import { parseReconcileSearch } from "@/features/reconciliations/reconcile-model";
 import { parseForecastSearch } from "@/features/reports/forecast-model";
 import { parseReportSearch } from "@/features/reports/report-model";
+import { parseTrendSearch } from "@/features/reports/trend-model";
 import { parseScope, type Scope } from "@/features/shared/scope";
 import { parseNewTransactionSearch, parseTransactionSearch } from "@/features/transactions/search";
 import { safeRedirect } from "@/lib/safe-redirect";
@@ -266,7 +267,10 @@ export const dashboardRoute = createRoute({
 export const reportRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "reports/$report",
-  validateSearch: parseReportSearch,
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...parseReportSearch(search),
+    ...parseTrendSearch(search),
+  }),
   component: lazyRouteComponent(() => import("@/features/reports/ReportPage"), "ReportPage"),
 });
 

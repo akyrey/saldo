@@ -6,15 +6,37 @@ import { monthOf, shiftMonth } from "@/features/budgets/budget-model";
 export type Interval = "day" | "week" | "month" | "year";
 export const INTERVALS: readonly Interval[] = ["day", "week", "month", "year"];
 
-export type ReportKind = "cash-flow" | "net-worth" | "by-category" | "by-tag" | "budget-vs-actual";
+export type ReportKind =
+  | "cash-flow"
+  | "savings-rate"
+  | "net-worth"
+  | "by-category"
+  | "by-counterparty"
+  | "category-averages"
+  | "year-over-year"
+  | "by-tag"
+  | "budget-vs-actual";
 
 export const REPORTS: readonly { kind: ReportKind; title: string; description: string }[] = [
   { kind: "cash-flow", title: "Cash flow", description: "Income and expenses" },
+  { kind: "savings-rate", title: "Savings rate", description: "The share of income kept" },
   { kind: "net-worth", title: "Net worth", description: "Assets minus debts over time" },
   { kind: "by-category", title: "By category", description: "Where the money went" },
+  { kind: "by-counterparty", title: "By payee", description: "Who the money went to" },
+  {
+    kind: "category-averages",
+    title: "Averages",
+    description: "A normal month per category",
+  },
+  { kind: "year-over-year", title: "Year over year", description: "This year against last" },
   { kind: "by-tag", title: "By tag", description: "Spending per tag" },
   { kind: "budget-vs-actual", title: "Budgets", description: "Budgeted against spent" },
 ];
+
+/** Reports that take a date span and an interval (the others have their own controls). */
+export function takesSpan(kind: ReportKind): boolean {
+  return kind !== "year-over-year" && kind !== "category-averages";
+}
 
 export function isReportKind(value: string): value is ReportKind {
   return REPORTS.some((r) => r.kind === value);

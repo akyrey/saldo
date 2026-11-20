@@ -10,7 +10,13 @@ import { todayIso } from "@/lib/dates";
 import { PairedBars, ValueLine } from "./charts";
 import { candidatesQuery } from "@/features/subscriptions/queries";
 import { forecastSpan, isBelowZero } from "./forecast-model";
-import { byCategoryQuery, cashFlowQuery, forecastQuery, netWorthQuery } from "./queries";
+import {
+  byCategoryQuery,
+  cashFlowQuery,
+  categoryAveragesQuery,
+  forecastQuery,
+  netWorthQuery,
+} from "./queries";
 import { cashFlowRows, defaultSpan, netWorthRows, REPORTS } from "./report-model";
 
 /** An overview: net worth and cash flow over a year, this month's top categories. */
@@ -23,12 +29,18 @@ export function DashboardPage() {
   const netWorth = useQuery(netWorthQuery(year));
   const cashFlow = useQuery(cashFlowQuery(year));
   const categories = useQuery(byCategoryQuery(month));
+  const averages = useQuery(categoryAveragesQuery(12, scope));
   const forecast = useQuery(forecastQuery({ ...forecastSpan(today, 1), scope }));
   const nextMonth = forecast.data?.currencies[0];
   const suggestions = useQuery(candidatesQuery(scope)).data?.length ?? 0;
   const primaryWorth = netWorth.data?.currencies[0];
   const primaryFlow = cashFlow.data?.currencies[0];
   const topCategories = categories.data?.currencies[0];
+  const averageOf = new Map(
+    averages.data?.currencies
+      .find((c) => c.currency === topCategories?.currency)
+      ?.items.map((i) => [i.id ?? "none", i.average]) ?? [],
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -161,7 +173,18 @@ export function DashboardPage() {
               {topCategories.items.slice(0, 8).map((item) => (
                 <li key={item.id ?? "none"} className="flex justify-between gap-2 py-2">
                   <span>{item.name ?? "(no category)"}</span>
-                  <Amount value={item.expenses} currency={topCategories.currency} />
+                  <span className="flex items-baseline gap-2">
+                    {averageOf.has(item.id ?? "none") ? (
+                      <span className="text-xs text-muted-foreground">
+                        avg{" "}
+                        <Amount
+                          value={averageOf.get(item.id ?? "none") ?? "0"}
+                          currency={topCategories.currency}
+                        />
+                      </span>
+                    ) : null}
+                    <Amount value={item.expenses} currency={topCategories.currency} />
+                  </span>
                 </li>
               ))}
             </ul>

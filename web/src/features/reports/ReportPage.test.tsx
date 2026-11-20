@@ -38,8 +38,10 @@ const CASH_FLOW = {
             income: "2500.00",
             expenses: "59.75",
             net: "2440.25",
+            savings_rate_bp: 9761,
           },
         ],
+        savings_rate_bp: 9761,
       },
     ],
   },
@@ -195,5 +197,55 @@ describe("reports", () => {
 
     await user.click(within(expenses).getByRole("button"));
     expect(names()).toEqual(["Food", "Rent", "Bars"]);
+  });
+
+  it("shows the savings rate as a percentage", async () => {
+    api();
+    renderApp("/reports/savings-rate?from=2026-11-01&to=2026-11-30");
+    expect(await screen.findByTestId("savings-rate-EUR")).toHaveTextContent("97.61%");
+  });
+
+  it("compares years with their own controls and no date span", async () => {
+    const seen = fakeApi({
+      "GET /api/v1/auth/me": ME,
+      "GET /api/v1/household/members": MEMBERS,
+      "GET /api/v1/currencies": CURRENCIES,
+      "GET /api/v1/categories": list([]),
+      "GET /api/v1/reports/year-over-year": {
+        data: {
+          metric: "expenses",
+          category_id: null,
+          currencies: [
+            {
+              currency: "EUR",
+              years: [
+                {
+                  year: 2025,
+                  months: Array(12).fill("10.00"),
+                  month_change_bp: Array(12).fill(null),
+                  total: "120.00",
+                  change: null,
+                  change_bp: null,
+                },
+                {
+                  year: 2026,
+                  months: [...Array(11).fill("15.00"), null],
+                  month_change_bp: [...Array(11).fill(5000), null],
+                  total: "165.00",
+                  change: "55.00",
+                  change_bp: 5000,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    renderApp("/reports/year-over-year?years=2&metric=expenses");
+    expect(await screen.findByText(/against the same months of 2025/)).toHaveTextContent("50.00%");
+    expect(screen.getByLabelText("Years")).toHaveValue("2");
+    expect(screen.queryByLabelText("Interval")).not.toBeVisible();
+    const request = seen.find((r) => r.url.includes("year-over-year"));
+    expect(new URL(request?.url ?? "").searchParams.get("years")).toBe("2");
   });
 });

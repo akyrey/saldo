@@ -19,6 +19,7 @@ pub mod oidc;
 pub mod piggy_banks;
 pub mod reconciliations;
 pub mod recurrences;
+pub mod report_trends;
 pub mod reports;
 pub mod rules;
 pub mod saved_views;
@@ -58,6 +59,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(event_stream::router())
         .merge(budgets::router())
         .merge(reports::router())
+        .merge(report_trends::router())
         .merge(notifications::router())
         .merge(piggy_banks::router())
         .merge(recurrences::router())

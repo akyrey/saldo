@@ -2,6 +2,7 @@
 
 use chrono::NaiveDate;
 use saldo_core::DateRange;
+use saldo_core::ratios::savings_rate_bp;
 use sqlx::SqliteConnection;
 
 use super::series::{DayRow, Grouped, fold};
@@ -15,6 +16,9 @@ use crate::error::AppError;
 enum By {
     Category,
     Tag,
+    /// The other side: the expense account of a withdrawal, the revenue
+    /// account of a deposit.
+    Counterparty,
 }
 
 impl ReportService {
@@ -43,6 +47,7 @@ impl ReportService {
                     income: money(income)?,
                     expenses: money(expenses)?,
                     net: money(minus(income, expenses)?)?,
+                    savings_rate_bp: savings_rate_bp(income, expenses),
                 });
             }
             let (income, expenses) = series.total;
@@ -50,6 +55,7 @@ impl ReportService {
                 income: money(income)?,
                 expenses: money(expenses)?,
                 net: money(minus(income, expenses)?)?,
+                savings_rate_bp: savings_rate_bp(income, expenses),
                 intervals: rows,
                 currency: code.clone(),
             });
@@ -78,6 +84,16 @@ impl ReportService {
         self.breakdown(ctx, query, By::Tag).await
     }
 
+    /// Expenses per expense account and income per revenue account: who the
+    /// money went to and came from.
+    pub async fn by_counterparty(
+        &self,
+        ctx: &HouseholdCtx,
+        query: &ReportQuery,
+    ) -> Result<BreakdownReport, AppError> {
+        self.breakdown(ctx, query, By::Counterparty).await
+    }
+
     async fn breakdown(
         &self,
         ctx: &HouseholdCtx,
@@ -89,6 +105,7 @@ impl ReportService {
         let rows = match by {
             By::Category => category_rows(&mut conn, ctx, query).await?,
             By::Tag => tag_rows(&mut conn, ctx, query).await?,
+            By::Counterparty => counterparty_rows(&mut conn, ctx, query).await?,
         };
         let grouped = fold(&intervals, rows)?;
         let fmt = Formatter::load(&mut conn, ctx, grouped.keys()).await?;
@@ -165,7 +182,7 @@ fn day_row(
 // whole household): a split counts if either of its accounts is the owner's,
 // the same rule as the transaction list.
 
-async fn flow_rows(
+pub(super) async fn flow_rows(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     query: &ReportQuery,
@@ -194,7 +211,7 @@ async fn flow_rows(
         .collect()
 }
 
-async fn category_rows(
+pub(super) async fn category_rows(
     conn: &mut SqliteConnection,
     ctx: &HouseholdCtx,
     query: &ReportQuery,
@@ -242,6 +259,39 @@ async fn tag_rows(
              AND (?4 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = s.household_id
                    AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?4))
            GROUP BY s.date, s.currency_code, t.id"#,
+        household_id,
+        from,
+        to,
+        owner,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    rows.into_iter()
+        .map(|r| day_row(&r.date, r.currency, r.key, r.name, r.income, r.expenses))
+        .collect()
+}
+
+async fn counterparty_rows(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    query: &ReportQuery,
+) -> Result<Vec<DayRow>, AppError> {
+    let (household_id, owner) = (ctx.household_id.to_string(), query.scope.owner(ctx));
+    let (from, to) = (query.from.to_string(), query.to.to_string());
+    // A withdrawal's destination is the expense account; a deposit's source
+    // is the revenue account.
+    let rows = sqlx::query!(
+        r#"SELECT s.date AS "date!", s.currency_code AS "currency!", a.id AS "key?", a.name AS "name?",
+                  SUM(CASE WHEN s.kind = 'deposit' THEN s.amount_minor ELSE 0 END) AS "income!: i64",
+                  SUM(CASE WHEN s.kind = 'withdrawal' THEN s.amount_minor ELSE 0 END) AS "expenses!: i64"
+           FROM splits s
+           JOIN accounts a ON a.household_id = s.household_id AND a.id =
+                CASE WHEN s.kind = 'withdrawal' THEN s.destination_account_id ELSE s.source_account_id END
+           WHERE s.household_id = ?1 AND s.date >= ?2 AND s.date <= ?3
+             AND s.kind IN ('withdrawal', 'deposit')
+             AND (?4 IS NULL OR EXISTS (SELECT 1 FROM accounts o WHERE o.household_id = s.household_id
+                   AND o.id IN (s.source_account_id, s.destination_account_id) AND o.owner_user_id = ?4))
+           GROUP BY s.date, s.currency_code, a.id"#,
         household_id,
         from,
         to,

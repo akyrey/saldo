@@ -4424,6 +4424,83 @@
         ]
       }
     },
+    "/api/v1/reports/by-counterparty": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Expenses per expense account and income per revenue account.",
+        "operationId": "by_counterparty",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First date, `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last date (inclusive), `YYYY-MM-DD`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "`day`, `week` (from Monday), `month` (default) or `year`; at most 1000 intervals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`: filters by account owner.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_BreakdownReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/reports/by-tag": {
       "get": {
         "tags": [
@@ -4578,6 +4655,65 @@
         ]
       }
     },
+    "/api/v1/reports/category-averages": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Average, smallest and largest monthly spending per category, and this\nmonth so far against the average.",
+        "operationId": "category_averages",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Complete months before the current one: 3 to 24 (default 12).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CategoryAveragesReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/reports/forecast": {
       "get": {
         "tags": [
@@ -4708,6 +4844,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Data_NetWorthReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/year-over-year": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "One amount per month for each of the last few years, with the change\nagainst the same months a year earlier.",
+        "operationId": "year_over_year",
+        "parameters": [
+          {
+            "name": "years",
+            "in": "query",
+            "description": "2 to 5 (default 3), ending with the current year.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "description": "`expenses` (default), `income` or `savings`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "One category, or `none` for splits without one.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "`household` (default), `mine` or `user:<id>`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_YearOverYearReport"
                 }
               }
             }
@@ -8496,7 +8709,15 @@
           },
           "net": {
             "type": "string",
-            "description": "Income minus expenses."
+            "description": "Income minus expenses: what was saved."
+          },
+          "savings_rate_bp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`net / income` in basis points (2500 = 25%); negative when spending\nwas larger, `null` without income."
           }
         }
       },
@@ -8522,6 +8743,13 @@
           "net": {
             "type": "string"
           },
+          "savings_rate_bp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
           "start": {
             "type": "string"
           }
@@ -8543,6 +8771,101 @@
           },
           "range": {
             "$ref": "#/components/schemas/ReportRange"
+          }
+        }
+      },
+      "CategoryAverageItem": {
+        "type": "object",
+        "required": [
+          "average",
+          "min",
+          "max",
+          "this_month"
+        ],
+        "properties": {
+          "average": {
+            "type": "string",
+            "description": "Months without spending count as zero."
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null`: withdrawals without a category."
+          },
+          "max": {
+            "type": "string"
+          },
+          "min": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "this_month": {
+            "type": "string"
+          },
+          "this_month_vs_average_bp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`(this_month - average) / average`; `null` when the average is zero."
+          }
+        }
+      },
+      "CategoryAveragesCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "items"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryAverageItem"
+            },
+            "description": "Largest average first."
+          }
+        }
+      },
+      "CategoryAveragesReport": {
+        "type": "object",
+        "description": "Average monthly spending per category over complete months, against this\nmonth so far.",
+        "required": [
+          "months",
+          "from",
+          "to",
+          "currencies"
+        ],
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryAveragesCurrency"
+            }
+          },
+          "from": {
+            "type": "string",
+            "description": "The first and last day of those months."
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many complete months the averages cover.",
+            "minimum": 0
+          },
+          "to": {
+            "type": "string"
           }
         }
       },
@@ -10007,6 +10330,46 @@
               },
               "range": {
                 "$ref": "#/components/schemas/ReportRange"
+              }
+            }
+          }
+        }
+      },
+      "Data_CategoryAveragesReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Average monthly spending per category over complete months, against this\nmonth so far.",
+            "required": [
+              "months",
+              "from",
+              "to",
+              "currencies"
+            ],
+            "properties": {
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CategoryAveragesCurrency"
+                }
+              },
+              "from": {
+                "type": "string",
+                "description": "The first and last day of those months."
+              },
+              "months": {
+                "type": "integer",
+                "format": "int32",
+                "description": "How many complete months the averages cover.",
+                "minimum": 0
+              },
+              "to": {
+                "type": "string"
               }
             }
           }
@@ -12180,6 +12543,42 @@
               },
               "webhook": {
                 "$ref": "#/components/schemas/WebhookView"
+              }
+            }
+          }
+        }
+      },
+      "Data_YearOverYearReport": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "One amount per month for several years, to compare like with like.",
+            "required": [
+              "metric",
+              "currencies"
+            ],
+            "properties": {
+              "category_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The category it is limited to (`none`: without a category)."
+              },
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/YearOverYearCurrency"
+                }
+              },
+              "metric": {
+                "type": "string",
+                "description": "`expenses`, `income` or `savings` (income minus expenses)."
               }
             }
           }
@@ -16476,6 +16875,106 @@
           },
           "webhook": {
             "$ref": "#/components/schemas/WebhookView"
+          }
+        }
+      },
+      "YearOverYearCurrency": {
+        "type": "object",
+        "required": [
+          "currency",
+          "years"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearOverYearYear"
+            },
+            "description": "Oldest year first."
+          }
+        }
+      },
+      "YearOverYearReport": {
+        "type": "object",
+        "description": "One amount per month for several years, to compare like with like.",
+        "required": [
+          "metric",
+          "currencies"
+        ],
+        "properties": {
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The category it is limited to (`none`: without a category)."
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearOverYearCurrency"
+            }
+          },
+          "metric": {
+            "type": "string",
+            "description": "`expenses`, `income` or `savings` (income minus expenses)."
+          }
+        }
+      },
+      "YearOverYearYear": {
+        "type": "object",
+        "required": [
+          "year",
+          "months",
+          "month_change_bp",
+          "total"
+        ],
+        "properties": {
+          "change": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`total` minus the previous year's total over the same months."
+          },
+          "change_bp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "month_change_bp": {
+            "type": "array",
+            "items": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "description": "Each month against the same month a year earlier, in basis points;\n`null` for months to come, the first year, or nothing a year earlier."
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "January to December; `null` for months still to come."
+          },
+          "total": {
+            "type": "string",
+            "description": "The sum of the months so far."
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }
