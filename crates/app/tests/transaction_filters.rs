@@ -217,3 +217,36 @@ async fn invalid_amount_ranges_are_rejected() {
     };
     assert_eq!(field_of(list(unknown).await), "currency");
 }
+
+#[tokio::test]
+async fn search_text_matches_percent_underscore_and_backslash_literally() {
+    let (test, setup) = with_household().await;
+    let ctx = &setup.ctx;
+    let checking = account(&test, ctx, "Checking", "asset", None).await;
+    let shop = account(&test, ctx, "Shop", "expense", None).await;
+    for (day, text) in [
+        (1, "50% off"),
+        (2, "500 coins"),
+        (3, "gift_card"),
+        (4, "giftXcard"),
+        (5, r"C:\path"),
+        (6, "C:path"),
+    ] {
+        let mut input = split(day, &checking, &shop, "1");
+        input.description = text.into();
+        test.app
+            .transactions
+            .create(ctx, Origin::Api, group(vec![input]))
+            .await
+            .unwrap();
+    }
+    let search = |q: &str| TransactionFilter {
+        q: Some(q.into()),
+        ..TransactionFilter::default()
+    };
+
+    assert_eq!(descriptions(&test, ctx, search("50%")).await, ["50% off"]);
+    assert_eq!(descriptions(&test, ctx, search("t_c")).await, ["gift_card"]);
+    assert_eq!(descriptions(&test, ctx, search(r"C:\")).await, [r"C:\path"]);
+    assert_eq!(descriptions(&test, ctx, search("OFF")).await, ["50% off"]);
+}

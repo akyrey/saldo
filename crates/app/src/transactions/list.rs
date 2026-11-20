@@ -63,6 +63,7 @@ struct ListFilter {
     no_budget: bool,
     bill_id: Option<String>,
     kind: Option<String>,
+    /// A `LIKE` pattern from `crate::search::contains_pattern`.
     q: Option<String>,
     owner_user_id: Option<String>,
     reconciled: Option<bool>,
@@ -94,7 +95,7 @@ impl TransactionService {
             no_budget: filter.no_budget,
             bill_id: filter.bill_id.map(|id| id.to_string()),
             kind: filter.kind.clone(),
-            q: filter.q.clone().filter(|q| !q.trim().is_empty()),
+            q: crate::search::contains_pattern(filter.q.as_deref()),
             owner_user_id: filter.scope.owner(ctx),
             reconciled: filter.reconciled,
             amounts,
@@ -182,7 +183,7 @@ async fn list_ids(
                AND (?6 IS NULL OR EXISTS (SELECT 1 FROM split_tags st WHERE st.split_id = s.id AND st.tag_id = ?6))
                AND (?7 IS NULL OR s.budget_id = ?7) AND (?8 IS NULL OR s.bill_id = ?8)
                AND (?9 IS NULL OR s.kind = ?9)
-               AND (?10 IS NULL OR s.description LIKE '%' || ?10 || '%' OR g.title LIKE '%' || ?10 || '%')
+               AND (?10 IS NULL OR s.description LIKE ?10 ESCAPE '\' OR g.title LIKE ?10 ESCAPE '\')
                AND (?11 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = g.household_id
                      AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11))
                AND (?12 IS NULL OR s.reconciled = ?12)
@@ -210,7 +211,7 @@ async fn list_ids(
                AND (?6 IS NULL OR EXISTS (SELECT 1 FROM split_tags st WHERE st.split_id = s.id AND st.tag_id = ?6))
                AND (?7 IS NULL OR s.budget_id = ?7) AND (?8 IS NULL OR s.bill_id = ?8)
                AND (?9 IS NULL OR s.kind = ?9)
-               AND (?10 IS NULL OR s.description LIKE '%' || ?10 || '%' OR g.title LIKE '%' || ?10 || '%')
+               AND (?10 IS NULL OR s.description LIKE ?10 ESCAPE '\' OR g.title LIKE ?10 ESCAPE '\')
                AND (?11 IS NULL OR EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = g.household_id
                      AND a.id IN (s.source_account_id, s.destination_account_id) AND a.owner_user_id = ?11))
                AND (?12 IS NULL OR s.reconciled = ?12)

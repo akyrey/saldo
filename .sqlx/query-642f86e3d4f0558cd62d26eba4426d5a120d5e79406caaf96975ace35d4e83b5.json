@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT count(*) FROM accounts\n         WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)\n           AND (?4 IS NULL OR owner_user_id = ?4)\n           AND (?5 IS NULL OR name LIKE ?5 ESCAPE '\\')",
+  "describe": {
+    "columns": [
+      {
+        "name": "count(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "642f86e3d4f0558cd62d26eba4426d5a120d5e79406caaf96975ace35d4e83b5"
+}

@@ -31,6 +31,7 @@ pub mod rules;
 pub mod safe_to_spend;
 pub mod saved_views;
 pub mod scope;
+mod search;
 pub mod subscriptions;
 pub mod tags;
 pub mod templates;

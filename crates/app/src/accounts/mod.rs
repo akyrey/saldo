@@ -302,7 +302,7 @@ async fn list_rows(
         account_type: filter.account_type.clone(),
         active: filter.active,
         owner_user_id: filter.scope.owner(ctx),
-        q: filter.q.clone().filter(|q| !q.trim().is_empty()),
+        q: crate::search::contains_pattern(filter.q.as_deref()),
         limit: page.limit(),
         offset: page.offset(),
     };

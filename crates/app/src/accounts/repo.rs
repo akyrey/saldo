@@ -121,7 +121,8 @@ pub(crate) struct ListFilter {
     pub account_type: Option<String>,
     pub active: Option<bool>,
     pub owner_user_id: Option<String>,
-    /// Matched anywhere in the name; SQLite's `LIKE` ignores ASCII case.
+    /// A `LIKE` pattern from [`crate::search::contains_pattern`]; SQLite's
+    /// `LIKE` ignores ASCII case.
     pub q: Option<String>,
     pub limit: i64,
     pub offset: i64,
@@ -142,7 +143,7 @@ pub(crate) async fn list(
            FROM accounts
            WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
              AND (?4 IS NULL OR owner_user_id = ?4)
-             AND (?5 IS NULL OR name LIKE '%' || ?5 || '%')
+             AND (?5 IS NULL OR name LIKE ?5 ESCAPE '\')
            ORDER BY type, sort_order, name
            LIMIT ?6 OFFSET ?7"#,
         household_id,
@@ -159,7 +160,7 @@ pub(crate) async fn list(
         "SELECT count(*) FROM accounts
          WHERE household_id = ?1 AND (?2 IS NULL OR type = ?2) AND (?3 IS NULL OR active = ?3)
            AND (?4 IS NULL OR owner_user_id = ?4)
-           AND (?5 IS NULL OR name LIKE '%' || ?5 || '%')",
+           AND (?5 IS NULL OR name LIKE ?5 ESCAPE '\\')",
         household_id,
         filter.account_type,
         filter.active,

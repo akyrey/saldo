@@ -338,6 +338,9 @@ async fn searches_accounts_by_name_ignoring_case() {
         ["Rossi Salary"]
     );
     assert_eq!(search("nothing like it", None).await.total, 0);
+    // `%` and `_` are plain characters, not wildcards.
+    assert_eq!(search("%", None).await.total, 0);
+    assert_eq!(search("_", None).await.total, 0);
     assert_eq!(
         search("  ", Some("expense")).await.total,
         2,
