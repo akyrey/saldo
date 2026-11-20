@@ -1,0 +1,17 @@
+# `cargo audit` settings, read by CI's audit job. Every ignored advisory has
+# no fixed version we can reach; remove the entry once the upstream crate
+# moves, so the next real problem fails the build again.
+[advisories]
+ignore = [
+    # rsa 0.9 (Marvin timing attack), through openidconnect 4.1 and
+    # web-push-native 0.5. Saldo only verifies signatures with public keys
+    # (OIDC ID tokens) and signs VAPID JWTs with ECDSA, never decrypts RSA.
+    "RUSTSEC-2023-0071",
+    # crypto-bigint 0.5 timing issues, through elliptic-curve 0.13 in
+    # web-push-native 0.5 (VAPID signing); elliptic-curve 0.13 is pinned to it.
+    "RUSTSEC-2026-0387",
+    # chrono and chrono-tz are unmaintained (no vulnerability). No drop-in
+    # replacement yet.
+    "RUSTSEC-2026-0543",
+    "RUSTSEC-2026-0555",
+]

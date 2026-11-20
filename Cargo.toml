@@ -27,7 +27,7 @@ proptest = "1.12.0"
 argon2 = "0.6.0"
 rand = "0.10.3"
 sha2 = "0.11.1"
-sqlx = { version = "0.9.0", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "sync", "time", "signal"] }
 tracing = "0.1.44"
 utoipa = "6.0.0"
@@ -35,7 +35,7 @@ axum = { version = "0.8.9", features = ["macros", "multipart"] }
 clap = { version = "4.6.7", features = ["derive"] }
 tower = { version = "0.5.3", features = ["util"] }
 tokio-util = "0.7.20"
-tower-http = { version = "0.7.1", features = ["trace", "request-id", "util", "cors"] }
+tower-http = { version = "0.7.1", features = ["trace", "request-id", "util", "cors", "timeout", "set-header"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 utoipa-axum = "0.3.0"
 http-body-util = "0.1.5"
