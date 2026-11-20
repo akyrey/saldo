@@ -17,6 +17,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 8 Templates | done | main / 28865c2 | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
 | 9 Statements + forecast | in progress | main | Brief f54208c. Package 1 (clippy guard for `BEGIN IMMEDIATE`, ea9608e) and Track A (live budget carry-over, 0c57453) Track B (cash-flow forecast, 1dce0b8) Track C (subscription suggestions, 3594ff4, released as v0.6.0) and Track D (reconciliation) done; Track E not started; Playwright flows for Phase 9 not written yet |
 | 10 Usability | done | main / 05c2a35 | Brief e6f8aef, decisions confirmed by the owner on 2026-11-20 (plus decision 10: scheduled recurrence bookings notify). Track A dark mode (2433594), B filters + saved views (cde4bd3, 8d39455), C shortcuts + palette (8218df2), D alerts + digest (cb91f57), E reports (3ea88f6), F goals + safe to spend (a9c50ae), Playwright flows (05c2a35). 645 Rust tests, 368 Vitest, 18 Playwright flows; initial route 185 kB gzipped (palette chunk 6 kB) |
+| 11 Bill history | not started | main | Brief `docs/phases/phase-11-bill-history.md` (2026-11-20); decisions in its section 4 await the owner's confirmation |
 
 States: not started, in progress, blocked (say on what), done.
 

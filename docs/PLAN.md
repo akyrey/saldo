@@ -17,6 +17,7 @@ Saldo is built in nine phases. Each phase has a self-contained brief in `docs/ph
 | 8 | [phase-8-templates.md](phases/phase-8-templates.md) | Transaction templates, duplicating a transaction | 4, 5 |
 | 9 | [phase-9-statements-and-forecast.md](phases/phase-9-statements-and-forecast.md) | Statement import, reconciliation, forecast, subscription suggestions, budget carry-over | 5, 8 |
 | 10 | [phase-10-usability.md](phases/phase-10-usability.md) | Dark mode, more filters and saved views, shortcuts and command palette, alerts and digest, new reports, net worth goals and safe to spend | 9 (forecast, carry-over) |
+| 11 | [phase-11-bill-history.md](phases/phase-11-bill-history.md) | Bill detail page: linked transactions, a payment chart over the bill's whole duration, and a payment summary | 5 (can run beside 10) |
 
 ## Order and parallel work
 
