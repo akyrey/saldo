@@ -4,6 +4,19 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-20
+
+### Added
+
+- Dark mode: choose System, Light or Dark under "More" (remembered per device); the theme applies before the page appears, and the desktop title bar follows it.
+- More transaction filters: amount range, budget, bill, reconciled and attachments, plus "No category" and "No budget" (`GET /transactions` takes `amount_min`, `amount_max`, `currency`, `has_attachments`, and `none` for `category_id` and `budget_id`).
+- Saved views: save the current filters under a name and restore them from a chip above the transaction list; an "Uncategorised" chip is always there (`/saved-views`).
+- Keyboard shortcuts and a command palette: ⌘K / Ctrl+K (or the search button) opens pages, actions, templates, saved views and accounts; `g` then `t`/`a`/`b`/`r`/`f` jumps between pages, `n` starts a transaction, `/` searches, `?` lists the shortcuts, and ⌘/Ctrl+Enter saves a form.
+- More notifications, chosen per channel: a budget at 80% and 100%, the forecast going below zero in the next 30 days, large transactions (amount set by the owner), recurring transactions booked on their date, piggy bank and net worth goals reached, and a weekly digest on Monday mornings (`GET /notification-types`). Existing channels keep receiving bill reminders only.
+- New reports: savings rate, year over year, by payee, and average monthly spending per category (also shown on the dashboard).
+- Net worth goals, with progress, the monthly amount still needed and the projected date, managed on the net worth report and drawn on its chart (`/net-worth-goals`).
+- "Safe to spend this month" on the dashboard: this month's income minus spending, bills, planned payments, what budgets have left, piggy bank targets and transfers to savings, with a per-day figure and its breakdown (`GET /reports/safe-to-spend`).
+
 ## [0.7.0] - 2026-11-17
 
 ### Added
