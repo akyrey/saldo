@@ -4,6 +4,26 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-20
+
+### Added
+
+- Sessions page under "More": every browser and desktop app you are logged in with, when each was last used, "Sign out" for one, and "Sign out everywhere else" (`GET /auth/sessions`, `DELETE /auth/sessions/{id}`, `POST /auth/sessions/revoke-others`). Personal access tokens are not affected.
+
+### Changed
+
+- A Web Push channel whose subscription no longer exists (the push service answers 404 or 410) is paused at once instead of being retried.
+
+### Fixed
+
+- Searching transactions or accounts for text with `%` or `_` matches those characters literally ("50%" no longer finds "500").
+
+### Security
+
+- Updated the email library (lettre 0.11.24: SMTP command injection, STARTTLS reply forgery, misrouted mail) and the bundled SQLite.
+- Every response carries a Content-Security-Policy without inline scripts, `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`, plus HSTS when the server's public URL is https.
+- Requests that take longer than 120 seconds are answered with 408.
+
 ## [0.9.0] - 2026-11-20
 
 ### Added
