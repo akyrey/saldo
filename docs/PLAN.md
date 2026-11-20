@@ -15,6 +15,8 @@ Saldo is built in nine phases. Each phase has a self-contained brief in `docs/ph
 | 6 | [phase-6-events.md](phases/phase-6-events.md) | Webhook delivery, bill reminders, notification channels, SSE stream | 2 (bill reminders need 5) |
 | 7 | [phase-7-clients.md](phases/phase-7-clients.md) | Tauri 2 desktop app, PWA install and Web Push polish, backup command | 4, 6 |
 | 8 | [phase-8-templates.md](phases/phase-8-templates.md) | Transaction templates, duplicating a transaction | 4, 5 |
+| 9 | [phase-9-statements-and-forecast.md](phases/phase-9-statements-and-forecast.md) | Statement import, reconciliation, forecast, subscription suggestions, budget carry-over | 5, 8 |
+| 10 | [phase-10-usability.md](phases/phase-10-usability.md) | Dark mode, more filters and saved views, shortcuts and command palette, alerts and digest, new reports, net worth goals and safe to spend | 9 (forecast, carry-over) |
 
 ## Order and parallel work
 

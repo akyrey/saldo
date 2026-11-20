@@ -16,6 +16,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 7 Clients | done (manual device checks open) | main / a2a45d0 | Tauri 2 desktop app (Saldo.app 11 MB, built on macOS; the .dmg step needs a GUI session or CI), PWA install banner and app badge, desktop bearer login + CORS, backup script. 477 Rust + 2 desktop tests, 177 Vitest, 12 Playwright flows. Not yet run by hand: the desktop app against a server, phone installs and push |
 | 8 Templates | done | main / 28865c2 | Templates (`/transaction-templates`, `POST /transactions/{id}/template`), templates page, "New from template…", Duplicate, Save as template; export `templates.csv`. 493 Rust tests (95.7% lines), 193 Vitest, 13 Playwright flows |
 | 9 Statements + forecast | in progress | main | Brief f54208c. Package 1 (clippy guard for `BEGIN IMMEDIATE`, ea9608e) and Track A (live budget carry-over, 0c57453) Track B (cash-flow forecast, 1dce0b8) Track C (subscription suggestions, 3594ff4, released as v0.6.0) and Track D (reconciliation) done; Track E not started; Playwright flows for Phase 9 not written yet |
+| 10 Usability | not started | main | Brief `docs/phases/phase-10-usability.md` (2026-11-20); decisions in its section 4 confirmed by the owner on 2026-11-20, plus notifying scheduled recurrence firings (decision 10) |
 
 States: not started, in progress, blocked (say on what), done.
 
