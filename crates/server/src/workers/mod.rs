@@ -10,6 +10,7 @@
 //! Every task keeps its progress in the database, so killing the process at
 //! any point and starting again is safe.
 
+mod alerts;
 mod attachments;
 mod budgets;
 pub mod notifier;
@@ -133,6 +134,7 @@ pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     });
     reminders::spawn_bill_scheduler(&mut workers, state);
     notifier::spawn_notifier(&mut workers, state);
+    alerts::spawn(&mut workers, state);
     recurrences::spawn(&mut workers, state);
     let app = state.app.clone();
     workers.spawn(attachments::NAME, attachments::INTERVAL, None, move || {
@@ -221,6 +223,7 @@ mod tests {
                 "auto-budgets",
                 "bill-scheduler",
                 "notifier",
+                "alert-scheduler",
                 "recurrence-runner",
                 "attachment-sweep"
             ]

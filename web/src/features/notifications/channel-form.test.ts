@@ -46,6 +46,7 @@ describe("describeChannel", () => {
     name: "Phone",
     active: true,
     settings: { server_url: "https://ntfy.sh", topic: "bills", has_token: true },
+    event_types: ["bill.due_soon", "bill.overdue"],
     created_at: "",
     updated_at: "",
   };

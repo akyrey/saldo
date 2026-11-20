@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM splits WHERE household_id = ? AND group_id = ?\n           AND currency_code = ? AND amount_minor >= ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b5d33aa43fefa342784f4aa079fa7c79901e23cbf8b257b02ac96509b1287e36"
+}

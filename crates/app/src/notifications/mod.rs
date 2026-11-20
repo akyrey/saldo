@@ -13,7 +13,10 @@ use crate::clock::SharedClock;
 
 pub use channels::{Channel, ChannelUpdate, ChannelView, NewChannel};
 pub use config::{ChannelConfig, ChannelKind, ChannelSettings};
-pub use message::{Message, NOTIFYING_EVENTS};
+pub use message::{
+    AccountNames, DEFAULT_EVENT_TYPES, Message, NOTIFICATION_TYPES, NOTIFYING_EVENTS,
+    NotificationType, notifies,
+};
 pub use outbox::{CURSOR, MAX_ATTEMPTS, PendingNotification};
 
 #[derive(Clone)]

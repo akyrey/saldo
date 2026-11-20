@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO alert_states (household_id, key, since) VALUES (?, ?, ?)\n             ON CONFLICT (household_id, key) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ff290742a736530b8fef3fbd64736cefc2176750bf22c5020868f504d724e713"
+}

@@ -16,3 +16,25 @@ export const vapidKeyQuery = queryOptions({
   queryFn: async () => (await call(api.GET("/api/v1/push/vapid-key"))).data.public_key ?? null,
   staleTime: Infinity,
 });
+
+export type NotificationType = components["schemas"]["NotificationType"];
+
+/** The event types a channel can receive, in display order. */
+export const notificationTypesQuery = queryOptions({
+  queryKey: ["notification-types"],
+  queryFn: async () => (await call(api.GET("/api/v1/notification-types"))).data,
+  staleTime: Infinity,
+});
+
+/** The chosen types with `type` added or removed, kept in the server's order. */
+export function toggleType(
+  chosen: readonly string[],
+  type: string,
+  on: boolean,
+  order: readonly NotificationType[],
+): string[] {
+  const next = new Set(chosen);
+  if (on) next.add(type);
+  else next.delete(type);
+  return order.map((t) => t.type).filter((t) => next.has(t));
+}

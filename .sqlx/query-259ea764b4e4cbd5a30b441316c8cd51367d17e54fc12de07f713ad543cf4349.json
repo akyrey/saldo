@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT large_transaction_minor FROM households WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "large_transaction_minor",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "large_transaction_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "259ea764b4e4cbd5a30b441316c8cd51367d17e54fc12de07f713ad543cf4349"
+}

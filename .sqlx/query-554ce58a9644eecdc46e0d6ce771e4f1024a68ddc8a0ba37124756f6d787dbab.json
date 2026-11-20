@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT b.name, p.due_date, b.amount_max_minor, b.currency_code\n         FROM bill_periods p JOIN bills b ON b.id = p.bill_id AND b.household_id = p.household_id\n         WHERE p.household_id = ? AND p.status = 'open' AND b.active = 1\n           AND p.due_date >= ? AND p.due_date <= ?\n         ORDER BY p.due_date, b.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "due_date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bill_periods",
+            "name": "due_date"
+          }
+        }
+      },
+      {
+        "name": "amount_max_minor",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "amount_max_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bills",
+            "name": "currency_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "554ce58a9644eecdc46e0d6ce771e4f1024a68ddc8a0ba37124756f6d787dbab"
+}

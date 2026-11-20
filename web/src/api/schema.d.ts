@@ -723,6 +723,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/notification-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The event types a channel can receive, for the settings screen. */
+    get: operations["notification_types"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/piggy-banks": {
     parameters: {
       query?: never;
@@ -1862,6 +1879,8 @@ export interface components {
       config?: {
         [key: string]: unknown;
       } | null;
+      /** @description Replaces the event types the channel receives. */
+      event_types?: string[] | null;
       name?: string | null;
     };
     /** @description A channel's settings without secrets, as the API returns them. */
@@ -1881,6 +1900,8 @@ export interface components {
     ChannelView: {
       active: boolean;
       created_at: string;
+      /** @description The event types this channel receives (see `GET /notification-types`). */
+      event_types: string[];
       id: string;
       /** @description `ntfy`, `gotify`, `email` or `webpush`. */
       kind: string;
@@ -1981,6 +2002,11 @@ export interface components {
       config: {
         [key: string]: unknown;
       };
+      /**
+       * @description Event types to receive (see `GET /notification-types`); default the
+       *     bill reminders.
+       */
+      event_types?: string[] | null;
       /** @description `ntfy`, `gotify`, `email` or `webpush`. */
       kind: string;
       name: string;
@@ -2304,6 +2330,8 @@ export interface components {
       data: {
         active: boolean;
         created_at: string;
+        /** @description The event types this channel receives (see `GET /notification-types`). */
+        event_types: string[];
         id: string;
         /** @description `ntfy`, `gotify`, `email` or `webpush`. */
         kind: string;
@@ -2355,6 +2383,11 @@ export interface components {
       data: {
         created_at: string;
         id: string;
+        /**
+         * @description Splits at or above this amount (primary currency) notify as
+         *     `transaction.large`; `None` means off.
+         */
+        large_transaction_amount?: string | null;
         name: string;
         primary_currency: string;
         timezone: string;
@@ -2711,6 +2744,8 @@ export interface components {
       data: {
         active: boolean;
         created_at: string;
+        /** @description The event types this channel receives (see `GET /notification-types`). */
+        event_types: string[];
         id: string;
         /** @description `ntfy`, `gotify`, `email` or `webpush`. */
         kind: string;
@@ -2738,6 +2773,14 @@ export interface components {
         joined_at: string;
         role: components["schemas"]["Role"];
         user_id: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_NotificationType: {
+      data: {
+        description: string;
+        label: string;
+        type: string;
       }[];
     };
     /** @description A single result. */
@@ -3078,6 +3121,11 @@ export interface components {
       version: string;
     };
     HouseholdPatch: {
+      /**
+       * @description Splits at or above this amount (a decimal string in the primary
+       *     currency) notify as `transaction.large`; `null` turns it off.
+       */
+      large_transaction_amount?: string | null;
       name?: string | null;
       primary_currency?: string | null;
       timezone?: string | null;
@@ -3085,6 +3133,11 @@ export interface components {
     HouseholdView: {
       created_at: string;
       id: string;
+      /**
+       * @description Splits at or above this amount (primary currency) notify as
+       *     `transaction.large`; `None` means off.
+       */
+      large_transaction_amount?: string | null;
       name: string;
       primary_currency: string;
       timezone: string;
@@ -3461,6 +3514,12 @@ export interface components {
       email: string;
       /** @description The member's initial password. */
       password: string;
+    };
+    /** @description An event type a channel can subscribe to, as `GET /notification-types` lists it. */
+    NotificationType: {
+      description: string;
+      label: string;
+      type: string;
     };
     OidcMethod: {
       /** @description For the button: "Log in with <name>". */
@@ -6247,6 +6306,33 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  notification_types: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_NotificationType"];
+        };
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };

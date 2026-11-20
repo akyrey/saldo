@@ -1,6 +1,7 @@
 //! Transaction groups: always written as a whole (create, replace, delete).
 
 mod input;
+mod large;
 mod list;
 mod prepare;
 pub(crate) mod recurring;
@@ -137,6 +138,8 @@ impl TransactionService {
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "created", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
+        let none = std::collections::BTreeSet::new();
+        large::emit(&mut *conn, &*self.clock, ctx, origin, &view, &none).await?;
         // Splits with a bill pay that bill's matching period (`bill.paid`).
         bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
         Ok(view)
@@ -225,6 +228,7 @@ impl TransactionService {
         }
         let plan = split_ids::plan(&mut *conn, &household_id, &id, &input).await?;
         let before = repo::confirmed_fields(&mut *conn, &household_id, &id).await?;
+        let (large_before, _) = large::large_splits(&mut *conn, &household_id, &id).await?;
         let group = prepare::validate(&mut *conn, ctx, origin, input).await?;
         let now = format_timestamp(self.clock.now());
         repo::update_group(&mut *conn, &household_id, &id, group.title(), &now).await?;
@@ -259,6 +263,7 @@ impl TransactionService {
         let view = load_one(&mut *conn, ctx, &id).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "updated", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
+        large::emit(&mut *conn, &*self.clock, ctx, origin, &view, &large_before).await?;
         bills::link_splits_in(&mut *conn, &*self.clock, ctx, origin, &view).await?;
         Ok(view)
     }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT seq, id, household_id, event_type, payload FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
+  "query": "SELECT seq, id, household_id, event_type, origin, payload FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
   "describe": {
     "columns": [
       {
@@ -48,8 +48,19 @@
         }
       },
       {
-        "name": "payload",
+        "name": "origin",
         "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "events",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -67,8 +78,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "219f8a2d08adc6f9231075dbb9383a090526a928492d2a66f4be031ae7f4d85e"
+  "hash": "0ab1d10a5e961f144eddc4e51d79e30b273c86b420b8a6d412db9ce7523e9d0b"
 }

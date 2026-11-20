@@ -3349,6 +3349,43 @@
         ]
       }
     },
+    "/api/v1/notification-types": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "The event types a channel can receive, for the settings screen.",
+        "operationId": "notification_types",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_NotificationType"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/piggy-banks": {
       "get": {
         "tags": [
@@ -8590,6 +8627,16 @@
               "type": "string"
             }
           },
+          "event_types": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Replaces the event types the channel receives."
+          },
           "name": {
             "type": [
               "string",
@@ -8649,6 +8696,7 @@
           "name",
           "active",
           "settings",
+          "event_types",
           "created_at",
           "updated_at"
         ],
@@ -8658,6 +8706,13 @@
           },
           "created_at": {
             "type": "string"
+          },
+          "event_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The event types this channel receives (see `GET /notification-types`)."
           },
           "id": {
             "type": "string"
@@ -8975,6 +9030,16 @@
             "propertyNames": {
               "type": "string"
             }
+          },
+          "event_types": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Event types to receive (see `GET /notification-types`); default the\nbill reminders."
           },
           "kind": {
             "type": "string",
@@ -10009,6 +10074,7 @@
               "name",
               "active",
               "settings",
+              "event_types",
               "created_at",
               "updated_at"
             ],
@@ -10018,6 +10084,13 @@
               },
               "created_at": {
                 "type": "string"
+              },
+              "event_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The event types this channel receives (see `GET /notification-types`)."
               },
               "id": {
                 "type": "string"
@@ -10194,6 +10267,13 @@
               },
               "id": {
                 "type": "string"
+              },
+              "large_transaction_amount": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Splits at or above this amount (primary currency) notify as\n`transaction.large`; `None` means off."
               },
               "name": {
                 "type": "string"
@@ -11403,6 +11483,7 @@
                 "name",
                 "active",
                 "settings",
+                "event_types",
                 "created_at",
                 "updated_at"
               ],
@@ -11412,6 +11493,13 @@
                 },
                 "created_at": {
                   "type": "string"
+                },
+                "event_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The event types this channel receives (see `GET /notification-types`)."
                 },
                 "id": {
                   "type": "string"
@@ -11507,6 +11595,38 @@
                   "$ref": "#/components/schemas/Role"
                 },
                 "user_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_NotificationType": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An event type a channel can subscribe to, as `GET /notification-types` lists it.",
+              "required": [
+                "type",
+                "label",
+                "description"
+              ],
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
                   "type": "string"
                 }
               }
@@ -12677,6 +12797,13 @@
       "HouseholdPatch": {
         "type": "object",
         "properties": {
+          "large_transaction_amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Splits at or above this amount (a decimal string in the primary\ncurrency) notify as `transaction.large`; `null` turns it off."
+          },
           "name": {
             "type": [
               "string",
@@ -12713,6 +12840,13 @@
           },
           "id": {
             "type": "string"
+          },
+          "large_transaction_amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Splits at or above this amount (primary currency) notify as\n`transaction.large`; `None` means off."
           },
           "name": {
             "type": "string"
@@ -14109,6 +14243,26 @@
           "password": {
             "type": "string",
             "description": "The member's initial password."
+          }
+        }
+      },
+      "NotificationType": {
+        "type": "object",
+        "description": "An event type a channel can subscribe to, as `GET /notification-types` lists it.",
+        "required": [
+          "type",
+          "label",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
           }
         }
       },

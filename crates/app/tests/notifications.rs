@@ -21,6 +21,7 @@ fn ntfy(name: &str, token: Option<&str>) -> NewChannel {
         name: name.into(),
         config: json!({ "server_url": "https://ntfy.example.com", "topic": "bills", "token": token }),
         active: None,
+        event_types: None,
     }
 }
 
@@ -102,6 +103,7 @@ async fn updates_merge_the_config_and_delete_removes_the_channel() {
         name: Some(" Laptop ".into()),
         config: Some(json!({ "topic": "renamed" })),
         active: Some(false),
+        event_types: None,
     };
     let updated = service
         .update_channel(&setup.ctx, Origin::Api, id, update)

@@ -194,14 +194,33 @@ impl IdentityService {
                 .to_string(),
             None => current.primary_currency,
         };
-        let now = format_timestamp(self.clock.now());
         let household_id = ctx.household_id.to_string();
+        let large = match update.large_transaction_amount {
+            Some(Some(text)) => {
+                let currency = currencies::find(&mut tx, &primary_currency, "currency").await?;
+                let amount =
+                    crate::budgets::positive_amount("large_transaction_amount", &text, &currency)?;
+                Some(amount.minor())
+            }
+            Some(None) => None,
+            None => {
+                sqlx::query_scalar!(
+                    "SELECT large_transaction_minor FROM households WHERE id = ?",
+                    household_id
+                )
+                .fetch_one(&mut *tx)
+                .await?
+            }
+        };
+        let now = format_timestamp(self.clock.now());
         sqlx::query!(
-            "UPDATE households SET name = ?, timezone = ?, primary_currency = ?, updated_at = ?
+            "UPDATE households SET name = ?, timezone = ?, primary_currency = ?,
+                    large_transaction_minor = ?, updated_at = ?
              WHERE id = ?",
             name,
             timezone,
             primary_currency,
+            large,
             now,
             household_id,
         )
@@ -409,18 +428,26 @@ pub(crate) async fn household_view(
 ) -> Result<HouseholdView, AppError> {
     let id = ctx.household_id.to_string();
     let row = sqlx::query!(
-        "SELECT id, name, primary_currency, timezone, created_at, updated_at
+        "SELECT id, name, primary_currency, timezone, large_transaction_minor, created_at, updated_at
          FROM households WHERE id = ?",
         id,
     )
     .fetch_optional(&mut *conn)
     .await?
     .ok_or(AppError::NotFound)?;
+    let large_transaction_amount = match row.large_transaction_minor {
+        Some(minor) => {
+            let currency = currencies::find(&mut *conn, &row.primary_currency, "currency").await?;
+            Some(saldo_core::Money::new(minor, currency.code()).to_decimal_string(&currency))
+        }
+        None => None,
+    };
     Ok(HouseholdView {
         id: row.id,
         name: row.name,
         primary_currency: row.primary_currency,
         timezone: row.timezone,
+        large_transaction_amount,
         created_at: row.created_at,
         updated_at: row.updated_at,
     })

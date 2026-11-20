@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT c.id FROM notification_channels c\n             JOIN household_members m ON m.household_id = c.household_id AND m.user_id = c.user_id\n             WHERE c.household_id = ? AND c.active = 1\n               AND EXISTS (SELECT 1 FROM json_each(c.event_types) t WHERE t.value = ?)\n             ORDER BY c.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notification_channels",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "70b8e462a436486f45b66053ab6d1082bdfe31ed5772a3246f9f98365a7db825"
+}

@@ -6,7 +6,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use saldo_app::ctx::Origin;
 use saldo_app::error::AppError;
-use saldo_app::notifications::{ChannelKind, ChannelUpdate, ChannelView, Message, NewChannel};
+use saldo_app::notifications::{
+    ChannelKind, ChannelUpdate, ChannelView, Message, NOTIFICATION_TYPES, NewChannel,
+    NotificationType,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
@@ -27,6 +30,14 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(update_channel, delete_channel))
         .routes(routes!(test_channel))
         .routes(routes!(vapid_key))
+        .routes(routes!(notification_types))
+}
+
+/// The event types a channel can receive, for the settings screen.
+#[utoipa::path(get, path = "/notification-types", tag = "notifications",
+    responses((status = 200, body = Data<Vec<NotificationType>>), (status = 401, body = ErrorEnvelope)), security(("bearer" = []), ("cookie" = [])))]
+pub async fn notification_types(Auth(_auth): Auth) -> Json<Data<Vec<NotificationType>>> {
+    Json(Data::new(NOTIFICATION_TYPES.to_vec()))
 }
 
 #[utoipa::path(get, path = "/notification-channels", tag = "notifications",
@@ -50,6 +61,9 @@ pub struct CreateChannelRequest {
     #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub config: Value,
     pub active: Option<bool>,
+    /// Event types to receive (see `GET /notification-types`); default the
+    /// bill reminders.
+    pub event_types: Option<Vec<String>>,
 }
 
 /// Email and Web Push need server settings; refuse those channels early.
@@ -78,6 +92,7 @@ pub async fn create_channel(
         name: body.name,
         config: body.config,
         active: body.active,
+        event_types: body.event_types,
     };
     let view = state
         .app
@@ -95,6 +110,8 @@ pub struct ChannelPatch {
     #[schema(value_type = Option<std::collections::HashMap<String, serde_json::Value>>)]
     pub config: Option<Value>,
     pub active: Option<bool>,
+    /// Replaces the event types the channel receives.
+    pub event_types: Option<Vec<String>>,
 }
 
 #[utoipa::path(patch, path = "/notification-channels/{id}", tag = "notifications", params(("id" = Uuid, Path)), request_body = ChannelPatch,
@@ -110,6 +127,7 @@ pub async fn update_channel(
         name: body.name,
         config: body.config,
         active: body.active,
+        event_types: body.event_types,
     };
     Ok(Json(Data::new(
         state

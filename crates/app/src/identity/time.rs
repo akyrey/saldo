@@ -1,7 +1,7 @@
 //! "Today" in a household's timezone, and the households background tasks
 //! work through.
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 use saldo_core::{HouseholdId, UserId};
 use sqlx::SqliteConnection;
@@ -28,6 +28,16 @@ pub async fn today_in(
     ctx: &HouseholdCtx,
     clock: &dyn Clock,
 ) -> Result<NaiveDate, AppError> {
+    Ok(now_in(conn, ctx, clock).await?.date())
+}
+
+/// The household's wall-clock date and time right now (the weekly digest
+/// goes out at a local hour).
+pub async fn now_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+    clock: &dyn Clock,
+) -> Result<NaiveDateTime, AppError> {
     let id = ctx.household_id.to_string();
     let name = sqlx::query_scalar!("SELECT timezone FROM households WHERE id = ?", id)
         .fetch_optional(&mut *conn)
@@ -35,7 +45,7 @@ pub async fn today_in(
         .ok_or(AppError::NotFound)?;
     // A timezone stored before validation existed falls back to UTC.
     let zone = parse_timezone("timezone", &name).unwrap_or(Tz::UTC);
-    Ok(clock.now().with_timezone(&zone).date_naive())
+    Ok(clock.now().with_timezone(&zone).naive_local())
 }
 
 impl IdentityService {

@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use super::NotificationService;
 use super::config::{ChannelConfig, ChannelKind, ChannelSettings};
+use super::message::{DEFAULT_EVENT_TYPES, NOTIFYING_EVENTS};
 use crate::clock::{format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
@@ -24,6 +25,8 @@ pub struct ChannelView {
     pub name: String,
     pub active: bool,
     pub settings: ChannelSettings,
+    /// The event types this channel receives (see `GET /notification-types`).
+    pub event_types: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -45,6 +48,8 @@ pub struct NewChannel {
     pub name: String,
     pub config: Value,
     pub active: Option<bool>,
+    /// `None`: bill reminders only, as before Phase 10.
+    pub event_types: Option<Vec<String>>,
 }
 
 /// A PATCH; `config` fields replace the stored ones (see [`ChannelConfig::merged`]).
@@ -53,6 +58,7 @@ pub struct ChannelUpdate {
     pub name: Option<String>,
     pub config: Option<Value>,
     pub active: Option<bool>,
+    pub event_types: Option<Vec<String>>,
 }
 
 struct Row {
@@ -63,6 +69,7 @@ struct Row {
     name: String,
     config: String,
     active: bool,
+    event_types: String,
     created_at: String,
     updated_at: String,
 }
@@ -87,6 +94,9 @@ impl Row {
             name: self.name.clone(),
             active: self.active,
             settings: self.channel()?.config.settings(),
+            event_types: serde_json::from_str(&self.event_types).map_err(|_| {
+                AppError::Internal(format!("corrupt event types of channel {}", self.id))
+            })?,
             created_at: self.created_at.clone(),
             updated_at: self.updated_at.clone(),
         })
@@ -100,7 +110,7 @@ impl NotificationService {
         let rows = sqlx::query_as!(
             Row,
             r#"SELECT id, household_id, user_id, kind, name, config, active AS "active: bool",
-                      created_at, updated_at
+                      event_types, created_at, updated_at
                FROM notification_channels WHERE household_id = ? AND user_id = ?
                ORDER BY created_at, id"#,
             household,
@@ -139,11 +149,13 @@ impl NotificationService {
             kind.as_str(),
             input.active.unwrap_or(true),
         );
+        let defaults = DEFAULT_EVENT_TYPES.map(str::to_string).to_vec();
+        let event_types = event_types_json(&input.event_types.unwrap_or(defaults))?;
         let mut tx = crate::db::begin(&self.pool).await?;
         sqlx::query!(
-            "INSERT INTO notification_channels (id, household_id, user_id, kind, name, config, active, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            id_text, household, user, kind, name, config, active, now, now,
+            "INSERT INTO notification_channels (id, household_id, user_id, kind, name, config, active, event_types, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            id_text, household, user, kind, name, config, active, event_types, now, now,
         )
         .execute(&mut *tx)
         .await?;
@@ -173,13 +185,18 @@ impl NotificationService {
         };
         let config = config.to_json().to_string();
         let active = update.active.unwrap_or(row.active);
+        let event_types = match &update.event_types {
+            Some(types) => event_types_json(types)?,
+            None => row.event_types.clone(),
+        };
         let now = format_timestamp(self.clock.now());
         sqlx::query!(
-            "UPDATE notification_channels SET name = ?, config = ?, active = ?, updated_at = ?
+            "UPDATE notification_channels SET name = ?, config = ?, active = ?, event_types = ?, updated_at = ?
              WHERE id = ? AND household_id = ? AND user_id = ?",
             name,
             config,
             active,
+            event_types,
             now,
             row.id,
             row.household_id,
@@ -237,6 +254,25 @@ impl NotificationService {
 }
 
 /// The caller's channel `id`; another member's or household's is `NotFound`.
+/// Checks the chosen event types and returns them as stored JSON, without
+/// repeats, in the order given.
+fn event_types_json(types: &[String]) -> Result<String, AppError> {
+    let mut chosen: Vec<&str> = Vec::new();
+    for event_type in types {
+        let event_type = event_type.trim();
+        if !NOTIFYING_EVENTS.contains(&event_type) {
+            return Err(AppError::invalid(
+                "event_types",
+                format!("{event_type:?} is not a notifying event type"),
+            ));
+        }
+        if !chosen.contains(&event_type) {
+            chosen.push(event_type);
+        }
+    }
+    serde_json::to_string(&chosen).map_err(|e| AppError::Internal(e.to_string()))
+}
+
 async fn find(conn: &mut SqliteConnection, ctx: &HouseholdCtx, id: Uuid) -> Result<Row, AppError> {
     let (id, household, user) = (
         id.to_string(),
@@ -246,7 +282,7 @@ async fn find(conn: &mut SqliteConnection, ctx: &HouseholdCtx, id: Uuid) -> Resu
     sqlx::query_as!(
         Row,
         r#"SELECT id, household_id, user_id, kind, name, config, active AS "active: bool",
-                  created_at, updated_at
+                  event_types, created_at, updated_at
            FROM notification_channels WHERE id = ? AND household_id = ? AND user_id = ?"#,
         id,
         household,

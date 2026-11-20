@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, primary_currency, timezone, created_at, updated_at\n         FROM households WHERE id = ?",
+  "query": "SELECT id, name, primary_currency, timezone, large_transaction_minor, created_at, updated_at\n         FROM households WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -48,8 +48,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "large_transaction_minor",
         "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "large_transaction_minor"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +71,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -78,9 +89,10 @@
       false,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "559c181bd6f1aec5bcb5e7b18e9134701a074f4c572a02eef20d74b019541ca3"
+  "hash": "40389b9688ff5215ae58a91dc378b1a42cc95133149c073f2261e944c2d6085f"
 }

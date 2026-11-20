@@ -41,6 +41,11 @@ pub struct HouseholdPatch {
     pub name: Option<String>,
     pub timezone: Option<String>,
     pub primary_currency: Option<String>,
+    /// Splits at or above this amount (a decimal string in the primary
+    /// currency) notify as `transaction.large`; `null` turns it off.
+    #[serde(default, deserialize_with = "super::double_option")]
+    #[schema(value_type = Option<String>)]
+    pub large_transaction_amount: Option<Option<String>>,
 }
 
 /// Changes household settings (owner only).
@@ -56,6 +61,7 @@ pub async fn update_household(
         name: body.name,
         timezone: body.timezone,
         primary_currency: body.primary_currency,
+        large_transaction_amount: body.large_transaction_amount,
     };
     Ok(Json(Data::new(
         state

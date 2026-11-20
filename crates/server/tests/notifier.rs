@@ -83,6 +83,7 @@ async fn channel(server: &common::TestServer, ctx: &HouseholdCtx, kind: &str, na
         name: name.into(),
         config,
         active: None,
+        event_types: None,
     };
     server
         .app
@@ -203,6 +204,7 @@ async fn channels_without_a_configured_sender_fail_and_events_without_text_are_s
         name: "Mail".into(),
         config: json!({ "to": "me@example.com" }),
         active: None,
+        event_types: None,
     };
     server
         .app

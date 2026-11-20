@@ -385,6 +385,7 @@ async fn owner_updates_household_settings() {
         name: Some("Our place".to_string()),
         timezone: Some("Europe/Rome".to_string()),
         primary_currency: Some("CHF".to_string()),
+        large_transaction_amount: Some(Some("500".to_string())),
     };
     let view = test
         .app
@@ -397,6 +398,7 @@ async fn owner_updates_household_settings() {
         ("Our place", "Europe/Rome")
     );
     assert_eq!(view.primary_currency, "CHF");
+    assert_eq!(view.large_transaction_amount.as_deref(), Some("500.00"));
     assert_eq!(
         test.app.identity.get_household(&setup.ctx).await.unwrap(),
         view

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, household_id, user_id, kind, name, config, active AS \"active: bool\",\n                      created_at, updated_at\n               FROM notification_channels WHERE household_id = ? AND user_id = ?\n               ORDER BY created_at, id",
+  "query": "SELECT id, household_id, user_id, kind, name, config, active AS \"active: bool\",\n                  event_types, created_at, updated_at\n           FROM notification_channels WHERE id = ? AND household_id = ? AND user_id = ?",
   "describe": {
     "columns": [
       {
@@ -81,8 +81,19 @@
         }
       },
       {
-        "name": "created_at",
+        "name": "event_types",
         "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notification_channels",
+            "name": "event_types"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,7 +104,7 @@
       },
       {
         "name": "updated_at",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,9 +115,10 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -118,5 +130,5 @@
       false
     ]
   },
-  "hash": "d2e57ab8880e6040486bcd7b6e777294c9f780a3412e0e38ec5319a73e4377d3"
+  "hash": "ebfbf81772558efa5ea889c617542179ff1ffc40642c74fa3e16770371155584"
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE households SET name = ?, timezone = ?, primary_currency = ?,\n                    large_transaction_minor = ?, updated_at = ?\n             WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "5ffbe29c854c457d6bb0f5f280868e917d876a62237cf8bba9f975abb075118e"
+}

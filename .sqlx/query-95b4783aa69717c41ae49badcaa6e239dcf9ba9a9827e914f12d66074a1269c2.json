@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT primary_currency, large_transaction_minor FROM households WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "primary_currency",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "primary_currency"
+          }
+        }
+      },
+      {
+        "name": "large_transaction_minor",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "households",
+            "name": "large_transaction_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "95b4783aa69717c41ae49badcaa6e239dcf9ba9a9827e914f12d66074a1269c2"
+}

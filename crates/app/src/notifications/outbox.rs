@@ -11,7 +11,7 @@ use sqlx::SqliteConnection;
 use super::NotificationService;
 use super::channels::Channel;
 use super::config::ChannelConfig;
-use super::message::{Message, NOTIFYING_EVENTS};
+use super::message::{AccountNames, Message, notifies};
 use crate::clock::{format_timestamp, new_id};
 use crate::error::AppError;
 
@@ -48,7 +48,7 @@ impl NotificationService {
         .await?
         .unwrap_or(0);
         let events = sqlx::query!(
-            "SELECT seq, id, household_id, event_type, payload FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
+            "SELECT seq, id, household_id, event_type, origin, payload FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
             cursor,
             batch
         )
@@ -58,13 +58,19 @@ impl NotificationService {
             return Ok(0);
         };
         for event in &events {
-            if !NOTIFYING_EVENTS.contains(&event.event_type.as_str()) {
+            let payload: Value = serde_json::from_str(&event.payload).unwrap_or(Value::Null);
+            if !notifies(&event.event_type, &event.origin, &payload) {
                 continue;
             }
-            let payload: Value = serde_json::from_str(&event.payload).unwrap_or(Value::Null);
             let key = dedupe_key(&event.event_type, &payload, &event.id);
-            self.enqueue(&mut tx, &event.household_id, event.seq, &key)
-                .await?;
+            self.enqueue(
+                &mut tx,
+                &event.household_id,
+                &event.event_type,
+                event.seq,
+                &key,
+            )
+            .await?;
         }
         let now = format_timestamp(self.clock.now());
         sqlx::query!(
@@ -84,16 +90,20 @@ impl NotificationService {
         &self,
         conn: &mut SqliteConnection,
         household: &str,
+        event_type: &str,
         seq: i64,
         key: &str,
     ) -> Result<(), AppError> {
-        // Active channels of current members only: a removed member's
-        // channels stay silent.
+        // Active channels of current members that chose this event type: a
+        // removed member's channels stay silent.
         let channels = sqlx::query_scalar!(
             "SELECT c.id FROM notification_channels c
              JOIN household_members m ON m.household_id = c.household_id AND m.user_id = c.user_id
-             WHERE c.household_id = ? AND c.active = 1 ORDER BY c.id",
-            household
+             WHERE c.household_id = ? AND c.active = 1
+               AND EXISTS (SELECT 1 FROM json_each(c.event_types) t WHERE t.value = ?)
+             ORDER BY c.id",
+            household,
+            event_type
         )
         .fetch_all(&mut *conn)
         .await?;
@@ -137,6 +147,7 @@ impl NotificationService {
                 }
             };
             let payload: Value = serde_json::from_str(&row.payload).unwrap_or(Value::Null);
+            let accounts = account_names(&self.pool, &row.household_id, &payload).await?;
             pending.push(PendingNotification {
                 id: row.id,
                 attempts: row.attempts,
@@ -148,7 +159,7 @@ impl NotificationService {
                     active: true,
                     config,
                 },
-                message: Message::for_event(&row.event_type, &payload),
+                message: Message::for_event(&row.event_type, &payload, &accounts),
             });
         }
         Ok(pending)
@@ -185,14 +196,52 @@ impl NotificationService {
     }
 }
 
-/// `bill.overdue:<period id>:<day>`: one notification per channel, period and
-/// reminder day, however often the event is read.
+/// The names of the accounts a transaction payload refers to (its splits'
+/// sources and destinations), for the message text. Empty for other events.
+async fn account_names(
+    pool: &sqlx::SqlitePool,
+    household: &str,
+    payload: &Value,
+) -> Result<AccountNames, AppError> {
+    let Some(splits) = payload["data"]["group"]["splits"].as_array() else {
+        return Ok(AccountNames::new());
+    };
+    let ids: Vec<&str> = splits
+        .iter()
+        .flat_map(|s| [&s["source_account_id"], &s["destination_account_id"]])
+        .filter_map(Value::as_str)
+        .collect();
+    let ids = serde_json::to_string(&ids).unwrap_or_else(|_| "[]".to_string());
+    let rows = sqlx::query!(
+        "SELECT id, name FROM accounts WHERE household_id = ? AND id IN (SELECT value FROM json_each(?))",
+        household,
+        ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.name)).collect())
+}
+
+/// One notification per channel and occurrence, however often the event is
+/// read: `bill.overdue:<period id>:<reminder day>`, `<type>:<alert key>` for
+/// scheduler alerts, `transaction.large:<split id>`,
+/// `recurrence.fired:<recurrence id>:<date>`, else `<type>:<event id>`.
 fn dedupe_key(event_type: &str, payload: &Value, event_id: &str) -> String {
-    let period = &payload["data"]["period"];
-    match (period["id"].as_str(), period["last_reminded_on"].as_str()) {
-        (Some(id), Some(day)) => format!("{event_type}:{id}:{day}"),
-        _ => format!("{event_type}:{event_id}"),
+    let data = &payload["data"];
+    let period = &data["period"];
+    if let (Some(id), Some(day)) = (period["id"].as_str(), period["last_reminded_on"].as_str()) {
+        return format!("{event_type}:{id}:{day}");
     }
+    if let Some(key) = data["alert_key"].as_str() {
+        return format!("{event_type}:{key}");
+    }
+    if let Some(split) = data["split_id"].as_str() {
+        return format!("{event_type}:{split}");
+    }
+    if let (Some(id), Some(date)) = (data["recurrence_id"].as_str(), data["date"].as_str()) {
+        return format!("{event_type}:{id}:{date}");
+    }
+    format!("{event_type}:{event_id}")
 }
 
 #[cfg(test)]
@@ -212,6 +261,25 @@ mod tests {
         assert_eq!(
             dedupe_key("bill.overdue", &json!({}), "e1"),
             "bill.overdue:e1"
+        );
+    }
+
+    #[test]
+    fn dedupe_keys_for_alerts_large_splits_and_recurrences() {
+        let alert = json!({ "data": { "alert_key": "budget:l1:80" } });
+        assert_eq!(
+            dedupe_key("budget.threshold_reached", &alert, "e1"),
+            "budget.threshold_reached:budget:l1:80"
+        );
+        let large = json!({ "data": { "split_id": "s1" } });
+        assert_eq!(
+            dedupe_key("transaction.large", &large, "e1"),
+            "transaction.large:s1"
+        );
+        let fired = json!({ "data": { "recurrence_id": "r1", "date": "2026-12-01" } });
+        assert_eq!(
+            dedupe_key("recurrence.fired", &fired, "e1"),
+            "recurrence.fired:r1:2026-12-01"
         );
     }
 }

@@ -10,7 +10,7 @@ mod time;
 pub use external::ExternalIdentity;
 pub(crate) use household::{household_view, members_in};
 pub use sessions::SESSION_LIFETIME;
-pub use time::today_in;
+pub use time::{now_in, today_in};
 
 use serde::Serialize;
 use sqlx::SqlitePool;
@@ -45,6 +45,9 @@ pub struct HouseholdUpdate {
     pub name: Option<String>,
     pub timezone: Option<String>,
     pub primary_currency: Option<String>,
+    /// A decimal amount in the primary currency; `Some(None)` turns the
+    /// large-transaction alert off.
+    pub large_transaction_amount: Option<Option<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
@@ -61,6 +64,9 @@ pub struct HouseholdView {
     pub name: String,
     pub primary_currency: String,
     pub timezone: String,
+    /// Splits at or above this amount (primary currency) notify as
+    /// `transaction.large`; `None` means off.
+    pub large_transaction_amount: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }

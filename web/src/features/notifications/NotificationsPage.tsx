@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddChannelForm } from "./AddChannelForm";
+import { ChannelEventTypes } from "./ChannelEventTypes";
 import { describeChannel } from "./channel-form";
+import { LargeTransactionCard } from "./LargeTransactionCard";
 import { pushSupported, subscribeBrowser } from "./push";
 import { type Channel, channelsQuery, vapidKeyQuery } from "./queries";
 
@@ -20,7 +22,8 @@ export function NotificationsPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <PageHeader title="Notifications" />
       <p className="text-sm text-muted-foreground">
-        Bill reminders go to every active channel below. Only you see your channels.
+        Each active channel below gets the notifications you tick for it. Only you see your
+        channels.
       </p>
       <Card>
         <CardHeader>
@@ -37,6 +40,7 @@ export function NotificationsPage() {
         </CardContent>
       </Card>
       <BrowserPushCard />
+      <LargeTransactionCard />
       <Card>
         <CardHeader>
           <CardTitle>Add a channel</CardTitle>
@@ -107,6 +111,7 @@ function ChannelRow({ channel }: { channel: Channel }) {
         </div>
       </div>
       <p className="break-all text-sm text-muted-foreground">{describeChannel(channel)}</p>
+      <ChannelEventTypes channel={channel} />
       {test.data ? (
         <p className="text-sm" role="status">
           {test.data.sent ? "Test sent." : `Test failed: ${test.data.error ?? "unknown error"}`}

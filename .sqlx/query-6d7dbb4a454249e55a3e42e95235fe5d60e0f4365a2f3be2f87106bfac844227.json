@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT 1 AS found FROM alert_states WHERE household_id = ? AND key = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "found",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6d7dbb4a454249e55a3e42e95235fe5d60e0f4365a2f3be2f87106bfac844227"
+}

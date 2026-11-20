@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT key FROM alert_states WHERE household_id = ? AND key NOT LIKE 'digest:%'",
+  "describe": {
+    "columns": [
+      {
+        "name": "key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "alert_states",
+            "name": "key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c8e1970898bafaa8d7c1dc24526253600971a7fb3bb3c984aa011303c4fd0c7d"
+}

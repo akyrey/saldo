@@ -29,6 +29,15 @@ impl PageRequest {
         Ok(Self { page, per_page })
     }
 
+    /// The first page at the largest size, for background tasks that read a
+    /// household's (short) lists of budgets or limits.
+    pub fn max() -> Self {
+        Self {
+            page: 1,
+            per_page: MAX_PER_PAGE,
+        }
+    }
+
     pub fn page(&self) -> u32 {
         self.page
     }

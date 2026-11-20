@@ -52,6 +52,9 @@ const KEYS: Record<string, QueryKey[]> = {
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
   saved_view: [["saved-views"]],
+  // Alerts change nothing on screen; known here so they do not refetch everything.
+  forecast: [],
+  digest: [],
   subscription_dismissal: [["subscriptions"]],
   reconciliation: [["reconciliations"], ["transactions"], ["balances"], ["accounts"]],
 };

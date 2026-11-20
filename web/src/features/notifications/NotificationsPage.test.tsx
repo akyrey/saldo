@@ -16,6 +16,7 @@ const PHONE = {
   name: "Phone",
   active: true,
   settings: { server_url: "https://ntfy.sh", topic: "bills", has_token: false },
+  event_types: ["bill.due_soon", "bill.overdue"],
   created_at: "",
   updated_at: "",
 };
@@ -32,7 +33,49 @@ function api(routes: Record<string, unknown> = {}) {
   });
 }
 
+const TYPES = {
+  data: [
+    { type: "bill.due_soon", label: "Bill due soon", description: "" },
+    { type: "bill.overdue", label: "Bill overdue", description: "" },
+    { type: "budget.threshold_reached", label: "Budget nearly used", description: "" },
+    { type: "recurrence.fired", label: "Recurring transaction created", description: "" },
+  ],
+};
+
 describe("notifications page", () => {
+  it("chooses what a channel receives, in the server's order", async () => {
+    const seen = api({
+      "GET /api/v1/notification-types": TYPES,
+      "PATCH /api/v1/notification-channels/c1": { data: PHONE },
+    });
+    renderApp("/settings/notifications");
+    const row = await screen.findByTestId("channel");
+    const recurring = await within(row).findByRole("checkbox", {
+      name: "Recurring transaction created",
+    });
+    expect(within(row).getByRole("checkbox", { name: "Bill due soon" })).toBeChecked();
+    expect(recurring).not.toBeChecked();
+    await userEvent.click(recurring);
+    await waitFor(() => expect(seen.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = seen.find((r) => r.method === "PATCH");
+    expect(await patch?.json()).toEqual({
+      event_types: ["bill.due_soon", "bill.overdue", "recurrence.fired"],
+    });
+  });
+
+  it("saves the large-transaction amount for the owner", async () => {
+    const seen = api({
+      "PATCH /api/v1/household": { data: ME.data.household },
+    });
+    renderApp("/settings/notifications");
+    const field = await screen.findByLabelText("Amount");
+    await userEvent.type(field, "500,50");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(seen.some((r) => r.url.endsWith("/household"))).toBe(true));
+    const patch = seen.find((r) => r.url.endsWith("/household"));
+    expect(await patch?.json()).toEqual({ large_transaction_amount: "500.50" });
+  });
+
   it("lists channels and sends a test", async () => {
     const seen = api({
       "POST /api/v1/notification-channels/c1/test": {

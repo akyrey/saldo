@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM alert_states WHERE household_id = ? AND key LIKE 'digest:%' AND key != ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9ac34729646c78fbca5e291d7d69fc4d4d6af6ef5ab3516bfa2ae69143870464"
+}

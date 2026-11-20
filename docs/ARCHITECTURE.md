@@ -784,6 +784,18 @@ CREATE TABLE notification_channels (
     updated_at    TEXT NOT NULL
 ) STRICT;
 
+-- Phase 10 (migration 20261120111443_alerts): notification_channels.event_types
+-- TEXT NOT NULL DEFAULT '["bill.due_soon","bill.overdue"]' (JSON array, the
+-- types the channel receives; existing channels keep bill reminders),
+-- households.large_transaction_minor INTEGER (> 0, primary currency; NULL is
+-- off), and alert_states (see 8.6).
+CREATE TABLE alert_states (
+    household_id  TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    key           TEXT NOT NULL,   -- 'budget:<limit id>:80', 'forecast:<account id>', 'goal:<id>', 'digest:2026-W47'
+    since         TEXT NOT NULL,
+    PRIMARY KEY (household_id, key)
+) STRICT;
+
 -- dedupe_key (e.g. 'bill.overdue:<period id>:2026-11-14') makes sending idempotent.
 CREATE TABLE notifications (
     id           TEXT PRIMARY KEY,
@@ -842,7 +854,7 @@ Conventions:
 | Area | Endpoints | Phase |
 |---|---|---|
 | Setup, auth | `GET /auth/methods` (public: `{ password, oidc: { name } | null }`), `GET /auth/oidc/start?redirect=` (desktop: `&desktop_port=&desktop_challenge=`), `GET /auth/oidc/callback` (public redirects), `POST /auth/oidc/desktop-token` (public), `GET /setup` (public: `{ needed }`), `POST /setup` (only while no user exists), `POST /auth/login` (`client: "desktop"` returns the session token in the body and sets no cookie; Phase 7), `POST /auth/logout`, `GET /auth/me`, `GET/POST /auth/tokens`, `DELETE /auth/tokens/{id}` | 2 |
-| Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}` | 2 |
+| Household | `GET/PATCH /household`, `GET/POST /household/members`, `DELETE /household/members/{user_id}`. Phase 10: the household has `large_transaction_amount` (decimal string in the primary currency or `null`), set by `PATCH` (`null` turns it off) | 2, 10 |
 | Currencies | `GET /currencies` | 2 |
 | Accounts | `GET/POST /accounts` (`GET` filters: `type`, `active`, `scope`, `q` for part of the name ignoring case, added 2026-11-16), `GET/PATCH/DELETE /accounts/{id}`, `GET /accounts/{id}/balance?date=`; `GET /accounts/balances` (a page of balances, same filters as `GET /accounts`, added in Phase 4) | 2 |
 | Transactions | `GET/POST /transactions`, `GET/PUT/DELETE /transactions/{id}`; filters `from`, `to`, `account_id`, `category_id`, `tag_id`, `budget_id`, `bill_id`, `kind`, `q`. Phase 10 adds `category_id=none` (withdrawals and deposits without a category), `budget_id=none` (withdrawals without a budget), `amount_min`/`amount_max` (decimal strings compared with the split amount; only splits in `currency`, default the primary currency, match; 422 when `amount_min > amount_max`) and `has_attachments` | 2, 10 |
@@ -859,7 +871,7 @@ Conventions:
 | Rules | `GET/POST /rule-groups`, `GET/PATCH/DELETE /rule-groups/{id}`, `GET/POST /rules`, `GET/PUT/DELETE /rules/{id}`, `POST /rules/{id}/test` (dry run), `POST /rules/{id}/apply` | 5 |
 | Reports | `GET /reports/net-worth`, `/reports/cash-flow`, `/reports/by-category`, `/reports/by-tag`, `/reports/budget-vs-actual`; all take `from`, `to` (required), `interval` (default `month`, at most 1000 intervals), `scope`. Response `{ range, currencies: [...] }`, one entry per currency, primary first, no conversion. Income = deposits, expenses = withdrawals; transfers, opening balances and reconciliations count as neither. Budget vs actual counts a limit in the interval its start date falls in. `GET /reports/forecast?to=&interval=&scope=&account_id=` (Phase 9) starts today (household time), `to` after today and at most 24 months ahead, `interval` `day`, `week` (default) or `month`; it covers the asset and liability accounts in net worth (or one such `account_id`, otherwise 422) and adds splits already dated after today, active recurrences' dates after `fired_through` (unfired past dates count tomorrow), and active bills' open periods plus their scheduled due dates beyond the created periods, at `amount_max`, from the account that paid the latest paid period (overdue ones count tomorrow; a bill named in an active recurrence's template split is left out; a bill never paid counts in the total only, and only for the whole household). Response `{ range, currencies: [{ currency, start_balance, points: [{ date, balance }], lowest, items: [{ date, source, source_id, title, account_id, amount }] }] }` | 5, 9 |
 | Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `POST /webhooks/{id}/test` (202 `{ event_id }`), `POST /webhooks/{id}/rotate-secret`, `GET /webhooks/{id}/deliveries`, `POST /webhook-deliveries/{id}/redeliver`. Owner only. The list is unpaginated; create and rotate answer `{ webhook, secret }`, the only place the secret appears | 6 |
-| Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields | 6 |
+| Notifications | `GET/POST /notification-channels`, `PATCH/DELETE /notification-channels/{id}`, `POST /notification-channels/{id}/test` (`{ sent, error }`), `GET /push/vapid-key` (`{ public_key \| null }`). Channels belong to the calling user (another user's channel is 404); responses never contain tokens, push endpoints or keys; `PATCH` merges `config` fields. Phase 10: channels have `event_types` (the notifying types they receive; default the two bill reminders; 422 for any other type; `PATCH` replaces the list), and `GET /notification-types` lists `{ type, label, description }` of every notifying type | 6, 10 |
 | Templates | `GET/POST /transaction-templates` (ordered by `sort_order`, then name), `GET/PATCH/DELETE /transaction-templates/{id}` (`PATCH` merges `name`, `kind`, `title`, `sort_order`; `splits` replaces them all), `POST /transactions/{id}/template` (`{ name }`; saves the group without its dates and reconciled flags; 422 for opening balances and reconciliations). Names are unique per household (409). A template is checked only for what it contains: its accounts, categories, budgets (withdrawals only), bills and tags belong to the household, amounts parse in their currency and are positive, and two given accounts form the template's kind. There is no instantiate endpoint: the web editor fills itself from the template and posts `POST /transactions` | 8 |
 | Subscriptions | `GET /subscription-candidates?scope=` (computed per request from the last 18 months of withdrawals, by next due date; unpaginated), `POST /subscription-candidates/accept` (`{ account_id, currency, name, frequency, amount_min, amount_max, split_ids }`, 201 with the bill: first due on the first payment; the payments get the bill, which pays their periods; open periods before the last payment are skipped; 422 on `split_ids` unless each is a withdrawal to the account in the currency without a bill), `POST /subscription-candidates/dismiss` (`{ account_id, currency }`, an expense account; twice is a no-op), `DELETE /subscription-dismissals/{account_id}/{currency}` (404 when not dismissed) | 9 |
 | Reconciliations | `GET /accounts/{id}/reconciliations` (latest statement first, paginated), `GET /accounts/{id}/reconciliations/draft?statement_date=` (`{ account_id, currency, statement_date, reconciled_through, cleared_balance, splits: [{ id, group_id, date, description, amount }] }`: cleared = reconciled splits and opening balances up to the date; `splits` = the rest up to the date, amounts signed for the account), `POST /accounts/{id}/reconciliations` (`{ statement_date, statement_balance, split_ids, book_difference? }`, 201: the splits must be the account's, unreconciled and dated on or before the statement, which must not be before the last reconciliation; a difference is a 422 on `statement_balance` unless `book_difference`, which books it as a reconciliation transaction against Equity(Reconciliation), dated on the statement and itself reconciled), `DELETE /reconciliations/{id}` (only the account's latest, otherwise 409: clears its splits' flags and deletes its difference transaction). Only asset and liability accounts (422 otherwise). `GET /transactions` takes `reconciled`. In `PUT /transactions/{id}`, a split named by `id` without `reconciled` keeps its stored flag (the web editor does not send it); a reconciled split whose date, amount or accounts change, or that is saved as not reconciled, leaves its reconciliation | 9 |
@@ -895,7 +907,7 @@ Event types are `<entity>.<verb>`:
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
 - Sessions and API tokens (login, logout, token create/revoke) are authentication state, not household data, and append no event.
 - The entity in `data` is the `saldo-app` view type (`AccountView`, `TransactionGroupView`, ...), which is also the API response, so the two cannot drift.
-- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_skipped`, `bill.period_reopened`, `recurrence.fired` (`{ recurrence_id, date, created, group }`), `piggy_bank.target_reached`, `import.completed`, `webhook.test`. Adding or removing piggy bank money appends `piggy_bank.updated`. Changes made by rules append `transaction.updated` with origin `rule`.
+- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_skipped`, `bill.period_reopened`, `recurrence.fired` (`{ recurrence_id, date, created, group }`), `piggy_bank.target_reached`, `import.completed`, `webhook.test`. Phase 10 alerts (8.6): `budget.threshold_reached` (`{ budget: { id, name }, limit, threshold, total, alert_key }`), `forecast.below_zero` (`{ account: { id, name }, currency, lowest, alert_key }`), `digest.weekly` (`{ week, currencies, top_categories, bills_due, budgets, alert_key }`), `net_worth_goal.reached` (the goal plus `alert_key`), all with origin `scheduler`; and `transaction.large` (`{ group, split_id, threshold }`), appended with the change for origins `api` and `rule` only, once per split that becomes large (at or above the household's amount in the primary currency). Adding or removing piggy bank money appends `piggy_bank.updated`. Changes made by rules append `transaction.updated` with origin `rule`.
 
 Payload, also the webhook body:
 
@@ -934,17 +946,28 @@ A period becomes `paid` when a split is linked to it: explicitly through `POST /
 
 ### 8.4 Notifications
 
-A notifier task reads events after the `notifications` cursor. For `bill.due_soon` and `bill.overdue` (more types later) it inserts one `notifications` row per active channel of every household member, with a dedupe key, then sends:
+A notifier task reads events after the `notifications` cursor. For each notifying type (`bill.due_soon`, `bill.overdue`, and from Phase 10 `budget.threshold_reached`, `forecast.below_zero`, `transaction.large`, `recurrence.fired`, `piggy_bank.target_reached`, `net_worth_goal.reached`, `digest.weekly`) it inserts one `notifications` row per active channel of every household member whose `event_types` holds the type, with a dedupe key, then sends. `recurrence.fired` notifies only when `created` is true and the origin is `scheduler` (a manual "Fire now" does not). Messages about transactions name the accounts, looked up when the message is built:
 
 - `ntfy` / `gotify`: an HTTP POST to the configured server and topic/token.
 - `email`: SMTP, configured by `SALDO_SMTP_*`.
 - `webpush`: Web Push with VAPID keys; the channel `config` holds the browser's push subscription.
 
-Failed sends are retried three times (four attempts in all), one attempt per notifier run (every 60 s and after writes), then marked `failed`. The dedupe key is `<type>:<period id>:<reminder day>`. Sending is at-least-once: a crash between a send and its bookkeeping sends that one notification again.
+Failed sends are retried three times (four attempts in all), one attempt per notifier run (every 60 s and after writes), then marked `failed`. The dedupe key is `<type>:<period id>:<reminder day>` for bill reminders, `<type>:<alert key>` for scheduler alerts, `transaction.large:<split id>`, `recurrence.fired:<recurrence id>:<date>`, else `<type>:<event id>`. Sending is at-least-once: a crash between a send and its bookkeeping sends that one notification again.
 
 ### 8.5 Background tasks
 
-All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `recurrence-runner`, `attachment-sweep`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database. `attachment-sweep` (at start and hourly) removes stored files that no attachment row uses and that are at least an hour old; deletes only remove rows, inside their database transaction, so a rollback (an importer dry run) never loses a file.
+All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `alert-scheduler` (Phase 10, 8.6), `recurrence-runner`, `attachment-sweep`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database. `attachment-sweep` (at start and hourly) removes stored files that no attachment row uses and that are at least an hour old; deletes only remove rows, inside their database transaction, so a rollback (an importer dry run) never loses a file.
+
+### 8.6 Alerts (Phase 10)
+
+The `alert-scheduler` task runs at startup, every 15 minutes and after writes, for every household (`AlertService::run`, origin `scheduler`), and wakes the notifier when it appended events. Each alert condition has a key; `alert_states` holds the keys that hold now. A key that starts holding is inserted and appends its event in the same transaction; a key that stops holding is deleted (no event), so a later crossing alerts again. Conditions:
+
+- `budget:<limit id>:<80|100>`: a limit of an active budget that contains today has spent at least that share of `amount + carried` (`core::alerts::budget_thresholds`, integer maths; nothing left to spend reaches both as soon as anything is spent).
+- `forecast:<account id>`: an active asset account in net worth has a forecast (`/reports/forecast` for that account, 30 days ahead) whose lowest balance is below zero.
+- `goal:<goal id>`: a net worth goal reached its target (Phase 10 Track F).
+- The weekly digest: from Monday 08:00 household time, once per ISO week (`digest:<year>-W<week>`, only the latest key kept), about the previous Monday to Sunday: cash flow per currency, the three largest expense categories per currency, open bill periods due in the next 7 days (at `amount_max`), and the budgets past 80% today. A household set up mid-week gets that week's digest on the first run.
+
+`alert_states` is bookkeeping: it is not exported and its changes append no events.
 
 ## 9. Importer and export
 

@@ -5,6 +5,7 @@
 //! commits. Every method takes a [`ctx::HouseholdCtx`] first.
 
 pub mod accounts;
+pub mod alerts;
 pub mod attachments;
 pub mod bills;
 pub mod budgets;
@@ -39,6 +40,7 @@ use std::path::PathBuf;
 use sqlx::SqlitePool;
 
 use crate::accounts::AccountService;
+use crate::alerts::AlertService;
 use crate::attachments::AttachmentService;
 use crate::bills::BillService;
 use crate::budgets::BudgetService;
@@ -89,6 +91,7 @@ pub struct App {
     pub subscriptions: SubscriptionService,
     pub reconciliations: ReconciliationService,
     pub saved_views: SavedViewService,
+    pub alerts: AlertService,
 }
 
 impl App {
@@ -126,6 +129,12 @@ impl App {
             notifications: NotificationService::new(pool.clone(), clock.clone()),
             tags: TagService::new(pool.clone(), clock.clone()),
             saved_views: SavedViewService::new(pool.clone(), clock.clone()),
+            alerts: AlertService::new(
+                pool.clone(),
+                clock.clone(),
+                BudgetService::new(pool.clone(), clock.clone()),
+                ReportService::new(pool.clone()),
+            ),
             rules: RuleService::new(pool.clone(), clock.clone(), transactions.clone()),
             webhooks: WebhookService::new(pool.clone(), clock.clone()),
             budgets: BudgetService::new(pool.clone(), clock.clone()),
