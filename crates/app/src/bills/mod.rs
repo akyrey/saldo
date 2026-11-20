@@ -1,6 +1,7 @@
 //! Bills: recurring expected payments, their due periods, and reminders
 //! (ARCHITECTURE.md 5.3 and 8.3).
 
+mod history;
 mod input;
 mod periods;
 mod scheduler;
@@ -19,6 +20,10 @@ use crate::identity::{required, today_in};
 use crate::page::{Page, PageRequest};
 use crate::{currencies, identity};
 
+pub use history::{
+    BillHistoryView, HistoryAccount, HistoryDueDate, HistoryPayment, HistoryRange, HistorySummary,
+    MAX_DUE_DATES,
+};
 pub use input::{BillUpdate, NewBill};
 use input::{
     DEFAULT_REMIND_DAYS_BEFORE, DEFAULT_REMIND_EVERY_DAYS, check_dates, check_every, parse_amounts,
