@@ -10,7 +10,7 @@ use chrono::{TimeZone, Utc};
 use saldo_app::clock::FixedClock;
 use saldo_app::ctx::{HouseholdCtx, Origin};
 use saldo_app::events::{EventFilter, EventView};
-use saldo_app::identity::{NewMember, SetupInput, SetupResult};
+use saldo_app::identity::{NewMember, SessionClient, SetupInput, SetupResult};
 use saldo_app::page::PageRequest;
 use saldo_app::{App, db};
 
@@ -66,7 +66,12 @@ pub async fn add_member(test: &TestApp, owner: &HouseholdCtx, email: &str) -> Ho
         .add_member(owner, Origin::Api, input)
         .await
         .unwrap();
-    test.app.identity.login(email, PASSWORD).await.unwrap().ctx
+    test.app
+        .identity
+        .login(email, PASSWORD, SessionClient::Browser)
+        .await
+        .unwrap()
+        .ctx
 }
 
 /// Every event of the household, oldest first.

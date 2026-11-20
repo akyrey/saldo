@@ -1203,6 +1203,128 @@
         }
       }
     },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "The caller's login sessions (browsers and desktop apps), newest first.\nPersonal access tokens are listed by `GET /auth/tokens`.",
+        "operationId": "list_sessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_SessionView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/revoke-others": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signs out everywhere else: ends every login session of the caller except\nthe one making this request. Personal access tokens stay valid.",
+        "operationId": "revoke_other_sessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_RevokedSessions"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Ends one of the caller's login sessions, which logs that device out.\nEnding the current one also clears the cookie, like logout.",
+        "operationId": "end_session",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/tokens": {
       "get": {
         "tags": [
@@ -11776,6 +11898,29 @@
           }
         }
       },
+      "Data_RevokedSessions": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "revoked"
+            ],
+            "properties": {
+              "revoked": {
+                "type": "integer",
+                "format": "int64",
+                "description": "How many sessions were ended.",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
       "Data_RuleApplyResult": {
         "type": "object",
         "description": "A single result.",
@@ -12918,6 +13063,59 @@
                 },
                 "updated_at": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_SessionView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One of the caller's login sessions (not a personal access token).",
+              "required": [
+                "id",
+                "created_at",
+                "expires_at",
+                "current"
+              ],
+              "properties": {
+                "client": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionClient"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "current": {
+                  "type": "boolean",
+                  "description": "True for the session that made this request."
+                },
+                "expires_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "last_used_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             }
@@ -16384,6 +16582,20 @@
           }
         }
       },
+      "RevokedSessions": {
+        "type": "object",
+        "required": [
+          "revoked"
+        ],
+        "properties": {
+          "revoked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many sessions were ended.",
+            "minimum": 0
+          }
+        }
+      },
       "Role": {
         "type": "string",
         "description": "A member's role in their household.",
@@ -16870,6 +17082,55 @@
           },
           "updated_at": {
             "type": "string"
+          }
+        }
+      },
+      "SessionClient": {
+        "type": "string",
+        "description": "Which app a login session was opened for. Stored in the session's\n`name` column (tokens use it for their label); sessions opened before\nthis existed have none.",
+        "enum": [
+          "browser",
+          "desktop"
+        ]
+      },
+      "SessionView": {
+        "type": "object",
+        "description": "One of the caller's login sessions (not a personal access token).",
+        "required": [
+          "id",
+          "created_at",
+          "expires_at",
+          "current"
+        ],
+        "properties": {
+          "client": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionClient"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "True for the session that made this request."
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

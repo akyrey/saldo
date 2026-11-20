@@ -7,7 +7,7 @@ mod common;
 
 use common::*;
 use saldo_app::error::AppError;
-use saldo_app::identity::ExternalIdentity;
+use saldo_app::identity::{ExternalIdentity, SessionClient};
 
 const ISSUER: &str = "https://auth.example.com/application/o/saldo/";
 
@@ -27,7 +27,10 @@ async fn a_verified_email_of_a_member_logs_in_and_links_the_identity() {
     let first = test
         .app
         .identity
-        .login_external(identity("sub-1", "Owner@Example.com", true))
+        .login_external(
+            identity("sub-1", "Owner@Example.com", true),
+            SessionClient::Browser,
+        )
         .await
         .unwrap();
 
@@ -41,7 +44,10 @@ async fn a_verified_email_of_a_member_logs_in_and_links_the_identity() {
     let again = test
         .app
         .identity
-        .login_external(identity("sub-1", "renamed@example.com", false))
+        .login_external(
+            identity("sub-1", "renamed@example.com", false),
+            SessionClient::Browser,
+        )
         .await
         .unwrap();
     assert_eq!(again.ctx.user_id, setup.ctx.user_id);
@@ -53,20 +59,29 @@ async fn unknown_or_unverified_emails_are_refused() {
     let identity_service = &test.app.identity;
 
     let stranger = identity_service
-        .login_external(identity("sub-2", "stranger@example.com", true))
+        .login_external(
+            identity("sub-2", "stranger@example.com", true),
+            SessionClient::Browser,
+        )
         .await;
     assert!(matches!(stranger, Err(AppError::Unauthorized)));
 
     let unverified = identity_service
-        .login_external(identity("sub-3", "owner@example.com", false))
+        .login_external(
+            identity("sub-3", "owner@example.com", false),
+            SessionClient::Browser,
+        )
         .await;
     assert!(matches!(unverified, Err(AppError::Unauthorized)));
 
     let no_email = identity_service
-        .login_external(ExternalIdentity {
-            email: None,
-            ..identity("sub-4", "", true)
-        })
+        .login_external(
+            ExternalIdentity {
+                email: None,
+                ..identity("sub-4", "", true)
+            },
+            SessionClient::Browser,
+        )
         .await;
     assert!(matches!(no_email, Err(AppError::Unauthorized)));
 }
@@ -77,7 +92,10 @@ async fn a_removed_member_cannot_log_in_with_a_linked_identity() {
     let member = add_member(&test, &setup.ctx, "partner@example.com").await;
     test.app
         .identity
-        .login_external(identity("sub-5", "partner@example.com", true))
+        .login_external(
+            identity("sub-5", "partner@example.com", true),
+            SessionClient::Browser,
+        )
         .await
         .unwrap();
     test.app
@@ -89,7 +107,10 @@ async fn a_removed_member_cannot_log_in_with_a_linked_identity() {
     let after = test
         .app
         .identity
-        .login_external(identity("sub-5", "partner@example.com", true))
+        .login_external(
+            identity("sub-5", "partner@example.com", true),
+            SessionClient::Browser,
+        )
         .await;
     assert!(matches!(after, Err(AppError::Unauthorized)));
 }

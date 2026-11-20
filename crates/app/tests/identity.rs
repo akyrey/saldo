@@ -5,7 +5,7 @@ use common::*;
 use saldo_app::ctx::{Origin, Role};
 use saldo_app::error::AppError;
 use saldo_app::events::EventFilter;
-use saldo_app::identity::{HouseholdUpdate, NewMember};
+use saldo_app::identity::{HouseholdUpdate, NewMember, SessionClient};
 use saldo_app::page::PageRequest;
 
 #[tokio::test]
@@ -85,7 +85,7 @@ async fn login_then_authenticate_resolves_the_context() {
     let login = test
         .app
         .identity
-        .login(" owner@example.com ", PASSWORD)
+        .login(" owner@example.com ", PASSWORD, SessionClient::Browser)
         .await
         .unwrap();
     assert_eq!(login.ctx, setup.ctx);
@@ -103,7 +103,7 @@ async fn login_email_is_case_insensitive() {
     assert!(
         test.app
             .identity
-            .login("OWNER@example.com", PASSWORD)
+            .login("OWNER@example.com", PASSWORD, SessionClient::Browser)
             .await
             .is_ok()
     );
@@ -115,12 +115,16 @@ async fn wrong_password_and_unknown_email_are_unauthorized() {
     let wrong = test
         .app
         .identity
-        .login("owner@example.com", "wrong password")
+        .login(
+            "owner@example.com",
+            "wrong password",
+            SessionClient::Browser,
+        )
         .await;
     let unknown = test
         .app
         .identity
-        .login("nobody@example.com", PASSWORD)
+        .login("nobody@example.com", PASSWORD, SessionClient::Browser)
         .await;
     assert!(matches!(wrong, Err(AppError::Unauthorized)));
     assert!(matches!(unknown, Err(AppError::Unauthorized)));
@@ -142,7 +146,7 @@ async fn expired_session_is_unauthorized_and_removed() {
     let login = test
         .app
         .identity
-        .login("owner@example.com", PASSWORD)
+        .login("owner@example.com", PASSWORD, SessionClient::Browser)
         .await
         .unwrap();
     test.clock.advance(TimeDelta::days(30));
@@ -157,7 +161,7 @@ async fn logout_ends_the_session() {
     let login = test
         .app
         .identity
-        .login("owner@example.com", PASSWORD)
+        .login("owner@example.com", PASSWORD, SessionClient::Browser)
         .await
         .unwrap();
     let auth = test.app.identity.authenticate(&login.token).await.unwrap();
@@ -255,7 +259,7 @@ async fn removed_members_lose_their_sessions_and_tokens() {
     assert!(
         test.app
             .identity
-            .login("partner@example.com", PASSWORD)
+            .login("partner@example.com", PASSWORD, SessionClient::Browser)
             .await
             .is_err()
     );

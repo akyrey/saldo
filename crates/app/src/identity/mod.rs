@@ -88,6 +88,46 @@ pub struct MeView {
     pub role: Role,
 }
 
+/// Which app a login session was opened for. Stored in the session's
+/// `name` column (tokens use it for their label); sessions opened before
+/// this existed have none.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionClient {
+    Browser,
+    Desktop,
+}
+
+impl SessionClient {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Browser => "browser",
+            Self::Desktop => "desktop",
+        }
+    }
+
+    /// The stored value back; anything unknown (or none) is `None`.
+    pub fn from_stored(value: Option<&str>) -> Option<Self> {
+        match value {
+            Some("browser") => Some(Self::Browser),
+            Some("desktop") => Some(Self::Desktop),
+            _ => None,
+        }
+    }
+}
+
+/// One of the caller's login sessions (not a personal access token).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+pub struct SessionView {
+    pub id: String,
+    pub client: Option<SessionClient>,
+    pub created_at: String,
+    pub last_used_at: Option<String>,
+    pub expires_at: String,
+    /// True for the session that made this request.
+    pub current: bool,
+}
+
 /// A personal access token without its secret.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
 pub struct TokenView {

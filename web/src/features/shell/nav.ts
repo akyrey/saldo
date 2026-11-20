@@ -7,6 +7,7 @@ import {
   Download,
   FolderTree,
   type LucideIcon,
+  MonitorSmartphone,
   PiggyBank,
   Receipt,
   Repeat,
@@ -43,6 +44,7 @@ export const MORE_NAV: readonly NavItem[] = [
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/rules", label: "Rules", icon: Wand2 },
   { to: "/templates", label: "Templates", icon: ClipboardCopy },
+  { to: "/settings/sessions", label: "Sessions", icon: MonitorSmartphone },
 ];
 
 /** Behind "More", for the owner only (export and webhooks are owner-only). */

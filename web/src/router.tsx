@@ -300,6 +300,12 @@ const notificationsRoute = createRoute({
   ),
 });
 
+const sessionsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "settings/sessions",
+  component: lazyRouteComponent(() => import("@/features/sessions/SessionsPage"), "SessionsPage"),
+});
+
 const piggyBanksRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "piggy-banks",
@@ -377,6 +383,7 @@ const routeTree = rootRoute.addChildren([
     reportRoute,
     forecastRoute,
     notificationsRoute,
+    sessionsRoute,
     piggyBanksRoute,
     recurrencesRoute,
     newRecurrenceRoute,

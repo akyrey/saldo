@@ -8,7 +8,7 @@ use axum::extract::{Query, State};
 use axum::http::{HeaderMap, header};
 use axum::response::{AppendHeaders, IntoResponse, Redirect, Response};
 use saldo_app::error::AppError;
-use saldo_app::identity::{LoginResult, SESSION_LIFETIME};
+use saldo_app::identity::{LoginResult, SESSION_LIFETIME, SessionClient};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -161,6 +161,10 @@ async fn finish_login(
     pending: oidc::Pending,
     code: String,
 ) -> Result<LoginResult, &'static str> {
+    let client = match pending.desktop {
+        Some(_) => SessionClient::Desktop,
+        None => SessionClient::Browser,
+    };
     let identity = oidc::finish(config, &callback_url(state), pending, code)
         .await
         .map_err(|error| {
@@ -170,7 +174,7 @@ async fn finish_login(
     state
         .app
         .identity
-        .login_external(identity)
+        .login_external(identity, client)
         .await
         .map_err(|error| match error {
             AppError::Unauthorized => "oidc_no_account",

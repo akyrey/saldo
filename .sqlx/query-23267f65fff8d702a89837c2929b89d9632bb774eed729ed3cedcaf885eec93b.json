@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM sessions\n             WHERE id = ? AND household_id = ? AND user_id = ? AND kind = 'session'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "23267f65fff8d702a89837c2929b89d9632bb774eed729ed3cedcaf885eec93b"
+}

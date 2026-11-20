@@ -1,4 +1,5 @@
-//! `/auth`: login, logout, the current user, and personal access tokens.
+//! `/auth`: login, logout, the current user, login sessions and personal
+//! access tokens.
 
 use std::time::Instant;
 
@@ -7,7 +8,9 @@ use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{AppendHeaders, IntoResponse};
 use saldo_app::ctx::Role;
-use saldo_app::identity::{MeView, SESSION_LIFETIME, TokenView, UserView};
+use saldo_app::identity::{
+    MeView, SESSION_LIFETIME, SessionClient, SessionView, TokenView, UserView,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -26,6 +29,9 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(me))
         .routes(routes!(list_tokens, create_token))
         .routes(routes!(revoke_token))
+        .routes(routes!(list_sessions))
+        .routes(routes!(end_session))
+        .routes(routes!(revoke_other_sessions))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -75,6 +81,11 @@ pub async fn login(
         return Err(saldo_app::error::AppError::Forbidden.into());
     }
     let desktop = is_desktop(body.client.as_deref())?;
+    let client = if desktop {
+        SessionClient::Desktop
+    } else {
+        SessionClient::Browser
+    };
     let mut keys = vec![format!("email:{}", body.email.trim().to_lowercase())];
     if let Some(ip) = ip {
         keys.push(format!("ip:{ip}"));
@@ -85,7 +96,7 @@ pub async fn login(
     let result = state
         .app
         .identity
-        .login(&body.email, &body.password)
+        .login(&body.email, &body.password, client)
         .await?;
     let cookie = session_cookie(
         &result.token,
@@ -188,4 +199,60 @@ pub async fn revoke_token(
 ) -> Result<StatusCode, ApiError> {
     state.app.identity.revoke_token(&auth.ctx, &id).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// The caller's login sessions (browsers and desktop apps), newest first.
+/// Personal access tokens are listed by `GET /auth/tokens`.
+#[utoipa::path(get, path = "/auth/sessions", tag = "auth",
+    responses((status = 200, body = Data<Vec<SessionView>>), (status = 401, body = ErrorEnvelope)), security(("bearer" = []), ("cookie" = [])))]
+pub async fn list_sessions(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+) -> Result<Json<Data<Vec<SessionView>>>, ApiError> {
+    let sessions = state
+        .app
+        .identity
+        .list_sessions(&auth.ctx, &auth.session_id)
+        .await?;
+    Ok(Json(Data::new(sessions)))
+}
+
+/// Ends one of the caller's login sessions, which logs that device out.
+/// Ending the current one also clears the cookie, like logout.
+#[utoipa::path(delete, path = "/auth/sessions/{id}", tag = "auth", params(("id" = String, Path)),
+    responses((status = 204), (status = 401, body = ErrorEnvelope), (status = 404, body = ErrorEnvelope)),
+    security(("bearer" = []), ("cookie" = [])))]
+pub async fn end_session(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+    ApiPath(id): ApiPath<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.app.identity.end_session(&auth.ctx, &id).await?;
+    let ended_current = id == auth.session_id;
+    let cookie = clear_session_cookie(state.config.cookie_secure);
+    let cookie_header = ended_current.then(|| AppendHeaders([(header::SET_COOKIE, cookie)]));
+    Ok((StatusCode::NO_CONTENT, cookie_header, ()))
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RevokedSessions {
+    /// How many sessions were ended.
+    pub revoked: u64,
+}
+
+/// Signs out everywhere else: ends every login session of the caller except
+/// the one making this request. Personal access tokens stay valid.
+#[utoipa::path(post, path = "/auth/sessions/revoke-others", tag = "auth",
+    responses((status = 200, body = Data<RevokedSessions>), (status = 401, body = ErrorEnvelope)),
+    security(("bearer" = []), ("cookie" = [])))]
+pub async fn revoke_other_sessions(
+    State(state): State<AppState>,
+    Auth(auth): Auth,
+) -> Result<Json<Data<RevokedSessions>>, ApiError> {
+    let revoked = state
+        .app
+        .identity
+        .end_other_sessions(&auth.ctx, &auth.session_id)
+        .await?;
+    Ok(Json(Data::new(RevokedSessions { revoked })))
 }

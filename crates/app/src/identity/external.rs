@@ -6,7 +6,7 @@
 use saldo_core::{HouseholdId, UserId};
 use sqlx::SqliteConnection;
 
-use super::{IdentityService, LoginResult};
+use super::{IdentityService, LoginResult, SessionClient};
 use crate::clock::format_timestamp;
 use crate::ctx::{HouseholdCtx, Role};
 use crate::error::{AppError, parse_stored};
@@ -38,6 +38,7 @@ impl IdentityService {
     pub async fn login_external(
         &self,
         identity: ExternalIdentity,
+        client: SessionClient,
     ) -> Result<LoginResult, AppError> {
         let mut tx = crate::db::begin(&self.pool).await?;
         let member = match linked_member(&mut tx, &identity).await? {
@@ -56,7 +57,7 @@ impl IdentityService {
             user_id: parse_stored::<UserId>(&member.user_id)?,
             role: Role::parse(&member.role)?,
         };
-        self.open_session(ctx).await
+        self.open_session(ctx, client).await
     }
 
     async fn link(

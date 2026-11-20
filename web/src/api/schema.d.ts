@@ -294,6 +294,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The caller's login sessions (browsers and desktop apps), newest first.
+     *     Personal access tokens are listed by `GET /auth/tokens`.
+     */
+    get: operations["list_sessions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/sessions/revoke-others": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Signs out everywhere else: ends every login session of the caller except
+     *     the one making this request. Personal access tokens stay valid.
+     */
+    post: operations["revoke_other_sessions"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/sessions/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Ends one of the caller's login sessions, which logs that device out.
+     *     Ending the current one also clears the cookie, like logout.
+     */
+    delete: operations["end_session"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/tokens": {
     parameters: {
       query?: never;
@@ -2810,6 +2870,16 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_RevokedSessions: {
+      data: {
+        /**
+         * Format: int64
+         * @description How many sessions were ended.
+         */
+        revoked: number;
+      };
+    };
+    /** @description A single result. */
     Data_RuleApplyResult: {
       data: {
         /** @description Groups that the rule actually changed. */
@@ -3140,6 +3210,18 @@ export interface components {
         /** Format: int64 */
         sort_order: number;
         updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_SessionView: {
+      data: {
+        client?: components["schemas"]["SessionClient"] | null;
+        created_at: string;
+        /** @description True for the session that made this request. */
+        current: boolean;
+        expires_at: string;
+        id: string;
+        last_used_at?: string | null;
       }[];
     };
     /** @description A single result. */
@@ -4142,6 +4224,13 @@ export interface components {
       interval: string;
       to: string;
     };
+    RevokedSessions: {
+      /**
+       * Format: int64
+       * @description How many sessions were ended.
+       */
+      revoked: number;
+    };
     /**
      * @description A member's role in their household.
      * @enum {string}
@@ -4304,6 +4393,23 @@ export interface components {
       /** Format: int64 */
       sort_order: number;
       updated_at: string;
+    };
+    /**
+     * @description Which app a login session was opened for. Stored in the session's
+     *     `name` column (tokens use it for their label); sessions opened before
+     *     this existed have none.
+     * @enum {string}
+     */
+    SessionClient: "browser" | "desktop";
+    /** @description One of the caller's login sessions (not a personal access token). */
+    SessionView: {
+      client?: components["schemas"]["SessionClient"] | null;
+      created_at: string;
+      /** @description True for the session that made this request. */
+      current: boolean;
+      expires_at: string;
+      id: string;
+      last_used_at?: string | null;
     };
     SetupRequest: {
       display_name: string;
@@ -5428,6 +5534,95 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  list_sessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_SessionView"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  revoke_other_sessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_RevokedSessions"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  end_session: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
       };
     };
   };

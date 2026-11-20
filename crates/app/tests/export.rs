@@ -480,7 +480,11 @@ async fn only_owners_can_export() {
     let member = test
         .app
         .identity
-        .login("partner@example.com", PASSWORD)
+        .login(
+            "partner@example.com",
+            PASSWORD,
+            saldo_app::identity::SessionClient::Browser,
+        )
         .await
         .unwrap()
         .ctx;
