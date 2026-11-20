@@ -9154,7 +9154,11 @@
         "properties": {
           "filters": {
             "type": "object",
-            "description": "A flat object of strings, numbers and booleans: at most 30 keys and 2 KB."
+            "description": "A flat object of strings, numbers and booleans: at most 30 keys and 2 KB.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "name": {
             "type": "string"
@@ -10936,7 +10940,11 @@
               },
               "filters": {
                 "type": "object",
-                "description": "The page's filters, as the client stored them."
+                "description": "The page's filters, as the client stored them.",
+                "additionalProperties": {},
+                "propertyNames": {
+                  "type": "string"
+                }
               },
               "id": {
                 "type": "string"
@@ -11665,7 +11673,11 @@
                 },
                 "filters": {
                   "type": "object",
-                  "description": "The page's filters, as the client stored them."
+                  "description": "The page's filters, as the client stored them.",
+                  "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string"
+                  }
                 },
                 "id": {
                   "type": "string"
@@ -15055,7 +15067,11 @@
               "object",
               "null"
             ],
-            "description": "Replaces the stored filters."
+            "description": "Replaces the stored filters.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "name": {
             "type": [
@@ -15089,7 +15105,11 @@
           },
           "filters": {
             "type": "object",
-            "description": "The page's filters, as the client stored them."
+            "description": "The page's filters, as the client stored them.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "id": {
             "type": "string"

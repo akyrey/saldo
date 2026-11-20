@@ -29,7 +29,7 @@ pub struct SavedViewView {
     pub name: String,
     pub page: String,
     /// The page's filters, as the client stored them.
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub filters: Value,
     pub sort_order: i64,
     pub created_at: String,

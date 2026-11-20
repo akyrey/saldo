@@ -5,7 +5,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { QueryState } from "@/components/QueryState";
 import { Button } from "@/components/ui/button";
 import { accountsQuery } from "@/features/accounts/queries";
+import { billsQuery } from "@/features/bills/queries";
+import { budgetsQuery } from "@/features/budgets/queries";
 import { categoriesQuery } from "@/features/categories/queries";
+import { SavedViewChips } from "@/features/saved-views/SavedViewChips";
 import { byId } from "@/features/shared/lookup";
 import { pageCount } from "@/features/shared/pagination";
 import { tagsQuery } from "@/features/tags/queries";
@@ -24,6 +27,8 @@ export function TransactionsPage() {
   const accounts = useQuery(accountsQuery());
   const categories = useQuery(categoriesQuery);
   const tags = useQuery(tagsQuery);
+  const budgets = useQuery(budgetsQuery);
+  const bills = useQuery(billsQuery);
 
   return (
     <div>
@@ -43,12 +48,18 @@ export function TransactionsPage() {
           </div>
         }
       />
+      <SavedViewChips
+        filters={filters}
+        onApply={(next) => void navigate({ search: (prev) => ({ scope: prev.scope, ...next }) })}
+      />
       <TransactionFilters
         key={filters.q ?? ""}
         value={filters}
         accounts={accounts.data ?? []}
         categories={categories.data ?? []}
         tags={tags.data ?? []}
+        budgets={budgets.data ?? []}
+        bills={bills.data ?? []}
         onChange={(changes) =>
           void navigate({ search: (prev) => ({ ...prev, ...changes, page: undefined }) })
         }

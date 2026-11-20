@@ -51,7 +51,7 @@ pub struct CreateSavedViewRequest {
     /// Default `transactions`.
     pub page: Option<String>,
     /// A flat object of strings, numbers and booleans: at most 30 keys and 2 KB.
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub filters: Value,
     #[serde(default)]
     pub sort_order: i64,
@@ -83,7 +83,7 @@ pub async fn create_saved_view(
 pub struct SavedViewPatch {
     pub name: Option<String>,
     /// Replaces the stored filters.
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<std::collections::HashMap<String, serde_json::Value>>)]
     pub filters: Option<Value>,
     pub sort_order: Option<i64>,
 }

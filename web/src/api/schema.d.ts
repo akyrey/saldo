@@ -2041,7 +2041,9 @@ export interface components {
     };
     CreateSavedViewRequest: {
       /** @description A flat object of strings, numbers and booleans: at most 30 keys and 2 KB. */
-      filters: Record<string, never>;
+      filters: {
+        [key: string]: unknown;
+      };
       name: string;
       /** @description Default `transactions`. */
       page?: string | null;
@@ -2567,7 +2569,9 @@ export interface components {
       data: {
         created_at: string;
         /** @description The page's filters, as the client stored them. */
-        filters: Record<string, never>;
+        filters: {
+          [key: string]: unknown;
+        };
         id: string;
         name: string;
         page: string;
@@ -2776,7 +2780,9 @@ export interface components {
       data: {
         created_at: string;
         /** @description The page's filters, as the client stored them. */
-        filters: Record<string, never>;
+        filters: {
+          [key: string]: unknown;
+        };
         id: string;
         name: string;
         page: string;
@@ -3743,7 +3749,9 @@ export interface components {
     };
     SavedViewPatch: {
       /** @description Replaces the stored filters. */
-      filters?: Record<string, never> | null;
+      filters?: {
+        [key: string]: unknown;
+      } | null;
       name?: string | null;
       /** Format: int64 */
       sort_order?: number | null;
@@ -3751,7 +3759,9 @@ export interface components {
     SavedViewView: {
       created_at: string;
       /** @description The page's filters, as the client stored them. */
-      filters: Record<string, never>;
+      filters: {
+        [key: string]: unknown;
+      };
       id: string;
       name: string;
       page: string;

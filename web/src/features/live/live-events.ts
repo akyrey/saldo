@@ -51,6 +51,7 @@ const KEYS: Record<string, QueryKey[]> = {
   recurrence: [["recurrences"], ["reports"]],
   notification_channel: [["notification-channels"]],
   template: [["templates"]],
+  saved_view: [["saved-views"]],
   subscription_dismissal: [["subscriptions"]],
   reconciliation: [["reconciliations"], ["transactions"], ["balances"], ["accounts"]],
 };
