@@ -4,6 +4,12 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-21
+
+### Added
+
+- Create an expense or revenue account while entering a transaction: type a new name in the destination or source account field and choose "Create expense account “…”" or "Create revenue account “…”". It takes the currency of your account on the other side, or the household's primary currency. Works in the recurrence editor too.
+
 ## [0.10.0] - 2026-11-20
 
 ### Added
