@@ -28,3 +28,18 @@ export function sideTypes(
   const forKind = accountTypesFor(kind)?.[side];
   return forKind ? partners.filter((type) => forKind.includes(type)) : partners;
 }
+
+/** The account type a side may create on the spot: revenue pays in, expenses take money out. */
+const CREATABLE: Record<Side, "revenue" | "expense"> = {
+  source: "revenue",
+  destination: "expense",
+};
+
+/** The type a picker on `side` may create, when `types` (from `sideTypes`) allows it. */
+export function creatableType(
+  side: Side,
+  types: readonly string[],
+): "revenue" | "expense" | undefined {
+  const type = CREATABLE[side];
+  return types.includes(type) ? type : undefined;
+}

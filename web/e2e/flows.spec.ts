@@ -343,3 +343,22 @@ test("a transaction by one member appears in the other's open tab; the owner add
   await ownerContext.close();
   await memberContext.close();
 });
+
+test("an expense account created from the editor takes the transaction", async ({ page }) => {
+  await login(page);
+  await page.goto("/transactions");
+  await page.getByRole("link", { name: "New transaction" }).click();
+  const row = split(page, 1);
+  await row.getByLabel("Description").fill("Plasters");
+  await choose(row.getByLabel("Source account"), "Checking (EUR)");
+  await row.getByLabel("Destination account").fill("Pharmacy");
+  await page.getByRole("option", { name: "Create expense account “Pharmacy”" }).click();
+  await expect(row.getByLabel("Destination account")).toHaveValue("Pharmacy (EUR)");
+  await row.getByLabel(/^Amount/).fill("4.20");
+  await page.getByRole("button", { name: "Create transaction" }).click();
+
+  await expect(page.getByRole("heading", { name: "Transactions" })).toBeVisible();
+  await page.getByRole("link", { name: "Accounts" }).first().click();
+  await page.getByRole("button", { name: "Expense accounts" }).click();
+  await expect(page.getByTestId("balance-Pharmacy")).toHaveText("€4.20");
+});

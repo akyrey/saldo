@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sideTypes } from "./account-sides";
+import { creatableType, sideTypes } from "./account-sides";
 
 const asset = { type: "asset" };
 const expense = { type: "expense" };
@@ -38,5 +38,18 @@ describe("sideTypes", () => {
     expect(sideTypes("destination", asset, "withdrawal")).toEqual(["expense"]);
     expect(sideTypes("source", undefined, "deposit")).toEqual(["revenue"]);
     expect(sideTypes("destination", asset, "transfer")).toEqual(["asset", "liability"]);
+  });
+});
+
+describe("creatableType", () => {
+  it("creates revenue accounts as sources and expense accounts as destinations", () => {
+    expect(creatableType("source", sideTypes("source", undefined))).toBe("revenue");
+    expect(creatableType("destination", sideTypes("destination", asset))).toBe("expense");
+  });
+
+  it("creates nothing where the side does not take that type", () => {
+    expect(creatableType("source", sideTypes("source", expense))).toBeUndefined();
+    expect(creatableType("destination", sideTypes("destination", revenue))).toBeUndefined();
+    expect(creatableType("source", sideTypes("source", undefined, "withdrawal"))).toBeUndefined();
   });
 });

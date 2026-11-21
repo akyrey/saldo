@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { choose } from "@/test/combobox";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/errors";
 import { accountsQuery, currenciesQuery, type Account } from "@/features/accounts/queries";
 import { billsQuery, type Bill } from "@/features/bills/queries";
@@ -11,8 +11,13 @@ import { categoriesQuery } from "@/features/categories/queries";
 import { tagsQuery } from "@/features/tags/queries";
 import { emptySplit } from "./editor-model";
 import { descriptionSearchQuery, type TransactionRequest } from "./queries";
-import { split } from "@/test/fake-api";
+import { fakeApi, ME, split } from "@/test/fake-api";
+import { meQuery } from "@/features/auth/queries";
 import { TransactionEditor } from "./TransactionEditor";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function account(id: string, name: string, type: string): Account {
   return {
@@ -60,6 +65,7 @@ function renderEditor(save: (body: TransactionRequest) => Promise<unknown>) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
   queryClient.setQueryData(accountsQuery().queryKey, ACCOUNTS);
   queryClient.setQueryData(categoriesQuery.queryKey, []);
+  queryClient.setQueryData(meQuery.queryKey, { ...ME.data, role: "owner" });
   queryClient.setQueryData(budgetsQuery.queryKey, [
     {
       id: "groceries",
@@ -212,6 +218,31 @@ describe("TransactionEditor", () => {
     const destinations = await offered("Destination account");
     expect(destinations.some((o) => o.includes("Food"))).toBe(false);
     expect(destinations.some((o) => o.includes("Checking"))).toBe(true);
+  });
+
+  it("creates a revenue account from the source picker and books on it", async () => {
+    const seen = fakeApi({
+      "POST /api/v1/accounts": () =>
+        Response.json({ data: account("bonus", "Bonus", "revenue") }, { status: 201 }),
+    });
+    const save = vi.fn((_body: TransactionRequest) => Promise.resolve({}));
+    renderEditor(save);
+    const user = userEvent.setup();
+    const fields = within(row(1));
+    await user.type(fields.getByLabelText("Description"), "bonus");
+    await user.type(fields.getByLabelText("Source account"), "Bonus");
+    await user.click(screen.getByRole("option", { name: "Create revenue account “Bonus”" }));
+    expect(await fields.findByDisplayValue("Bonus (EUR)")).toBeInTheDocument();
+    expect(await seen[0]?.json()).toEqual({ name: "Bonus", type: "revenue", currency: "EUR" });
+
+    // Opposite a revenue account only own accounts fit, so nothing is created there.
+    await user.type(fields.getByLabelText("Destination account"), "Savings");
+    expect(screen.queryByText(/Create .* account/)).toBeNull();
+    await choose(fields.getByLabelText("Destination account"), accountLabel("checking"));
+    await user.type(fields.getByLabelText(/^Amount/), "100");
+    await user.click(screen.getByRole("button", { name: "Create transaction" }));
+
+    expect(save.mock.calls[0]?.[0].splits[0]?.source_id).toBe("bonus");
   });
 
   it("puts server validation errors on the matching row and field", async () => {

@@ -9,6 +9,13 @@ export type { ComboboxOption } from "./combobox-filter";
 /** More options than this are cut off until the person types more. */
 const RENDER_LIMIT = 100;
 
+/** An extra last row that creates what was typed, such as a new account. */
+export interface ComboboxCreate {
+  /** The row's text for the typed name, or `null` to offer nothing (blank names never ask). */
+  label: (text: string) => string | null;
+  onCreate: (text: string) => void;
+}
+
 interface ComboboxProps {
   id?: string;
   /** The field's name, for the clear button ("Clear Category"). */
@@ -22,6 +29,7 @@ interface ComboboxProps {
   clearable?: boolean;
   disabled?: boolean;
   className?: string;
+  create?: ComboboxCreate;
   "aria-label"?: string;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
@@ -33,7 +41,7 @@ interface ComboboxProps {
  * only choosing an option does, so leaving the field keeps the old choice.
  */
 export function Combobox(props: ComboboxProps) {
-  const { options, value, onChange, clearable = false } = props;
+  const { options, value, onChange, clearable = false, create } = props;
   const listId = useId();
   const chosen = options.find((o) => o.value === value);
   const [text, setText] = useState<string | null>(null); // null: not editing
@@ -43,6 +51,9 @@ export function Combobox(props: ComboboxProps) {
     () => (open ? filterOptions(options, text).slice(0, RENDER_LIMIT) : []),
     [open, options, text],
   );
+  const typed = text?.trim() ?? "";
+  const createLabel = create && typed !== "" ? create.label(typed) : null;
+  const rowCount = matches.length + (createLabel ? 1 : 0);
 
   const close = () => {
     setText(null);
@@ -52,24 +63,33 @@ export function Combobox(props: ComboboxProps) {
     onChange(option.value);
     close();
   };
+  const createTyped = () => {
+    create?.onCreate(typed);
+    close();
+  };
+  /** Row `index`: an option, or the create row after the last one. */
+  const pick = (index: number) => {
+    const option = matches[index];
+    if (option) choose(option);
+    else if (createLabel) createTyped();
+  };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (!open) setText("");
       const step = event.key === "ArrowDown" ? 1 : -1;
-      setActive((i) => (matches.length === 0 ? 0 : (i + step + matches.length) % matches.length));
+      setActive((i) => (rowCount === 0 ? 0 : (i + step + rowCount) % rowCount));
     } else if (event.key === "Enter" && open) {
       event.preventDefault(); // choose; do not submit the form
-      const option = matches[Math.min(active, matches.length - 1)];
-      if (option) choose(option);
+      if (rowCount > 0) pick(Math.min(active, rowCount - 1));
     } else if (event.key === "Escape" && open) {
       event.preventDefault();
       close();
     }
   };
 
-  const activeId = open && matches[active] ? `${listId}-${active}` : undefined;
+  const activeId = open && active < rowCount ? `${listId}-${active}` : undefined;
   return (
     <div className={cn("relative", props.className)}>
       <input
@@ -116,7 +136,7 @@ export function Combobox(props: ComboboxProps) {
           role="listbox"
           className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-background p-1 shadow-md"
         >
-          {matches.length === 0 ? (
+          {rowCount === 0 ? (
             <li className="px-2 py-1.5 text-sm text-muted-foreground">No matches</li>
           ) : (
             matches.map((option, index) => (
@@ -141,6 +161,21 @@ export function Combobox(props: ComboboxProps) {
               </li>
             ))
           )}
+          {createLabel ? (
+            <li
+              id={`${listId}-${matches.length}`}
+              role="option"
+              aria-selected={active === matches.length}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={createTyped}
+              className={cn(
+                "cursor-pointer rounded px-2 py-1.5 text-sm",
+                active === matches.length && "bg-accent",
+              )}
+            >
+              <span>{createLabel}</span>
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </div>

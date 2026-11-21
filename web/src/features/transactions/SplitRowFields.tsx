@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
@@ -13,9 +14,10 @@ import type { Budget } from "@/features/budgets/queries";
 import type { Category } from "@/features/categories/queries";
 import type { Tag } from "@/features/tags/queries";
 import { cn } from "@/lib/utils";
-import { AccountSelect } from "./AccountSelect";
+import { meQuery } from "@/features/auth/queries";
+import { type AccountCreate, AccountSelect } from "./AccountSelect";
 import { deriveKind, KIND_LABELS, type SplitRow, type TemplateKind } from "./editor-model";
-import { sideTypes } from "./account-sides";
+import { creatableType, type Side, sideTypes } from "./account-sides";
 import { TagPicker } from "./TagPicker";
 
 export interface SplitRowFieldsProps {
@@ -37,6 +39,18 @@ export interface SplitRowFieldsProps {
   kindHint?: TemplateKind;
 }
 
+/** Expense and revenue accounts take the own side's currency, else the household's. */
+function createFor(
+  side: Side,
+  types: readonly string[],
+  other: Account | undefined,
+  primaryCurrency: string | undefined,
+): AccountCreate | undefined {
+  const type = creatableType(side, types);
+  const currency = other?.currency ?? primaryCurrency;
+  return type && currency ? { type, currency } : undefined;
+}
+
 /** One split: date, description, accounts, amounts, category, budget, bill and tags. */
 export function SplitRowFields(props: SplitRowFieldsProps) {
   const { index, row, errors = {}, accounts, onChange } = props;
@@ -47,6 +61,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
   // Each picker offers only accounts that can pair with the other side's choice.
   const sourceChoices = accounts.filter((a) => a.id !== row.destination_id);
   const destinationChoices = accounts.filter((a) => a.id !== row.source_id);
+  // `me` is loaded before any page of the app renders.
+  const primaryCurrency = useQueryClient().getQueryData(meQuery.queryKey)?.household
+    .primary_currency;
+  const sourceTypes = sideTypes("source", destination, props.kindHint);
+  const destinationTypes = sideTypes("destination", source, props.kindHint);
   const budgetAllowed = kind === undefined || kind === "withdrawal";
   const currency = [source, destination].find(
     (a) => a && a.type !== "expense" && a.type !== "revenue" && a.type !== "equity",
@@ -126,7 +145,8 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
             id={id("source")}
             label="Source account"
             accounts={sourceChoices}
-            types={sideTypes("source", destination, props.kindHint)}
+            types={sourceTypes}
+            create={createFor("source", sourceTypes, destination, primaryCurrency)}
             value={row.source_id}
             onChange={(source_id) => onChange({ source_id })}
             {...errorProps(id("source"), errors.source_id)}
@@ -142,7 +162,8 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
             id={id("destination")}
             label="Destination account"
             accounts={destinationChoices}
-            types={sideTypes("destination", source, props.kindHint)}
+            types={destinationTypes}
+            create={createFor("destination", destinationTypes, source, primaryCurrency)}
             value={row.destination_id}
             onChange={(destination_id) => onChange({ destination_id })}
             {...errorProps(id("destination"), errors.destination_id)}
