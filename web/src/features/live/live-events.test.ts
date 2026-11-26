@@ -4,7 +4,15 @@ import { keysFor, parseNotice, startLiveEvents, type EventSourceLike } from "./l
 
 describe("keysFor", () => {
   it("maps known entities to the query keys they affect", () => {
-    expect(keysFor("account")).toEqual([["accounts"], ["balances"], ["reports"], ["bills"]]);
+    expect(keysFor("account")).toEqual([
+      ["accounts"],
+      ["balances"],
+      ["reports"],
+      ["bills"],
+      ["credit-cards"],
+    ]);
+    expect(keysFor("credit_card_plan")).toEqual([["credit-cards"]]);
+    expect(keysFor("credit_card_move")).toEqual([["credit-cards"]]);
     expect(keysFor("tag")).toEqual([["tags"], ["transactions"], ["reports"]]);
     expect(keysFor("household_member")).toEqual([["members"]]);
     expect(keysFor("template")).toEqual([["templates"]]);

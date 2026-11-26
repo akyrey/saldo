@@ -26,7 +26,7 @@ const BATCH_MS = 250;
 /** Query keys (prefixes) per entity type. Add new features here. */
 const KEYS: Record<string, QueryKey[]> = {
   // Bill histories show account names.
-  account: [["accounts"], ["balances"], ["reports"], ["bills"]],
+  account: [["accounts"], ["balances"], ["reports"], ["bills"], ["credit-cards"]],
   // A transaction moves balances, budget spending, bill periods and reports.
   transaction: [
     ["transactions"],
@@ -37,6 +37,7 @@ const KEYS: Record<string, QueryKey[]> = {
     ["reports"],
     ["subscriptions"],
     ["goals"],
+    ["credit-cards"],
   ],
   category: [["categories"], ["transactions"], ["reports"]],
   tag: [["tags"], ["transactions"], ["reports"]],
@@ -59,7 +60,15 @@ const KEYS: Record<string, QueryKey[]> = {
   forecast: [],
   digest: [],
   subscription_dismissal: [["subscriptions"]],
-  reconciliation: [["reconciliations"], ["transactions"], ["balances"], ["accounts"]],
+  reconciliation: [
+    ["reconciliations"],
+    ["transactions"],
+    ["balances"],
+    ["accounts"],
+    ["credit-cards"],
+  ],
+  credit_card_plan: [["credit-cards"]],
+  credit_card_move: [["credit-cards"]],
 };
 
 /** The keys an entity type affects, or `"all"` when we do not know it. */

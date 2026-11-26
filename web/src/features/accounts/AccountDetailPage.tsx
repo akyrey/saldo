@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { membersQuery } from "@/features/auth/queries";
 import { ReconciliationHistory } from "@/features/reconciliations/ReconciliationHistory";
 import { categoriesQuery } from "@/features/categories/queries";
+import { CreditCardPanel } from "@/features/credit-cards/CreditCardPanel";
 import { byId } from "@/features/shared/lookup";
 import { pageCount } from "@/features/shared/pagination";
 import { Pager } from "@/features/transactions/Pager";
@@ -143,6 +144,9 @@ export function AccountDetailPage() {
           </div>
         ) : null}
       </dl>
+      {data.type === "asset" && data.asset_role === "credit_card" ? (
+        <CreditCardPanel card={data} />
+      ) : null}
       {canReconcile ? <ReconciliationHistory accountId={accountId} /> : null}
       <h2 className="mb-2 font-semibold">Transactions</h2>
       <QueryState isPending={transactions.isPending} error={transactions.error} />

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -5,6 +6,7 @@ import { Amount } from "@/components/Amount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cardSummariesQuery, type CardSummary } from "@/features/credit-cards/queries";
 import { ownerLabel, TYPE_LABELS } from "./grouping";
 import type { Account, Balance } from "./queries";
 
@@ -63,6 +65,8 @@ interface AccountListProps {
 }
 
 export function AccountList({ accounts, balances, members }: AccountListProps) {
+  const hasCards = accounts.some((a) => a.asset_role === "credit_card");
+  const cards = useQuery({ ...cardSummariesQuery, enabled: hasCards });
   return (
     <ul className="divide-y">
       {accounts.map((account) => (
@@ -70,6 +74,7 @@ export function AccountList({ accounts, balances, members }: AccountListProps) {
           key={account.id}
           account={account}
           balance={balances.get(account.id)}
+          card={cards.data?.get(account.id)}
           members={members}
         />
       ))}
@@ -77,8 +82,15 @@ export function AccountList({ accounts, balances, members }: AccountListProps) {
   );
 }
 
-function AccountRow(props: { account: Account; balance?: Balance; members: Members }) {
-  const { account, balance, members } = props;
+interface AccountRowProps {
+  account: Account;
+  balance?: Balance;
+  /** The current month of a credit card with a plan. */
+  card?: CardSummary;
+  members: Members;
+}
+
+function AccountRow({ account, balance, card, members }: AccountRowProps) {
   return (
     <li className="flex items-center justify-between gap-2 py-2">
       <div className="min-w-0">
@@ -94,15 +106,29 @@ function AccountRow(props: { account: Account; balance?: Balance; members: Membe
           {account.active ? null : <Badge>archived</Badge>}
         </div>
       </div>
-      {balance ? (
-        <Amount
-          value={balance.balance}
-          currency={balance.currency}
-          className="text-sm"
-          data-testid={`balance-${account.name}`}
-        />
-      ) : null}
+      <div className="flex flex-col items-end">
+        {balance ? (
+          <Amount
+            value={balance.balance}
+            currency={balance.currency}
+            className="text-sm"
+            data-testid={`balance-${account.name}`}
+          />
+        ) : null}
+        {card ? <CardLeft summary={card} name={account.name} /> : null}
+      </div>
     </li>
+  );
+}
+
+/** "€687.60 left of €1,500.00" under a card's balance. */
+function CardLeft({ summary, name }: { summary: CardSummary; name: string }) {
+  const { available, limit, currency } = summary.current;
+  return (
+    <span className="text-xs text-muted-foreground" data-testid={`card-left-${name}`}>
+      <Amount value={available} currency={currency} /> left of{" "}
+      <Amount value={limit} currency={currency} />
+    </span>
   );
 }
 
