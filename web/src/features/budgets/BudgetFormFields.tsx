@@ -1,3 +1,4 @@
+import { NotesField } from "@/components/notes/NotesField";
 import { Field } from "@/components/Field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -81,10 +82,10 @@ export function BudgetFormFields({ form, errors, onChange, compact }: BudgetForm
             </NativeSelect>
           </Field>
           <Field id="budget-notes" label="Notes" error={errors.notes} className="sm:col-span-2">
-            <Input
+            <NotesField
               id="budget-notes"
               value={form.notes}
-              onChange={(e) => onChange({ notes: e.target.value })}
+              onChange={(notes) => onChange({ notes })}
             />
           </Field>
           <label className="flex items-center gap-2 self-end text-sm">

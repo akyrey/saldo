@@ -3,13 +3,14 @@ import { useNavigate, useParams, useRouteContext } from "@tanstack/react-router"
 import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage, fieldErrors } from "@/api/errors";
+import { NotesField } from "@/components/notes/NotesField";
 import { Field } from "@/components/Field";
 import { errorProps } from "@/components/field-props";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState } from "@/components/QueryState";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/Combobox";
 import { NativeSelect } from "@/components/ui/native-select";
 import { currencyOptions } from "@/features/shared/options";
@@ -108,7 +109,7 @@ function BillFormFields(props: {
         />
       </Field>
       <Field id="notes" label="Notes" error={errors.notes} className="sm:col-span-2">
-        <Textarea id="notes" value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+        <NotesField id="notes" value={form.notes} onChange={(notes) => set("notes", notes)} />
       </Field>
       {mutation.error && Object.keys(errors).length === 0 ? (
         <Alert className="sm:col-span-2">{errorMessage(mutation.error)}</Alert>

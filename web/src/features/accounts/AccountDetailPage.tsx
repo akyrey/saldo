@@ -4,6 +4,7 @@ import { Archive, ArchiveRestore, ListChecks, Pencil, Trash2 } from "lucide-reac
 import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage } from "@/api/errors";
+import { NotesView } from "@/components/notes/NotesView";
 import { Amount } from "@/components/Amount";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState } from "@/components/QueryState";
@@ -140,7 +141,9 @@ export function AccountDetailPage() {
         {data.notes ? (
           <div className="col-span-2">
             <dt className="text-muted-foreground">Notes</dt>
-            <dd className="whitespace-pre-wrap">{data.notes}</dd>
+            <dd>
+              <NotesView text={data.notes} />
+            </dd>
           </div>
         ) : null}
       </dl>

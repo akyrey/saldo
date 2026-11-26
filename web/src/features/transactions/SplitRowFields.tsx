@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { DatePicker } from "@/components/DatePicker";
 import { Field } from "@/components/Field";
 import { errorProps } from "@/components/field-props";
+import { NotesField } from "@/components/notes/NotesField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -273,10 +274,11 @@ export function SplitRowFields(props: SplitRowFieldsProps) {
           </Field>
           {props.template ? null : (
             <Field id={id("notes")} label="Notes" error={errors.notes} className="sm:col-span-2">
-              <Input
+              <NotesField
                 id={id("notes")}
                 value={row.notes}
-                onChange={(e) => onChange({ notes: e.target.value })}
+                onChange={(notes) => onChange({ notes })}
+                {...errorProps(id("notes"), errors.notes)}
               />
             </Field>
           )}

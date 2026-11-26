@@ -168,3 +168,67 @@
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Notes written in Markdown (NotesView). */
+.saldo-markdown {
+  overflow-wrap: anywhere;
+}
+.saldo-markdown > * + * {
+  margin-top: 0.5rem;
+}
+.saldo-markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+}
+.saldo-markdown h1 {
+  font-size: 1.125rem;
+}
+.saldo-markdown h2 {
+  font-size: 1rem;
+}
+.saldo-markdown ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.saldo-markdown ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.saldo-markdown ul.contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.saldo-markdown a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.saldo-markdown code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  background: var(--muted);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+}
+.saldo-markdown pre {
+  background: var(--muted);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+}
+.saldo-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.saldo-markdown blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.75rem;
+  color: var(--muted-foreground);
+}
+.saldo-markdown table {
+  border-collapse: collapse;
+}
+.saldo-markdown :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
