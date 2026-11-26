@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT kind, date, source_account_id, destination_account_id, amount_minor,\n                  currency_code, foreign_amount_minor, reconciled AS \"reconciled: bool\"\n           FROM splits WHERE household_id = ? AND group_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "source_account_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "source_account_id"
+          }
+        }
+      },
+      {
+        "name": "destination_account_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "destination_account_id"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "foreign_amount_minor",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "foreign_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "reconciled: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "reconciled"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "057df471da1902e1056ef884d3ebdf9de8b9d8bef0bac76ca024154c505295c1"
+}

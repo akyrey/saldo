@@ -2038,6 +2038,16 @@ export interface components {
       sort_order: number;
       updated_at: string;
     };
+    CardLimitView: {
+      amount: string;
+      from_cycle: string;
+    };
+    /** @description A move as stored, for the export. */
+    CardMoveRecordView: {
+      account_id: string;
+      created_at: string;
+      split_id: string;
+    };
     CashFlowCurrency: {
       currency: string;
       expenses: string;
@@ -2377,6 +2387,25 @@ export interface components {
       info: components["schemas"]["TokenView"];
       /** @description Shown only now; send it as `Authorization: Bearer <token>`. */
       token: string;
+    };
+    /** @description A card's plan, as the API returns it and as plan events carry it. */
+    CreditCardPlanView: {
+      account_id: string;
+      created_at: string;
+      currency: string;
+      /** @description The budgets, oldest first: each applies from its month until the next. */
+      limits: components["schemas"]["CardLimitView"][];
+      /** @description The asset account that pays the card. */
+      settlement_account_id: string;
+      /**
+       * Format: int32
+       * @description Day of the following month the card is paid (1 to 31; the last day
+       *     of a shorter month).
+       */
+      settlement_day: number;
+      /** @description The first month the plan covers. */
+      starts_cycle: string;
+      updated_at: string;
     };
     /** @description A currency as `GET /currencies` returns it. */
     CurrencyView: {
@@ -3440,6 +3469,10 @@ export interface components {
       budget_limits: components["schemas"]["BudgetLimitView"][];
       budgets: components["schemas"]["BudgetView"][];
       categories: components["schemas"]["CategoryView"][];
+      /** @description Card transactions counted in the month after their date (Phase 12). */
+      credit_card_moves: components["schemas"]["CardMoveRecordView"][];
+      /** @description Credit card plans with their budgets (Phase 12). */
+      credit_card_plans: components["schemas"]["CreditCardPlanView"][];
       currencies: components["schemas"]["CurrencyView"][];
       exported_at: string;
       external_refs: components["schemas"]["ExternalRefView"][];

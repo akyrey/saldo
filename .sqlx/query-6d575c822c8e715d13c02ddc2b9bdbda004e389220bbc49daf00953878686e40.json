@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO credit_card_cycles (household_id, account_id, cycle, state, group_id,\n            written_amount_minor, written_date, written_source_id)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (account_id, cycle) DO UPDATE SET state = excluded.state,\n            group_id = excluded.group_id, written_amount_minor = excluded.written_amount_minor,\n            written_date = excluded.written_date, written_source_id = excluded.written_source_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "6d575c822c8e715d13c02ddc2b9bdbda004e389220bbc49daf00953878686e40"
+}

@@ -11,6 +11,7 @@ pub mod bills;
 pub mod budgets;
 pub mod categories;
 pub mod clock;
+pub mod credit_cards;
 pub mod ctx;
 pub mod currencies;
 pub mod db;
@@ -49,6 +50,7 @@ use crate::bills::BillService;
 use crate::budgets::BudgetService;
 use crate::categories::CategoryService;
 use crate::clock::SharedClock;
+use crate::credit_cards::CreditCardService;
 use crate::currencies::CurrencyService;
 use crate::events::EventService;
 use crate::export::ExportService;
@@ -99,6 +101,7 @@ pub struct App {
     pub alerts: AlertService,
     pub goals: GoalService,
     pub safe_to_spend: SafeToSpendService,
+    pub credit_cards: CreditCardService,
 }
 
 impl App {
@@ -118,6 +121,7 @@ impl App {
             ),
             accounts,
             attachments,
+            credit_cards: CreditCardService::new(pool.clone(), clock.clone(), transactions.clone()),
             reconciliations: ReconciliationService::new(
                 pool.clone(),
                 clock.clone(),

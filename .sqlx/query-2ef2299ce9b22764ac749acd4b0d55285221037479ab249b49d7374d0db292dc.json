@@ -1,0 +1,100 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id AS \"id!\", s.group_id AS \"group_id!\", s.date AS \"date!\",\n                  s.description AS \"description!\",\n                  CASE WHEN s.kind = 'withdrawal' THEN s.amount_minor ELSE -s.amount_minor END\n                      AS \"amount_minor!: i64\",\n                  c.id AS \"counterparty_id!\", c.name AS \"counterparty_name!\",\n                  (m.split_id IS NOT NULL) AS \"moved!: bool\"\n           FROM splits s\n           JOIN accounts c ON c.household_id = s.household_id\n                AND c.id = CASE WHEN s.kind = 'withdrawal'\n                                THEN s.destination_account_id ELSE s.source_account_id END\n           LEFT JOIN credit_card_moves m ON m.split_id = s.id\n                AND m.household_id = s.household_id AND m.account_id = ?3\n           WHERE s.household_id = ?1 AND s.date >= ?4 AND s.date <= ?5\n             AND ((s.kind = 'withdrawal' AND s.source_account_id = ?2)\n                  OR (s.kind = 'deposit' AND s.destination_account_id = ?2))\n           ORDER BY s.date, s.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "group_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "date!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "description!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "amount_minor!: i64",
+        "ordinal": 4,
+        "type_info": "Null",
+        "origin": "Expression"
+      },
+      {
+        "name": "counterparty_id!",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "counterparty_name!",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "moved!: bool",
+        "ordinal": 7,
+        "type_info": "Null",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "2ef2299ce9b22764ac749acd4b0d55285221037479ab249b49d7374d0db292dc"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.split_id AS \"split_id!\", s.date AS \"date!\"\n           FROM credit_card_moves m\n           JOIN splits s ON s.id = m.split_id\n           WHERE m.household_id = ?1 AND m.account_id = ?2\n             AND NOT ((s.kind = 'withdrawal' AND s.source_account_id = ?2)\n                      OR (s.kind = 'deposit' AND s.destination_account_id = ?2))",
+  "describe": {
+    "columns": [
+      {
+        "name": "split_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_moves",
+            "name": "split_id"
+          }
+        }
+      },
+      {
+        "name": "date!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7768c165a30b787cf09dee5d4b85a939bb58b5bb738e3869502d6b146ed2d718"
+}

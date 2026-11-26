@@ -1,6 +1,7 @@
 //! Export: everything of a household as one JSON document or a zip of CSV
 //! files (ARCHITECTURE.md 9.2). Owner only.
 
+mod cards_csv;
 mod csv;
 mod planning_csv;
 mod recurrence_csv;
@@ -17,6 +18,7 @@ use crate::bills::{self, BillPeriodView, BillView};
 use crate::budgets::{self, BudgetLimitView, BudgetView};
 use crate::categories::{self, CategoryView};
 use crate::clock::{SharedClock, format_timestamp};
+use crate::credit_cards::{self, CardMoveRecordView, CreditCardPlanView};
 use crate::ctx::HouseholdCtx;
 use crate::currencies::{self, CurrencyView};
 use crate::error::AppError;
@@ -82,6 +84,10 @@ pub struct ExportDocument {
     pub saved_views: Vec<SavedViewView>,
     /// Net worth goals with their progress on the export day (Phase 10).
     pub net_worth_goals: Vec<NetWorthGoalView>,
+    /// Credit card plans with their budgets (Phase 12).
+    pub credit_card_plans: Vec<CreditCardPlanView>,
+    /// Card transactions counted in the month after their date (Phase 12).
+    pub credit_card_moves: Vec<CardMoveRecordView>,
 }
 
 #[derive(Clone)]
@@ -115,6 +121,7 @@ impl ExportService {
         let (budgets, budget_limits) = budgets::all_in(&mut tx, ctx).await?;
         let (piggy_banks, piggy_bank_events) = piggy_banks::all_in(&mut tx, ctx).await?;
         let today = crate::identity::today_in(&mut tx, ctx, &*self.clock).await?;
+        let (credit_card_plans, credit_card_moves) = credit_cards::all_in(&mut tx, ctx).await?;
         let document = ExportDocument {
             format: FORMAT.to_string(),
             version: VERSION,
@@ -142,6 +149,8 @@ impl ExportService {
             reconciliations: reconciliations::all_in(&mut tx, ctx).await?,
             saved_views: saved_views::all_in(&mut tx, ctx).await?,
             net_worth_goals: goals::all_in(&mut tx, ctx, today).await?,
+            credit_card_plans,
+            credit_card_moves,
         };
         tx.rollback().await?;
         Ok(document)

@@ -16,7 +16,7 @@ use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
 use crate::page::{Page, PageRequest};
 use crate::scope::Scope;
-use crate::{currencies, identity};
+use crate::{credit_cards, currencies, identity};
 
 pub(crate) use input::core_account;
 use input::{ALL_TYPES, CREATABLE_TYPES, apply_update, check_row, parse_virtual_balance};
@@ -157,6 +157,7 @@ impl AccountService {
         }
         row.updated_at = format_timestamp(self.clock.now());
         check_row(&mut *conn, ctx, &row).await?;
+        check_credit_card_plans(&mut *conn, &current, &row).await?;
         repo::update(&mut *conn, &row).await?;
         let view = view_of(&mut *conn, row).await?;
         let event = NewEvent::new(&*self.clock, "account", "updated", view.id.clone(), &view)?;
@@ -196,6 +197,17 @@ impl AccountService {
             return Err(AppError::Conflict(
                 "the account has transactions".to_string(),
             ));
+        }
+        let plan_conflict = credit_cards::account_change_conflict(
+            &mut *conn,
+            &row.household_id,
+            &row.id,
+            false,
+            false,
+        )
+        .await?;
+        if let Some(message) = plan_conflict {
+            return Err(AppError::Conflict(message.to_string()));
         }
         repo::delete(&mut *conn, &row.household_id, &row.id).await?;
         let view = view_of(&mut *conn, row).await?;
@@ -307,4 +319,31 @@ async fn list_rows(
         offset: page.offset(),
     };
     repo::list(conn, &ctx.household_id.to_string(), &repo_filter).await
+}
+
+/// An account with a credit card plan must stay a credit card in the same
+/// currency; an account that pays one must stay an active asset account in
+/// the same currency.
+async fn check_credit_card_plans(
+    conn: &mut SqliteConnection,
+    before: &AccountRow,
+    after: &AccountRow,
+) -> Result<(), AppError> {
+    let same_currency = before.currency_code == after.currency_code;
+    let is_asset = after.account_type == "asset";
+    let can_be_card =
+        is_asset && after.asset_role.as_deref() == Some("credit_card") && same_currency;
+    let can_pay = is_asset && after.active && same_currency;
+    let conflict = credit_cards::account_change_conflict(
+        conn,
+        &after.household_id,
+        &after.id,
+        can_be_card,
+        can_pay,
+    )
+    .await?;
+    match conflict {
+        Some(message) => Err(AppError::Conflict(message.to_string())),
+        None => Ok(()),
+    }
 }

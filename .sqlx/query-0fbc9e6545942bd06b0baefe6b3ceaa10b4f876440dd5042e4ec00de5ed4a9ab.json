@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO credit_card_moves (split_id, household_id, account_id, created_at)\n         VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0fbc9e6545942bd06b0baefe6b3ceaa10b4f876440dd5042e4ec00de5ed4a9ab"
+}

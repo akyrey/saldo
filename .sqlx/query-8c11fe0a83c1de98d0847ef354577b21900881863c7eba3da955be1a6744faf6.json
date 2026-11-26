@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE credit_card_plans SET settlement_account_id = ?, settlement_day = ?, updated_at = ?\n         WHERE household_id = ? AND account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "8c11fe0a83c1de98d0847ef354577b21900881863c7eba3da955be1a6744faf6"
+}

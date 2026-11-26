@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT cycle AS \"cycle!\", state, group_id, written_amount_minor, written_date,\n                  written_source_id\n           FROM credit_card_cycles WHERE household_id = ? AND account_id = ? ORDER BY cycle",
+  "describe": {
+    "columns": [
+      {
+        "name": "cycle!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "cycle"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "group_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "written_amount_minor",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "written_amount_minor"
+          }
+        }
+      },
+      {
+        "name": "written_date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "written_date"
+          }
+        }
+      },
+      {
+        "name": "written_source_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_cycles",
+            "name": "written_source_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "62063d1884810cba64d261b4cd08e4bf6b6ebe26d700b443363d9a2edcd0fe87"
+}

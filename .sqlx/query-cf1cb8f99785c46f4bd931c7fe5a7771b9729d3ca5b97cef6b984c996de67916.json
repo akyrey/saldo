@@ -1,0 +1,28 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n             EXISTS (SELECT 1 FROM credit_card_plans\n                     WHERE household_id = ?1 AND account_id = ?2) AS \"is_card!: bool\",\n             EXISTS (SELECT 1 FROM credit_card_plans\n                     WHERE household_id = ?1 AND settlement_account_id = ?2) AS \"pays!: bool\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "is_card!: bool",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "pays!: bool",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "cf1cb8f99785c46f4bd931c7fe5a7771b9729d3ca5b97cef6b984c996de67916"
+}

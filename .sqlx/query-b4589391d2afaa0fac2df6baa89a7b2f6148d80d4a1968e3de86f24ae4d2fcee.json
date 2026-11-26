@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM credit_card_moves WHERE household_id = ? AND split_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b4589391d2afaa0fac2df6baa89a7b2f6148d80d4a1968e3de86f24ae4d2fcee"
+}

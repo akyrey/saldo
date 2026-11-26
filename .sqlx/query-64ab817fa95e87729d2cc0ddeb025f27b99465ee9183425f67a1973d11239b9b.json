@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT account_id AS \"account_id!\", settlement_account_id, settlement_day,\n                  starts_cycle, created_at, updated_at\n           FROM credit_card_plans WHERE household_id = ? AND account_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "settlement_account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "settlement_account_id"
+          }
+        }
+      },
+      {
+        "name": "settlement_day",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "settlement_day"
+          }
+        }
+      },
+      {
+        "name": "starts_cycle",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "starts_cycle"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "64ab817fa95e87729d2cc0ddeb025f27b99465ee9183425f67a1973d11239b9b"
+}

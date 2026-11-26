@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM credit_card_plans WHERE household_id = ? AND account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2b9ca5b325dd905686086be05af56d0d149034224d595f84551854117895dfa7"
+}

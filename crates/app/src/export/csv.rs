@@ -242,6 +242,7 @@ pub(crate) fn files(doc: &ExportDocument) -> Vec<(&'static str, String)> {
     files.extend(super::recurrence_csv::files(doc));
     files.extend(super::templates_csv::files(doc));
     files.extend(super::views_csv::files(doc));
+    files.extend(super::cards_csv::files(doc));
     files
 }
 

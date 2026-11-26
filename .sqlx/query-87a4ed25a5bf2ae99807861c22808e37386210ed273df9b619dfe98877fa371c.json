@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.account_id AS \"account_id!\", p.settlement_account_id, p.settlement_day,\n                  p.starts_cycle, p.created_at, p.updated_at\n           FROM credit_card_plans p\n           JOIN accounts a ON a.household_id = p.household_id AND a.id = p.account_id\n           WHERE p.household_id = ?\n           ORDER BY a.sort_order, a.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "settlement_account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "settlement_account_id"
+          }
+        }
+      },
+      {
+        "name": "settlement_day",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "settlement_day"
+          }
+        }
+      },
+      {
+        "name": "starts_cycle",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "starts_cycle"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_plans",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "87a4ed25a5bf2ae99807861c22808e37386210ed273df9b619dfe98877fa371c"
+}

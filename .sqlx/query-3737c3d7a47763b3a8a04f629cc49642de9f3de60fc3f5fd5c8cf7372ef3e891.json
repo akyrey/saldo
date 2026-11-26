@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT from_cycle, limit_minor FROM credit_card_limits\n         WHERE household_id = ? AND account_id = ? ORDER BY from_cycle",
+  "describe": {
+    "columns": [
+      {
+        "name": "from_cycle",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_limits",
+            "name": "from_cycle"
+          }
+        }
+      },
+      {
+        "name": "limit_minor",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "credit_card_limits",
+            "name": "limit_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3737c3d7a47763b3a8a04f629cc49642de9f3de60fc3f5fd5c8cf7372ef3e891"
+}

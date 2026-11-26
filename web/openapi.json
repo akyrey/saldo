@@ -9220,6 +9220,41 @@
           }
         }
       },
+      "CardLimitView": {
+        "type": "object",
+        "required": [
+          "from_cycle",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "from_cycle": {
+            "type": "string"
+          }
+        }
+      },
+      "CardMoveRecordView": {
+        "type": "object",
+        "description": "A move as stored, for the export.",
+        "required": [
+          "split_id",
+          "account_id",
+          "created_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "split_id": {
+            "type": "string"
+          }
+        }
+      },
       "CashFlowCurrency": {
         "type": "object",
         "required": [
@@ -10255,6 +10290,55 @@
           "token": {
             "type": "string",
             "description": "Shown only now; send it as `Authorization: Bearer <token>`."
+          }
+        }
+      },
+      "CreditCardPlanView": {
+        "type": "object",
+        "description": "A card's plan, as the API returns it and as plan events carry it.",
+        "required": [
+          "account_id",
+          "currency",
+          "settlement_account_id",
+          "settlement_day",
+          "starts_cycle",
+          "limits",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardLimitView"
+            },
+            "description": "The budgets, oldest first: each applies from its month until the next."
+          },
+          "settlement_account_id": {
+            "type": "string",
+            "description": "The asset account that pays the card."
+          },
+          "settlement_day": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Day of the following month the card is paid (1 to 31; the last day\nof a shorter month).",
+            "minimum": 0
+          },
+          "starts_cycle": {
+            "type": "string",
+            "description": "The first month the plan covers."
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       },
@@ -13811,7 +13895,9 @@
           "subscription_dismissals",
           "reconciliations",
           "saved_views",
-          "net_worth_goals"
+          "net_worth_goals",
+          "credit_card_plans",
+          "credit_card_moves"
         ],
         "properties": {
           "accounts": {
@@ -13855,6 +13941,20 @@
             "items": {
               "$ref": "#/components/schemas/CategoryView"
             }
+          },
+          "credit_card_moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardMoveRecordView"
+            },
+            "description": "Card transactions counted in the month after their date (Phase 12)."
+          },
+          "credit_card_plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditCardPlanView"
+            },
+            "description": "Credit card plans with their budgets (Phase 12)."
           },
           "currencies": {
             "type": "array",

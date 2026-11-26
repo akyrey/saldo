@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT split_id, account_id, created_at FROM credit_card_moves\n         WHERE household_id = ? ORDER BY account_id, created_at, split_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "split_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_moves",
+            "name": "split_id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_moves",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "credit_card_moves",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "24a7c0c3a8c0766347eab63f914409a0904362b292ea942cd8ea305af967c3c9"
+}

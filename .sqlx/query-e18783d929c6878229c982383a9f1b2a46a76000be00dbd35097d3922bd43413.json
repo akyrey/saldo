@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO credit_card_limits (household_id, account_id, from_cycle, limit_minor, created_at)\n         VALUES (?, ?, ?, ?, ?)\n         ON CONFLICT (account_id, from_cycle) DO UPDATE SET limit_minor = excluded.limit_minor",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "e18783d929c6878229c982383a9f1b2a46a76000be00dbd35097d3922bd43413"
+}

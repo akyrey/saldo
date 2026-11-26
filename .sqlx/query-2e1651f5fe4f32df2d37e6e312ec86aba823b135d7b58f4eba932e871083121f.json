@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO credit_card_plans (account_id, household_id, settlement_account_id,\n            settlement_day, starts_cycle, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "2e1651f5fe4f32df2d37e6e312ec86aba823b135d7b58f4eba932e871083121f"
+}
