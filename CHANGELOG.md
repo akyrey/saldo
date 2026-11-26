@@ -4,6 +4,13 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-27
+
+### Added
+
+- Credit card plans: give a credit card account a monthly budget, the bank account that pays it and the payment day. The account page shows what is still available this month, the month's transactions and the settlement; the accounts list shows "… left of …" under the card's balance. Saldo books the settlement transfer from the bank account to the card on the payment day and keeps its amount in step with the month's spending until then. "Count in next month" moves a transaction to the next month's budget and settlement without changing its date, and "Move back" undoes it. The plans, budgets and moves are in the export.
+- Notes on transactions, budgets, bills and accounts take several lines and support Markdown (lists, links, tables, task lists), with a preview while editing. Account notes are shown formatted on the account page.
+
 ## [0.11.0] - 2026-11-21
 
 ### Added
