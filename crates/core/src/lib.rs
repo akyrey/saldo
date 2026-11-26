@@ -76,6 +76,7 @@ pub mod balance;
 pub mod bill_history;
 pub mod bills;
 pub mod budget;
+pub mod card_cycle;
 pub mod carry;
 pub mod currency;
 pub mod error;

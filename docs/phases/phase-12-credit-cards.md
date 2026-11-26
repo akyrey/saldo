@@ -73,8 +73,9 @@ Order: core → app → server → web. One commit per package.
 - `fn available(limit: i64, spent: i64) -> Result<i64, MoneyError>`.
 - `fn limit_for(limits: &[(Cycle, i64)], cycle: Cycle) -> Option<i64>`: the amount of the latest entry starting on or before `cycle` (decision 13); `None` before the first.
 - `SettlementState { Synced, Frozen, Detached }`.
-- `SettlementAction { Nothing, Create { amount, date }, Update { amount, date }, Delete, Freeze }` and
-  `fn settlement_action(state, existing: Option<Written>, spent, settlement_date, today, reconciled: bool) -> SettlementAction`, the whole of decision 9 as one decision table. `Written { amount, date }` is what the server last wrote; detecting a hand edit is the app's job (it compares the stored group with `Written`).
+- `Transfer { amount, date, source }`, `Stored { Missing, Transfer(Transfer), Other }` (what the database holds for the last written group), `SettlementInput` and
+  `fn settlement_step(input: SettlementInput) -> SettlementStep { change: Change, next_state }` with `Change { None, Create(Transfer), Update(Transfer), Delete }`: the whole of decision 9 as one decision table, including detecting a hand edit (stored differs from written). On the settlement date the transfer gets a last update and the month freezes in the same step, so a run missed before the date still books the right amount.
+- `fn is_closed(state, settlement_date, today) -> bool`: a month refuses moves once frozen or from its settlement date.
 
 Tests: every row of the decision table; clamping (31 January → 28/29 February settlement, 30 → 31-day months); `Cycle` parsing, ordering and the December → January rollover; property tests that `cycle_spending` over all cycles equals the sum of all amounts, and that moving one entry shifts exactly its amount from one cycle to the next.
 
