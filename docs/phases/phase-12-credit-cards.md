@@ -172,7 +172,7 @@ Tests (integration, SQLite): a new budget from next month leaves this month and 
 ### Last: docs and Playwright
 
 - Update ARCHITECTURE.md (sections listed at the top).
-- One Playwright flow: create a credit card account with a plan (budget 500.00, paid from Checking, day 15), add two withdrawals of 100.00 and 50.00 this month, see "350.00 left" and a 150.00 settlement transfer dated the 15th of next month; move the 50.00 one to next month and see 450.00 left and the transfer at 100.00.
+- One Playwright flow: create a credit card account with a plan (budget 500.00, paid from Checking, day 15), add two withdrawals of 100.00 and 50.00 this month, see "350.00 left" and a 150.00 settlement transfer dated the 15th of next month; move the 50.00 one to next month and see 400.00 left and the transfer at 100.00.
 
 ## 7. Contracts
 

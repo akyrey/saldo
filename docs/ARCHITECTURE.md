@@ -184,6 +184,7 @@ Balance of an account = sum of amounts where it is the destination − sum where
 - **Forecast** (Phase 9): `forecast::project(start, planned, intervals) -> Projection` adds planned amounts (dated, signed, one currency) to a starting balance and returns the balance at the end of each interval and the lowest end-of-day balance. Collecting the amounts is `app`'s job.
 - **Subscription detection** (Phase 9): `subscriptions::detect_subscriptions(payments, today) -> Vec<Candidate>` groups withdrawals by counterparty and currency, drops a group with any payment already on a bill, keeps payments within 20% of the latest amount, and tries weekly (±2 days, 3 payments), monthly (±4, 3), quarterly (±7, 3), half-year (±10, 2) and yearly (±15, 2), shortest first. Each payment is compared with the date the schedule expected (a miss restarts the schedule from that payment); at least 75% of gaps must fit, and the next due date plus the tolerance must not be past.
 - **Reconciliation** (Phase 9): `reconcile::reconcile(statement_balance, cleared) -> Option<Money>` is the statement balance minus the cleared signed amounts, `None` when they agree.
+- **Credit card months** (Phase 12): `card_cycle::Cycle` is a calendar month (`YYYY-MM`, ordered, `settlement_date(day)` = that day of the following month, clamped to its last day). `effective_cycle(date, moved)` is the date's month, or the next one when moved; `cycle_spending(entries, cycle)` sums signed card entries (+ purchase, − refund) counting toward a month; `available(limit, spent)`; `limit_for(limits, cycle)` is the latest budget starting on or before the month. `settlement_step(SettlementInput) -> SettlementStep { change, next_state }` is the settlement decision table (5.4f): frozen and detached months are left alone; a stored transfer that differs from what the server wrote detaches the month; a reconciled one freezes it; otherwise the transfer is created, updated or deleted to equal the month's spending (none when zero or less), and from the settlement date on the month freezes after that last update. `is_closed(state, settlement_date, today)`: no more moves once frozen or from the settlement date.
 
 ## 5. SQL schema
 
@@ -735,6 +736,61 @@ CREATE TABLE net_worth_goals (
 ) STRICT;
 ```
 
+### 5.4f Credit card plans (Phase 12)
+
+An asset account with `asset_role = 'credit_card'` may have one plan: a monthly budget, the active asset account in the same currency that pays it (`settlement_account_id`) and the day of the following month it is paid (1–31, the last day of a shorter month). A month is a calendar month in household time. A month spent the card's withdrawals minus its deposits (refunds) dated in it, plus those of the month before that were moved to it, minus its own moved to the next; transfers (the payment itself included), opening balances and reconciliations never count. Available = budget − spent. A plan starts with the month it is created in (`starts_cycle`): earlier months get no payment, are not listed and refuse moves.
+
+Budgets are per month: `credit_card_limits` holds each budget with the month it starts; a month's budget is the latest one starting on or before it. New budgets start in the current month or later, so earlier months never change.
+
+The `card-settlements` task (8.5) keeps one payment transfer per month (from the paying account to the card, dated on the settlement day, description `<card> — <Month YYYY>`, origin `scheduler`, rules not run) through the transaction service, so each change appends its `transaction.*` event. A month's state in `credit_card_cycles`: `synced` (the server makes the transfer equal the month's spending until the settlement date; it keeps the owner's category, tags and notes when it updates it), `frozen` (from the settlement date, after a last update, or once the transfer is reconciled: never changed again; later changes show as `difference_after_settlement`), `detached` (the owner edited the amount, date or paying account, reshaped or deleted the transfer: left alone for good). A move is allowed only on a split counting toward the card, when neither its own month nor the next is closed (before `starts_cycle`, frozen, or on/after its settlement date); the task drops moves whose split stopped counting toward the card. Deleting a plan deletes its synced transfers that are not due yet, keeps frozen and detached ones, and removes its budgets, moves and month rows. An account with a plan must stay a credit card in the same currency, and a paying account must stay an active asset account in the same currency and cannot be deleted (409).
+
+```sql
+CREATE TABLE credit_card_plans (
+    account_id             TEXT PRIMARY KEY,
+    household_id           TEXT NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+    settlement_account_id  TEXT NOT NULL,
+    settlement_day         INTEGER NOT NULL CHECK (settlement_day BETWEEN 1 AND 31),
+    starts_cycle           TEXT NOT NULL,     -- 'YYYY-MM'
+    created_at             TEXT NOT NULL,
+    updated_at             TEXT NOT NULL,
+    UNIQUE (household_id, account_id),
+    FOREIGN KEY (household_id, account_id) REFERENCES accounts (household_id, id) ON DELETE CASCADE,
+    FOREIGN KEY (household_id, settlement_account_id) REFERENCES accounts (household_id, id)
+) STRICT;
+
+CREATE TABLE credit_card_limits (
+    household_id  TEXT NOT NULL,
+    account_id    TEXT NOT NULL,
+    from_cycle    TEXT NOT NULL,
+    limit_minor   INTEGER NOT NULL CHECK (limit_minor > 0),
+    created_at    TEXT NOT NULL,
+    PRIMARY KEY (account_id, from_cycle),
+    FOREIGN KEY (household_id, account_id) REFERENCES credit_card_plans (household_id, account_id) ON DELETE CASCADE
+) STRICT;
+
+CREATE TABLE credit_card_moves (
+    split_id      TEXT PRIMARY KEY REFERENCES splits (id) ON DELETE CASCADE,
+    household_id  TEXT NOT NULL,
+    account_id    TEXT NOT NULL,
+    created_at    TEXT NOT NULL,
+    FOREIGN KEY (household_id, account_id) REFERENCES credit_card_plans (household_id, account_id) ON DELETE CASCADE
+) STRICT;
+
+-- Bookkeeping: not exported, changes append no events.
+CREATE TABLE credit_card_cycles (
+    household_id          TEXT NOT NULL,
+    account_id            TEXT NOT NULL,
+    cycle                 TEXT NOT NULL,
+    state                 TEXT NOT NULL CHECK (state IN ('synced', 'frozen', 'detached')),
+    group_id              TEXT,               -- the payment transfer; no FK, like recurrence_id
+    written_amount_minor  INTEGER,            -- what the server last wrote
+    written_date          TEXT,
+    written_source_id     TEXT,
+    PRIMARY KEY (account_id, cycle),
+    FOREIGN KEY (household_id, account_id) REFERENCES credit_card_plans (household_id, account_id) ON DELETE CASCADE
+) STRICT;
+```
+
 ### 5.5 Events, webhooks, notifications
 
 ```sql
@@ -901,6 +957,7 @@ Conventions:
 | Templates | `GET/POST /transaction-templates` (ordered by `sort_order`, then name), `GET/PATCH/DELETE /transaction-templates/{id}` (`PATCH` merges `name`, `kind`, `title`, `sort_order`; `splits` replaces them all), `POST /transactions/{id}/template` (`{ name }`; saves the group without its dates and reconciled flags; 422 for opening balances and reconciliations). Names are unique per household (409). A template is checked only for what it contains: its accounts, categories, budgets (withdrawals only), bills and tags belong to the household, amounts parse in their currency and are positive, and two given accounts form the template's kind. There is no instantiate endpoint: the web editor fills itself from the template and posts `POST /transactions` | 8 |
 | Subscriptions | `GET /subscription-candidates?scope=` (computed per request from the last 18 months of withdrawals, by next due date; unpaginated), `POST /subscription-candidates/accept` (`{ account_id, currency, name, frequency, amount_min, amount_max, split_ids }`, 201 with the bill: first due on the first payment; the payments get the bill, which pays their periods; open periods before the last payment are skipped; 422 on `split_ids` unless each is a withdrawal to the account in the currency without a bill), `POST /subscription-candidates/dismiss` (`{ account_id, currency }`, an expense account; twice is a no-op), `DELETE /subscription-dismissals/{account_id}/{currency}` (404 when not dismissed) | 9 |
 | Reconciliations | `GET /accounts/{id}/reconciliations` (latest statement first, paginated), `GET /accounts/{id}/reconciliations/draft?statement_date=` (`{ account_id, currency, statement_date, reconciled_through, cleared_balance, splits: [{ id, group_id, date, description, amount }] }`: cleared = reconciled splits and opening balances up to the date; `splits` = the rest up to the date, amounts signed for the account), `POST /accounts/{id}/reconciliations` (`{ statement_date, statement_balance, split_ids, book_difference? }`, 201: the splits must be the account's, unreconciled and dated on or before the statement, which must not be before the last reconciliation; a difference is a 422 on `statement_balance` unless `book_difference`, which books it as a reconciliation transaction against Equity(Reconciliation), dated on the statement and itself reconciled), `DELETE /reconciliations/{id}` (only the account's latest, otherwise 409: clears its splits' flags and deletes its difference transaction). Only asset and liability accounts (422 otherwise). `GET /transactions` takes `reconciled`. In `PUT /transactions/{id}`, a split named by `id` without `reconciled` keeps its stored flag (the web editor does not send it); a reconciled split whose date, amount or accounts change, or that is saved as not reconciled, leaves its reconciliation | 9 |
+| Credit cards | `GET/PUT/DELETE /accounts/{id}/credit-card` (the plan `{ account_id, currency, settlement_account_id, settlement_day, starts_cycle, limits: [{ from_cycle, amount }] }`; `PUT` takes `{ monthly_limit, settlement_account_id, settlement_day }`, 201 on create (then `monthly_limit` is required), 200 on replace (a `monthly_limit` then sets the current month's budget); 422 for an account that is not a credit card); `PUT /accounts/{id}/credit-card/limits/{cycle}` (`{ amount }`, the budget from that month on; 422 before the current month); `GET /accounts/{id}/credit-card/cycles?from=&to=` (months `YYYY-MM`, default the current month and five before, at most 36, from `starts_cycle` at the earliest, newest first: `[{ cycle, from, to, currency, limit, spent, available, moved_in, moved_out, settlement: { state, date, group_id, amount }, difference_after_settlement }]`); `GET /accounts/{id}/credit-card/cycles/{cycle}` (one month plus `splits: [{ split_id, group_id, date, description, counterparty: { id, name }, amount, moved_in, moved_out }]`); `PUT`/`DELETE /accounts/{id}/credit-card/moves/{split_id}` (204; count the split in the next month / its own again; 422 when it is no purchase or refund of the card, 409 when a month involved is closed); `GET /credit-cards` (`[{ account_id, account_name, current }]`, the current month of every card with a plan, for the accounts list) | 12 |
 
 Health: `GET /healthz` (no auth, checks the database): `{ status, app: "saldo", api: "v1", version }`, which the desktop app checks before connecting.
 
@@ -934,7 +991,7 @@ Event types are `<entity>.<verb>`:
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).
 - Sessions and API tokens (login, logout, token create/revoke) are authentication state, not household data, and append no event.
 - The entity in `data` is the `saldo-app` view type (`AccountView`, `TransactionGroupView`, ...), which is also the API response, so the two cannot drift.
-- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_skipped`, `bill.period_reopened`, `recurrence.fired` (`{ recurrence_id, date, created, group }`), `piggy_bank.target_reached`, `import.completed`, `webhook.test`. Phase 10 alerts (8.6): `budget.threshold_reached` (`{ budget: { id, name }, limit, threshold, total, alert_key }`), `forecast.below_zero` (`{ account: { id, name }, currency, lowest, alert_key }`), `digest.weekly` (`{ week, currencies, top_categories, bills_due, budgets, alert_key }`), `net_worth_goal.reached` (the goal plus `alert_key`), all with origin `scheduler`; and `transaction.large` (`{ group, split_id, threshold }`), appended with the change for origins `api` and `rule` only, once per split that becomes large (at or above the household's amount in the primary currency). Adding or removing piggy bank money appends `piggy_bank.updated`. Changes made by rules append `transaction.updated` with origin `rule`.
+- Domain: `bill.due_soon`, `bill.overdue`, `bill.paid`, `bill.period_skipped`, `bill.period_reopened`, `recurrence.fired` (`{ recurrence_id, date, created, group }`), `piggy_bank.target_reached`, `import.completed`, `webhook.test`. Phase 10 alerts (8.6): `budget.threshold_reached` (`{ budget: { id, name }, limit, threshold, total, alert_key }`), `forecast.below_zero` (`{ account: { id, name }, currency, lowest, alert_key }`), `digest.weekly` (`{ week, currencies, top_categories, bills_due, budgets, alert_key }`), `net_worth_goal.reached` (the goal plus `alert_key`), all with origin `scheduler`; and `transaction.large` (`{ group, split_id, threshold }`), appended with the change for origins `api` and `rule` only, once per split that becomes large (at or above the household's amount in the primary currency). Adding or removing piggy bank money appends `piggy_bank.updated`. Phase 12: `credit_card_plan.created`/`.updated`/`.deleted` (the plan, entity ID the card's account ID; setting a budget is an update) and `credit_card_move.created`/`.deleted` (`{ account_id, split_id, from_cycle, to_cycle }`, entity ID the split), origin `api`, or `scheduler` when the settlement task drops a stale move. Changes made by rules append `transaction.updated` with origin `rule`.
 
 Payload, also the webhook body:
 
@@ -983,7 +1040,7 @@ Failed sends are retried three times (four attempts in all), one attempt per not
 
 ### 8.5 Background tasks
 
-All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `alert-scheduler` (Phase 10, 8.6), `recurrence-runner`, `attachment-sweep`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database. `attachment-sweep` (at start and hourly) removes stored files that no attachment row uses and that are at least an hour old; deletes only remove rows, inside their database transaction, so a rollback (an importer dry run) never loses a file.
+All tasks (`webhook-dispatcher`, `webhook-delivery`, `auto-budgets`, `bill-scheduler`, `notifier`, `alert-scheduler` (Phase 10, 8.6), `recurrence-runner`, `card-settlements` (Phase 12, 5.4f: at startup, every 15 minutes and after writes; one database transaction per card, a failing card is logged and retried), `attachment-sweep`) are Tokio tasks started by `saldo serve`, stopped on SIGTERM through a shared cancellation token. Time comes from a `Clock` trait so tests can use a fake clock. Each task must be safe to run again after a crash at any point: all progress is in the database. `attachment-sweep` (at start and hourly) removes stored files that no attachment row uses and that are at least an hour old; deletes only remove rows, inside their database transaction, so a rollback (an importer dry run) never loses a file.
 
 ### 8.6 Alerts (Phase 10)
 
@@ -1036,7 +1093,7 @@ Checked against the owner's Firefly 6.7.9 in Phase 3; the answers are in `docs/S
 ### 9.2 Export
 
 - `GET /api/v1/export/json` and `saldo export json`: one document `{ "format": "saldo-export", "version": 1, "exported_at": ..., "household": ..., "currencies": [...], "accounts": [...], "transactions": [...], ... }` with every table of the household, using the API's own representations. It is complete enough to rebuild the household.
-- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them); `saved_views.csv` (Phase 10) has the stored filters as JSON; `net_worth_goals.csv` (Phase 10) has each goal with its net worth on the export day. Rule triggers and actions read as `kind=value`.
+- `GET /api/v1/export/csv` and `saldo export csv`: a zip with one CSV per entity. `transactions.csv` is one row per split with account names, category, budget, bill, tags and decimal amounts, so it opens directly in a spreadsheet; `recurrences.csv` is one row per template split; `templates.csv` (transaction templates, Phase 8) is one row per template split, with account, category, budget, bill and tag names; `subscription_dismissals.csv` (Phase 9) names the account; `reconciliations.csv` (Phase 9) is one row per reconciliation with its number of splits (the JSON export lists them); `saved_views.csv` (Phase 10) has the stored filters as JSON; `net_worth_goals.csv` (Phase 10) has each goal with its net worth on the export day; `credit_card_plans.csv`, `credit_card_limits.csv` (one row per budget and its first month) and `credit_card_moves.csv` (Phase 12). `credit_card_cycles` is not exported: it is rebuilt by the next run, and the payments are ordinary transactions. Rule triggers and actions read as `kind=value`.
 - Left out (owner-approved): the event log, sessions and tokens, `import_runs`, webhook endpoints and deliveries, notification channels and notifications (secrets and bookkeeping, not needed to rebuild the household). Attachment files are referenced by SHA-256, not embedded.
 - The SQLite file itself is the third way out: `saldo backup <path>` runs `VACUUM INTO`.
 

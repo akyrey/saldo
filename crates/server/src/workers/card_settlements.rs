@@ -60,3 +60,98 @@ pub async fn run(app: &App) -> Result<usize, String> {
     }
     Ok(changes)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use saldo_app::accounts::NewAccount;
+    use saldo_app::clock::SystemClock;
+    use saldo_app::credit_cards::PlanInput;
+    use saldo_app::ctx::{HouseholdCtx, Origin};
+    use saldo_app::identity::SetupInput;
+    use saldo_app::transactions::{SplitInput, TransactionInput};
+
+    use super::*;
+
+    async fn account(
+        app: &App,
+        ctx: &HouseholdCtx,
+        name: &str,
+        kind: &str,
+        role: Option<&str>,
+    ) -> saldo_core::AccountId {
+        let input = NewAccount {
+            name: name.to_string(),
+            account_type: kind.to_string(),
+            asset_role: role.map(str::to_string),
+            ..NewAccount::default()
+        };
+        app.accounts
+            .create(ctx, Origin::Api, input)
+            .await
+            .unwrap()
+            .id
+            .parse()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn books_the_payment_once_and_then_changes_nothing() {
+        let pool = saldo_app::db::connect_in_memory().await.unwrap();
+        saldo_app::db::migrate(&pool).await.unwrap();
+        let app = App::new(pool, Arc::new(SystemClock));
+        let setup = SetupInput {
+            email: "owner@example.com".to_string(),
+            password: "correct horse battery".to_string(),
+            display_name: "Owner".to_string(),
+            household_name: "Home".to_string(),
+            primary_currency: "EUR".to_string(),
+        };
+        let ctx = app.identity.setup(Origin::Api, setup).await.unwrap().ctx;
+        assert_eq!(run(&app).await, Ok(0));
+
+        let card = account(&app, &ctx, "Visa", "asset", Some("credit_card")).await;
+        let bank = account(&app, &ctx, "Checking", "asset", None).await;
+        let shop = account(&app, &ctx, "Shop", "expense", None).await;
+        let plan = PlanInput {
+            monthly_limit: Some("500.00".to_string()),
+            settlement_account_id: bank,
+            settlement_day: 28,
+        };
+        app.credit_cards
+            .put_plan(&ctx, Origin::Api, card, plan)
+            .await
+            .unwrap();
+        let today = chrono::Utc::now().date_naive();
+        let purchase = SplitInput {
+            id: None,
+            date: today,
+            description: "Shopping".to_string(),
+            source_id: card,
+            destination_id: shop,
+            amount: "10.00".to_string(),
+            currency: None,
+            foreign_amount: None,
+            foreign_currency: None,
+            category_id: None,
+            budget_id: None,
+            bill_id: None,
+            tag_ids: Vec::new(),
+            reconciled: false,
+            notes: None,
+            meta: serde_json::Map::new(),
+        };
+        let input = TransactionInput {
+            title: None,
+            splits: vec![purchase],
+        };
+        app.transactions
+            .create(&ctx, Origin::Api, input)
+            .await
+            .unwrap();
+
+        assert_eq!(run(&app).await, Ok(1));
+        assert_eq!(run(&app).await, Ok(0));
+    }
+}
