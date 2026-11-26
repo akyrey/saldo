@@ -487,6 +487,515 @@
         ]
       }
     },
+    "/api/v1/accounts/{id}/credit-card": {
+      "get": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "The card's plan: budgets, paying account and payment day.",
+        "operationId": "get_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CreditCardPlanView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "Creates (201) or replaces (200) the plan of a credit card account.",
+        "operationId": "put_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CreditCardPlanView"
+                }
+              }
+            }
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CreditCardPlanView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "Removes the plan. Settlement transfers the server still keeps in sync\nand that are not due yet are deleted; booked ones stay.",
+        "operationId": "delete_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/credit-card/cycles": {
+      "get": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "The card's months, newest first, from the plan's start at the earliest.",
+        "operationId": "list_cycles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First month, `YYYY-MM`; default five months before `to`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last month, `YYYY-MM`; default the current month. At most 36 months.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_CardCycleView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/credit-card/cycles/{cycle}": {
+      "get": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "One month with the transactions that count toward it.",
+        "operationId": "get_cycle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cycle",
+            "in": "path",
+            "description": "YYYY-MM",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CardCycleDetailView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/credit-card/limits/{cycle}": {
+      "put": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "Sets the budget from a month on (the current one or later); earlier\nmonths keep theirs.",
+        "operationId": "set_limit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cycle",
+            "in": "path",
+            "description": "YYYY-MM",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_CreditCardPlanView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/credit-card/moves/{split_id}": {
+      "put": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "Counts a purchase or refund of the card in the month after its date.\n409 when either month is closed (before the plan, or its payment booked).",
+        "operationId": "move_split",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "split_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "Counts the transaction in its own month again.",
+        "operationId": "unmove_split",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "split_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/accounts/{id}/reconciliations": {
       "get": {
         "tags": [
@@ -2803,6 +3312,43 @@
             }
           },
           "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/credit-cards": {
+      "get": {
+        "tags": [
+          "credit-cards"
+        ],
+        "summary": "The current month of every card with a plan.",
+        "operationId": "list_summaries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_CardSummaryView"
+                }
+              }
+            }
+          },
+          "401": {
             "content": {
               "application/json": {
                 "schema": {
@@ -9220,6 +9766,89 @@
           }
         }
       },
+      "CardCycleDetailView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CardCycleView"
+          },
+          {
+            "type": "object",
+            "required": [
+              "splits"
+            ],
+            "properties": {
+              "splits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CardSplitView"
+                },
+                "description": "Oldest first: the month's own transactions (also those moved out,\nwhich do not count here) and those moved in from the month before."
+              }
+            }
+          }
+        ],
+        "description": "One month with the transactions that count toward it."
+      },
+      "CardCycleView": {
+        "type": "object",
+        "description": "One month of a card.",
+        "required": [
+          "cycle",
+          "from",
+          "to",
+          "currency",
+          "limit",
+          "spent",
+          "available",
+          "moved_in",
+          "moved_out",
+          "settlement"
+        ],
+        "properties": {
+          "available": {
+            "type": "string",
+            "description": "`limit - spent`; negative when over budget."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "cycle": {
+            "type": "string"
+          },
+          "difference_after_settlement": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a frozen or hand-managed month: `spent` minus what the transfer\npaid. `None` while the server keeps the transfer in sync."
+          },
+          "from": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "string",
+            "description": "The month's budget."
+          },
+          "moved_in": {
+            "type": "string",
+            "description": "Spending moved here from the month before."
+          },
+          "moved_out": {
+            "type": "string",
+            "description": "Spending of this month's dates moved to the next month."
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/SettlementView"
+          },
+          "spent": {
+            "type": "string",
+            "description": "Purchases minus refunds counted in this month (after moves)."
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
       "CardLimitView": {
         "type": "object",
         "required": [
@@ -9252,6 +9881,68 @@
           },
           "split_id": {
             "type": "string"
+          }
+        }
+      },
+      "CardSplitView": {
+        "type": "object",
+        "required": [
+          "split_id",
+          "group_id",
+          "date",
+          "description",
+          "counterparty",
+          "amount",
+          "moved_in",
+          "moved_out"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Positive for a purchase, negative for a refund."
+          },
+          "counterparty": {
+            "$ref": "#/components/schemas/CounterpartyView"
+          },
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "group_id": {
+            "type": "string"
+          },
+          "moved_in": {
+            "type": "boolean",
+            "description": "Dated in the month before and counted here."
+          },
+          "moved_out": {
+            "type": "boolean",
+            "description": "Dated in this month and counted in the next."
+          },
+          "split_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CardSummaryView": {
+        "type": "object",
+        "description": "A card's current month, for the accounts list.",
+        "required": [
+          "account_id",
+          "account_name",
+          "current"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "current": {
+            "$ref": "#/components/schemas/CardCycleView"
           }
         }
       },
@@ -9627,6 +10318,21 @@
             "type": "string"
           },
           "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CounterpartyView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
             "type": "string"
           }
         }
@@ -11036,6 +11742,38 @@
           }
         }
       },
+      "Data_CardCycleDetailView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CardCycleView"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "splits"
+                ],
+                "properties": {
+                  "splits": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CardSplitView"
+                    },
+                    "description": "Oldest first: the month's own transactions (also those moved out,\nwhich do not count here) and those moved in from the month before."
+                  }
+                }
+              }
+            ],
+            "description": "One month with the transactions that count toward it."
+          }
+        }
+      },
       "Data_CashFlowReport": {
         "type": "object",
         "description": "A single result.",
@@ -11227,6 +11965,64 @@
               "token": {
                 "type": "string",
                 "description": "Shown only now; send it as `Authorization: Bearer <token>`."
+              }
+            }
+          }
+        }
+      },
+      "Data_CreditCardPlanView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A card's plan, as the API returns it and as plan events carry it.",
+            "required": [
+              "account_id",
+              "currency",
+              "settlement_account_id",
+              "settlement_day",
+              "starts_cycle",
+              "limits",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CardLimitView"
+                },
+                "description": "The budgets, oldest first: each applies from its month until the next."
+              },
+              "settlement_account_id": {
+                "type": "string",
+                "description": "The asset account that pays the card."
+              },
+              "settlement_day": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Day of the following month the card is paid (1 to 31; the last day\nof a shorter month).",
+                "minimum": 0
+              },
+              "starts_cycle": {
+                "type": "string",
+                "description": "The first month the plan covers."
+              },
+              "updated_at": {
+                "type": "string"
               }
             }
           }
@@ -12709,6 +13505,110 @@
                 },
                 "updated_at": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_CardCycleView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One month of a card.",
+              "required": [
+                "cycle",
+                "from",
+                "to",
+                "currency",
+                "limit",
+                "spent",
+                "available",
+                "moved_in",
+                "moved_out",
+                "settlement"
+              ],
+              "properties": {
+                "available": {
+                  "type": "string",
+                  "description": "`limit - spent`; negative when over budget."
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "cycle": {
+                  "type": "string"
+                },
+                "difference_after_settlement": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "For a frozen or hand-managed month: `spent` minus what the transfer\npaid. `None` while the server keeps the transfer in sync."
+                },
+                "from": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "string",
+                  "description": "The month's budget."
+                },
+                "moved_in": {
+                  "type": "string",
+                  "description": "Spending moved here from the month before."
+                },
+                "moved_out": {
+                  "type": "string",
+                  "description": "Spending of this month's dates moved to the next month."
+                },
+                "settlement": {
+                  "$ref": "#/components/schemas/SettlementView"
+                },
+                "spent": {
+                  "type": "string",
+                  "description": "Purchases minus refunds counted in this month (after moves)."
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_CardSummaryView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A card's current month, for the accounts list.",
+              "required": [
+                "account_id",
+                "account_name",
+                "current"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string"
+                },
+                "account_name": {
+                  "type": "string"
+                },
+                "current": {
+                  "$ref": "#/components/schemas/CardCycleView"
                 }
               }
             }
@@ -14587,6 +15487,18 @@
           }
         }
       },
+      "LimitRequest": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "The budget in the card's currency, more than zero."
+          }
+        }
+      },
       "ListMeta": {
         "type": "object",
         "required": [
@@ -16280,6 +17192,32 @@
           }
         }
       },
+      "PlanRequest": {
+        "type": "object",
+        "required": [
+          "settlement_account_id",
+          "settlement_day"
+        ],
+        "properties": {
+          "monthly_limit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The monthly budget in the card's currency. Required for a new plan;\non an existing plan it sets the budget from the current month on."
+          },
+          "settlement_account_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "An active asset account in the card's currency, not the card."
+          },
+          "settlement_day": {
+            "type": "integer",
+            "format": "int64",
+            "description": "1 to 31: the day of the following month the card is paid (the last\nday of a shorter month)."
+          }
+        }
+      },
       "PreviewRequest": {
         "type": "object",
         "required": [
@@ -17231,6 +18169,37 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "SettlementView": {
+        "type": "object",
+        "description": "The month's settlement transfer.",
+        "required": [
+          "state",
+          "date"
+        ],
+        "properties": {
+          "amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "The payment day of the following month."
+          },
+          "group_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The transfer, when there is one."
+          },
+          "state": {
+            "type": "string",
+            "description": "`synced` (follows the month), `frozen` (booked) or `detached` (managed\nby hand)."
           }
         }
       },

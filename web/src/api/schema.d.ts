@@ -74,6 +74,103 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/accounts/{id}/credit-card": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The card's plan: budgets, paying account and payment day. */
+    get: operations["get_plan"];
+    /** Creates (201) or replaces (200) the plan of a credit card account. */
+    put: operations["put_plan"];
+    post?: never;
+    /**
+     * Removes the plan. Settlement transfers the server still keeps in sync
+     *     and that are not due yet are deleted; booked ones stay.
+     */
+    delete: operations["delete_plan"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/credit-card/cycles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The card's months, newest first, from the plan's start at the earliest. */
+    get: operations["list_cycles"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/credit-card/cycles/{cycle}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One month with the transactions that count toward it. */
+    get: operations["get_cycle"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/credit-card/limits/{cycle}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Sets the budget from a month on (the current one or later); earlier
+     *     months keep theirs.
+     */
+    put: operations["set_limit"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/credit-card/moves/{split_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Counts a purchase or refund of the card in the month after its date.
+     *     409 when either month is closed (before the plan, or its payment booked).
+     */
+    put: operations["move_split"];
+    post?: never;
+    /** Counts the transaction in its own month again. */
+    delete: operations["unmove_split"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/accounts/{id}/reconciliations": {
     parameters: {
       query?: never;
@@ -613,6 +710,23 @@ export interface paths {
     options?: never;
     head?: never;
     patch: operations["update_category"];
+    trace?: never;
+  };
+  "/api/v1/credit-cards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The current month of every card with a plan. */
+    get: operations["list_summaries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/currencies": {
@@ -2038,6 +2152,37 @@ export interface components {
       sort_order: number;
       updated_at: string;
     };
+    /** @description One month with the transactions that count toward it. */
+    CardCycleDetailView: components["schemas"]["CardCycleView"] & {
+      /**
+       * @description Oldest first: the month's own transactions (also those moved out,
+       *     which do not count here) and those moved in from the month before.
+       */
+      splits: components["schemas"]["CardSplitView"][];
+    };
+    /** @description One month of a card. */
+    CardCycleView: {
+      /** @description `limit - spent`; negative when over budget. */
+      available: string;
+      currency: string;
+      cycle: string;
+      /**
+       * @description For a frozen or hand-managed month: `spent` minus what the transfer
+       *     paid. `None` while the server keeps the transfer in sync.
+       */
+      difference_after_settlement?: string | null;
+      from: string;
+      /** @description The month's budget. */
+      limit: string;
+      /** @description Spending moved here from the month before. */
+      moved_in: string;
+      /** @description Spending of this month's dates moved to the next month. */
+      moved_out: string;
+      settlement: components["schemas"]["SettlementView"];
+      /** @description Purchases minus refunds counted in this month (after moves). */
+      spent: string;
+      to: string;
+    };
     CardLimitView: {
       amount: string;
       from_cycle: string;
@@ -2047,6 +2192,25 @@ export interface components {
       account_id: string;
       created_at: string;
       split_id: string;
+    };
+    CardSplitView: {
+      /** @description Positive for a purchase, negative for a refund. */
+      amount: string;
+      counterparty: components["schemas"]["CounterpartyView"];
+      date: string;
+      description: string;
+      group_id: string;
+      /** @description Dated in the month before and counted here. */
+      moved_in: boolean;
+      /** @description Dated in this month and counted in the next. */
+      moved_out: boolean;
+      split_id: string;
+    };
+    /** @description A card's current month, for the accounts list. */
+    CardSummaryView: {
+      account_id: string;
+      account_name: string;
+      current: components["schemas"]["CardCycleView"];
     };
     CashFlowCurrency: {
       currency: string;
@@ -2169,6 +2333,10 @@ export interface components {
       settings: components["schemas"]["ChannelSettings"];
       updated_at: string;
       user_id: string;
+    };
+    CounterpartyView: {
+      id: string;
+      name: string;
     };
     CreateAccountRequest: {
       account_number?: string | null;
@@ -2617,6 +2785,17 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_CardCycleDetailView: {
+      /** @description One month with the transactions that count toward it. */
+      data: components["schemas"]["CardCycleView"] & {
+        /**
+         * @description Oldest first: the month's own transactions (also those moved out,
+         *     which do not count here) and those moved in from the month before.
+         */
+        splits: components["schemas"]["CardSplitView"][];
+      };
+    };
+    /** @description A single result. */
     Data_CashFlowReport: {
       /**
        * @description Income (deposits) and expenses (withdrawals) per interval. Transfers,
@@ -2680,6 +2859,28 @@ export interface components {
         info: components["schemas"]["TokenView"];
         /** @description Shown only now; send it as `Authorization: Bearer <token>`. */
         token: string;
+      };
+    };
+    /** @description A single result. */
+    Data_CreditCardPlanView: {
+      /** @description A card's plan, as the API returns it and as plan events carry it. */
+      data: {
+        account_id: string;
+        created_at: string;
+        currency: string;
+        /** @description The budgets, oldest first: each applies from its month until the next. */
+        limits: components["schemas"]["CardLimitView"][];
+        /** @description The asset account that pays the card. */
+        settlement_account_id: string;
+        /**
+         * Format: int32
+         * @description Day of the following month the card is paid (1 to 31; the last day
+         *     of a shorter month).
+         */
+        settlement_day: number;
+        /** @description The first month the plan covers. */
+        starts_cycle: string;
+        updated_at: string;
       };
     };
     /** @description A single result. */
@@ -3123,6 +3324,39 @@ export interface components {
         /** @description `open`, `paid` or `skipped`. */
         status: string;
         updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_CardCycleView: {
+      data: {
+        /** @description `limit - spent`; negative when over budget. */
+        available: string;
+        currency: string;
+        cycle: string;
+        /**
+         * @description For a frozen or hand-managed month: `spent` minus what the transfer
+         *     paid. `None` while the server keeps the transfer in sync.
+         */
+        difference_after_settlement?: string | null;
+        from: string;
+        /** @description The month's budget. */
+        limit: string;
+        /** @description Spending moved here from the month before. */
+        moved_in: string;
+        /** @description Spending of this month's dates moved to the next month. */
+        moved_out: string;
+        settlement: components["schemas"]["SettlementView"];
+        /** @description Purchases minus refunds counted in this month (after moves). */
+        spent: string;
+        to: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_CardSummaryView: {
+      data: {
+        account_id: string;
+        account_name: string;
+        current: components["schemas"]["CardCycleView"];
       }[];
     };
     /** @description A single result. */
@@ -3670,6 +3904,10 @@ export interface components {
       /** Format: date */
       start_date?: string | null;
     };
+    LimitRequest: {
+      /** @description The budget in the card's currency, more than zero. */
+      amount: string;
+    };
     ListMeta: {
       /** Format: int32 */
       page: number;
@@ -4133,6 +4371,24 @@ export interface components {
       target_date?: string | null;
       updated_at: string;
     };
+    PlanRequest: {
+      /**
+       * @description The monthly budget in the card's currency. Required for a new plan;
+       *     on an existing plan it sets the budget from the current month on.
+       */
+      monthly_limit?: string | null;
+      /**
+       * Format: uuid
+       * @description An active asset account in the card's currency, not the card.
+       */
+      settlement_account_id: string;
+      /**
+       * Format: int64
+       * @description 1 to 31: the day of the following month the card is paid (the last
+       *     day of a shorter month).
+       */
+      settlement_day: number;
+    };
     PreviewRequest: {
       /** @description How many dates (default 5, at most 100). */
       count?: number | null;
@@ -4443,6 +4699,19 @@ export interface components {
       expires_at: string;
       id: string;
       last_used_at?: string | null;
+    };
+    /** @description The month's settlement transfer. */
+    SettlementView: {
+      amount?: string | null;
+      /** @description The payment day of the following month. */
+      date: string;
+      /** @description The transfer, when there is one. */
+      group_id?: string | null;
+      /**
+       * @description `synced` (follows the month), `frozen` (booked) or `detached` (managed
+       *     by hand).
+       */
+      state: string;
     };
     SetupRequest: {
       display_name: string;
@@ -5093,6 +5362,323 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CreditCardPlanView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  put_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PlanRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CreditCardPlanView"];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CreditCardPlanView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_cycles: {
+    parameters: {
+      query?: {
+        /** @description First month, `YYYY-MM`; default five months before `to`. */
+        from?: string;
+        /** @description Last month, `YYYY-MM`; default the current month. At most 36 months. */
+        to?: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_CardCycleView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_cycle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        /** @description YYYY-MM */
+        cycle: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CardCycleDetailView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  set_limit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        /** @description YYYY-MM */
+        cycle: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LimitRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_CreditCardPlanView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  move_split: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        split_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  unmove_split: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        split_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -6597,6 +7183,33 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_summaries: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_CardSummaryView"];
+        };
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };

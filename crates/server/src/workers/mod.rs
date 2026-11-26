@@ -13,6 +13,7 @@
 mod alerts;
 mod attachments;
 mod budgets;
+mod card_settlements;
 pub mod notifier;
 pub mod recurrences;
 mod reminders;
@@ -136,6 +137,7 @@ pub fn start(state: &AppState, cancel: CancellationToken) -> Workers {
     notifier::spawn_notifier(&mut workers, state);
     alerts::spawn(&mut workers, state);
     recurrences::spawn(&mut workers, state);
+    card_settlements::spawn(&mut workers, state);
     let app = state.app.clone();
     workers.spawn(attachments::NAME, attachments::INTERVAL, None, move || {
         attachments::run(app.clone())
@@ -225,6 +227,7 @@ mod tests {
                 "notifier",
                 "alert-scheduler",
                 "recurrence-runner",
+                "card-settlements",
                 "attachment-sweep"
             ]
         );
