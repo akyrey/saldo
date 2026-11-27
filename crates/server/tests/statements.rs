@@ -238,3 +238,60 @@ async fn bad_requests_get_the_error_envelope() {
         .await;
     assert_eq!(missing.status, StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn amazon_and_paypal_exports_over_http() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let csv = b"Order ID,Order Date,Currency,Total Amount,Product Name,Order Status,Payment Method Type,ASIN\n405-1-1,2026-11-02T10:00:00Z,EUR,15.00,Moka pot,Closed,Visa - 1,B1\n";
+    let body = form(&[("kind", "amazon_orders")], Some(("orders.csv", csv)));
+    let created = server
+        .send_raw(
+            Method::POST,
+            "/api/v1/source-documents",
+            &multipart(),
+            body.clone(),
+            &owner,
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{:?}", created.body);
+    assert_eq!(created.body["data"]["rows_added"], 1);
+    let again = server
+        .send_raw(
+            Method::POST,
+            "/api/v1/source-documents",
+            &multipart(),
+            body,
+            &owner,
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::CONFLICT);
+
+    let rows = server
+        .get(
+            "/api/v1/source-rows?kind=amazon_orders&unmatched=true",
+            &owner,
+        )
+        .await;
+    assert_eq!(rows.status, StatusCode::OK, "{:?}", rows.body);
+    assert_eq!(rows.body["meta"]["total"], 1);
+    assert_eq!(rows.body["data"][0]["text"], "Moka pot");
+    let documents = server.get("/api/v1/source-documents", &owner).await;
+    let id = documents.body["data"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let deleted = server
+        .send(
+            Method::DELETE,
+            &format!("/api/v1/source-documents/{id}"),
+            None,
+            &owner,
+        )
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    assert_eq!(
+        server.get("/api/v1/source-rows", &owner).await.body["meta"]["total"],
+        0
+    );
+}

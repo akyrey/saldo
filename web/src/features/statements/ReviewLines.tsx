@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { Account } from "@/features/accounts/queries";
 import type { Line, LinePatch } from "./queries";
-import { newCounterpartyName, statusLabel } from "./review-model";
+import { newCounterpartyName, proposalOf, statusLabel } from "./review-model";
 
 interface ReviewLinesProps {
   lines: readonly Line[];
@@ -20,6 +20,60 @@ const ACTIONS = [
   { value: "link", label: "Link" },
   { value: "skip", label: "Skip" },
 ];
+
+interface ProposalControlsProps {
+  line: Line;
+  editable: boolean;
+  onChange: (position: number, patch: LinePatch) => void;
+}
+
+/** What a matched Amazon or PayPal row proposes, and whether to book it. */
+function ProposalControls({ line, editable, onChange }: ProposalControlsProps) {
+  const proposal = proposalOf(line.proposal);
+  if (!proposal) return null;
+  const source = proposal.source === "paypal" ? "PayPal" : "Amazon";
+  const label = `${line.booked_date} ${line.description}`;
+  return (
+    <span className="mt-1 flex flex-col gap-1 rounded-md bg-muted/50 px-2 py-1 text-xs">
+      <span className="font-medium">{proposal.description}</span>
+      {proposal.notes.map((note) => (
+        <span key={note} className="text-muted-foreground">
+          {note}
+        </span>
+      ))}
+      <span className="flex flex-wrap gap-3">
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={line.use_proposal}
+            disabled={!editable}
+            aria-label={`Use ${source} details for ${label}`}
+            onChange={(e) => onChange(line.position, { use_proposal: e.target.checked })}
+          />
+          Use {source} details
+        </label>
+        {proposal.items.length > 1 ? (
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={line.split_by_item}
+              disabled={!editable || !line.use_proposal}
+              aria-label={`Split by item for ${label}`}
+              onChange={(e) => onChange(line.position, { split_by_item: e.target.checked })}
+            />
+            Split by item ({proposal.items.length})
+          </label>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
+/** The counterparty commit looks up or creates: the proposal's, when kept. */
+function counterpartyName(line: Line): string {
+  const proposal = proposalOf(line.proposal);
+  return proposal && line.use_proposal ? proposal.counterparty : newCounterpartyName(line);
+}
 
 function accountName(accounts: readonly Account[], id: string | null | undefined): string {
   return accounts.find((a) => a.id === id)?.name ?? "";
@@ -48,6 +102,7 @@ export function ReviewLines({
             {line.reason ? (
               <span className="block text-xs text-muted-foreground">{line.reason}</span>
             ) : null}
+            <ProposalControls line={line} editable={editable} onChange={onChange} />
             {line.parts.length > 0 ? (
               <span className="block text-xs text-muted-foreground">
                 {line.parts.map((p) => `${p.column}: ${p.amount}`).join(", ")}
@@ -81,7 +136,7 @@ export function ReviewLines({
                 onChange(line.position, { counterparty_account_id: e.target.value || null })
               }
             >
-              <option value="">New account: {newCounterpartyName(line)}</option>
+              <option value="">New account: {counterpartyName(line)}</option>
               {/* A chosen account the list leaves out still shows as chosen. */}
               {line.counterparty_account_id &&
               !counterparties.some((a) => a.id === line.counterparty_account_id) ? (

@@ -10,7 +10,7 @@ mod time;
 pub use external::ExternalIdentity;
 pub(crate) use household::{household_view, members_in};
 pub use sessions::SESSION_LIFETIME;
-pub use time::{now_in, today_in};
+pub use time::{household_zone, now_in, today_in};
 
 use serde::Serialize;
 use sqlx::SqlitePool;

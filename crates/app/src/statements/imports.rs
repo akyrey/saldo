@@ -11,14 +11,18 @@ use sha2::{Digest, Sha256};
 use sqlx::SqliteConnection;
 
 use super::classify::{Known, classify, ref_keys};
+use super::enrich::SourceMatch;
 use super::import_repo::{self, ImportRow, LineRow};
 use super::ledger_repo;
-use super::parse::{Format, Mapping, StatementLine, parse_statement};
+use super::match_repo;
+use super::parse::{Mapping, StatementLine, parse_statement};
+use super::review::{apply_update, draft, statement_currency, stored_format};
+use super::source_lookup;
 use super::summary::{clean_filename, hex, split_rows, summary};
 use super::views::{
     ImportDetail, ImportView, LineUpdate, LineView, UploadInput, detail_of, import_view, line_view,
 };
-use super::{StatementService, TransferRule, account_type, profile_repo};
+use super::{StatementService, TransferRule, profile_repo};
 use crate::clock::{format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::currencies;
@@ -34,6 +38,22 @@ const LEDGER_MARGIN_DAYS: u64 = 10;
 /// Most lines one import may hold, so a commit holds the write lock briefly.
 const MAX_IMPORT_LINES: usize = 5_000;
 
+/// What classifying a statement produced.
+struct Classified {
+    rows: Vec<LineRow>,
+    findings: Vec<Value>,
+    /// `(line position, source row)` for `source_matches`.
+    matches: Vec<(usize, SourceMatch)>,
+}
+
+/// A draft ready to store.
+struct Draft {
+    row: ImportRow,
+    lines: Vec<LineRow>,
+    currency: Currency,
+    matches: Vec<(usize, SourceMatch)>,
+}
+
 impl StatementService {
     /// Reads a file with a saved profile, classifies every line and stores
     /// the draft, appending `statement_import.created`. Parsing and
@@ -45,7 +65,12 @@ impl StatementService {
         origin: Origin,
         input: UploadInput,
     ) -> Result<ImportDetail, AppError> {
-        let (row, lines, currency) = {
+        let Draft {
+            row,
+            lines,
+            currency,
+            matches,
+        } = {
             let mut conn = self.pool.acquire().await?;
             self.prepare_draft(&mut conn, ctx, input).await?
         };
@@ -53,6 +78,25 @@ impl StatementService {
         import_repo::insert(&mut tx, &ctx.household_id.to_string(), &row).await?;
         for line in &lines {
             import_repo::insert_line(&mut tx, &row.id, line).await?;
+        }
+        let household_id = ctx.household_id.to_string();
+        for (position, found) in &matches {
+            // Every line's matches are kept while it is a draft, so a line
+            // switched from skip to create keeps its details; commit drops
+            // the matches of lines that booked nothing.
+            let position =
+                i64::try_from(*position).map_err(|e| AppError::Internal(e.to_string()))?;
+            match_repo::insert_source_match(
+                &mut tx,
+                &household_id,
+                &found.row_id,
+                &row.id,
+                position,
+                found.match_type,
+                found.amount_diff_minor,
+                &row.created_at,
+            )
+            .await?;
         }
         let detail = detail_of(row, lines, &currency)?;
         self.emit_import(&mut tx, ctx, origin, &detail.import, "created")
@@ -67,7 +111,7 @@ impl StatementService {
         conn: &mut SqliteConnection,
         ctx: &HouseholdCtx,
         input: UploadInput,
-    ) -> Result<(ImportRow, Vec<LineRow>, Currency), AppError> {
+    ) -> Result<Draft, AppError> {
         let household_id = ctx.household_id.to_string();
         let profile = match profile_repo::find(conn, &household_id, &input.profile_id).await {
             Err(AppError::NotFound) => {
@@ -98,7 +142,11 @@ impl StatementService {
         }
         let account_id: AccountId = parse_stored(&account)?;
         let keys = ref_keys(account_id, &lines);
-        let (rows, findings) = self
+        let Classified {
+            rows,
+            findings,
+            matches,
+        } = self
             .classified(conn, ctx, account_id, &currency, &rules, &lines, &keys)
             .await?;
         let amounts: Vec<Money> = lines.iter().map(|l| l.amount).collect();
@@ -132,7 +180,12 @@ impl StatementService {
             created_at: format_timestamp(self.clock.now()),
             committed_at: None,
         };
-        Ok((row, rows, currency))
+        Ok(Draft {
+            row,
+            lines: rows,
+            currency,
+            matches,
+        })
     }
 
     /// Loads what the classification needs and runs it.
@@ -146,18 +199,25 @@ impl StatementService {
         rules: &[TransferRule],
         lines: &[StatementLine],
         keys: &[String],
-    ) -> Result<(Vec<LineRow>, Vec<Value>), AppError> {
+    ) -> Result<Classified, AppError> {
         let household_id = ctx.household_id.to_string();
         let account = account_id.to_string();
+        let enrichments = source_lookup::enrichments(conn, &household_id, lines, currency).await?;
         let refs = ExternalRefs::load(conn, ctx, BANK_STATEMENT).await?;
         let skipped_before: BTreeSet<String> =
             import_repo::skipped_before(conn, &household_id, &account, keys)
                 .await?
                 .into_iter()
                 .collect();
+        // Matched Amazon orders' dates too: the purchase may be booked on one.
+        let order_dates = enrichments
+            .iter()
+            .flatten()
+            .flat_map(|e| e.order_dates.iter().copied());
         let dates = lines
             .iter()
-            .flat_map(|l| [l.booked_date, l.accounting_date]);
+            .flat_map(|l| [l.booked_date, l.accounting_date])
+            .chain(order_dates);
         let (from, to) = (dates.clone().min(), dates.max());
         let margin = Days::new(LEDGER_MARGIN_DAYS);
         let ledger = match (
@@ -193,8 +253,22 @@ impl StatementService {
             reconciled_through,
             accounts: &accounts,
             transfer_rules: rules,
+            enrichments: &enrichments,
         };
-        classify(lines, keys, &known)
+        let (rows, findings) = classify(lines, keys, &known)?;
+        let matches = enrichments
+            .into_iter()
+            .enumerate()
+            .flat_map(|(position, e)| {
+                e.into_iter()
+                    .flat_map(move |e| e.matches.into_iter().map(move |m| (position, m)))
+            })
+            .collect();
+        Ok(Classified {
+            rows,
+            findings,
+            matches,
+        })
     }
 
     pub async fn get(&self, ctx: &HouseholdCtx, id: &str) -> Result<ImportDetail, AppError> {
@@ -270,6 +344,7 @@ impl StatementService {
         let mut tx = crate::db::begin(&self.pool).await?;
         let household_id = ctx.household_id.to_string();
         let mut row = draft(&mut tx, &household_id, id).await?;
+        match_repo::drop_matches(&mut tx, id).await?;
         import_repo::set_status(&mut tx, id, "discarded", None).await?;
         row.status = "discarded".to_string();
         let currency = currencies::find(&mut tx, &row.currency_code, "currency").await?;
@@ -291,106 +366,6 @@ impl StatementService {
         let event = NewEvent::new(&*self.clock, ENTITY, verb, view.id.clone(), view)?;
         append_event(conn, ctx, origin, event).await?;
         Ok(())
-    }
-}
-
-/// The import, if it is still a draft (409 otherwise).
-pub(super) async fn draft(
-    conn: &mut SqliteConnection,
-    household_id: &str,
-    id: &str,
-) -> Result<ImportRow, AppError> {
-    let row = import_repo::find(conn, household_id, id).await?;
-    if row.status != "draft" {
-        return Err(AppError::Conflict(format!(
-            "the import is {}, not a draft",
-            row.status
-        )));
-    }
-    Ok(row)
-}
-
-async fn apply_update(
-    conn: &mut SqliteConnection,
-    household_id: &str,
-    account_id: &str,
-    line: &mut LineRow,
-    update: LineUpdate,
-) -> Result<(), AppError> {
-    if let Some(action) = update.action {
-        if !matches!(action.as_str(), "create" | "link" | "skip") {
-            return Err(AppError::invalid("action", "must be create, link or skip"));
-        }
-        line.action = action;
-    }
-    if let Some(split_id) = update.split_id {
-        if let Some(id) = &split_id
-            && !import_repo::split_on_account(conn, household_id, account_id, id).await?
-        {
-            return Err(AppError::invalid("split_id", "not a split of this account"));
-        }
-        line.split_id = split_id;
-    }
-    if let Some(counterparty) = update.counterparty_account_id {
-        if let Some(id) = &counterparty
-            && (id == account_id || account_type(conn, household_id, id).await?.is_none())
-        {
-            return Err(AppError::invalid(
-                "counterparty_account_id",
-                "not another account of this household",
-            ));
-        }
-        line.counterparty_account_id = counterparty;
-    }
-    if let Some(category) = update.category_id {
-        if let Some(id) = &category
-            && !import_repo::category_exists(conn, household_id, id).await?
-        {
-            return Err(AppError::invalid(
-                "category_id",
-                "not a category of this household",
-            ));
-        }
-        line.category_id = category;
-    }
-    if line.action == "link" && line.split_id.is_none() {
-        return Err(AppError::invalid(
-            "split_id",
-            "a link needs the split it links to",
-        ));
-    }
-    Ok(())
-}
-
-/// The currency of the household's asset or liability account.
-pub(super) async fn statement_currency(
-    conn: &mut SqliteConnection,
-    household_id: &str,
-    account: &str,
-) -> Result<Currency, AppError> {
-    let row = sqlx::query!(
-        "SELECT type AS kind, currency_code FROM accounts WHERE household_id = ? AND id = ?",
-        household_id,
-        account
-    )
-    .fetch_optional(&mut *conn)
-    .await?
-    .ok_or_else(|| AppError::invalid("account_id", "not an account of this household"))?;
-    if row.kind != "asset" && row.kind != "liability" {
-        return Err(AppError::invalid(
-            "account_id",
-            "statements belong to asset and liability accounts",
-        ));
-    }
-    currencies::find(conn, &row.currency_code, "account_id").await
-}
-
-/// The parser's format for a stored or requested format name.
-pub(super) fn stored_format(name: &str) -> Option<Format> {
-    match name {
-        "csv" => Some(Format::Csv),
-        "xlsx" => Some(Format::Xlsx),
-        _ => None,
     }
 }
 

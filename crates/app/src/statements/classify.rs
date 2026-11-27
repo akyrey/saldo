@@ -14,6 +14,7 @@ use saldo_core::{AccountId, Currency, CurrencyCode, DateRange, Money, SplitKind}
 use serde_json::{Value, json};
 
 use super::TransferRule;
+use super::enrich::Enrichment;
 use super::import_repo::LineRow;
 use super::ledger_repo::{AccountRow, LedgerRow};
 use super::parse::StatementLine;
@@ -39,6 +40,8 @@ pub(super) struct Known<'a> {
     pub reconciled_through: Option<NaiveDate>,
     pub accounts: &'a [AccountRow],
     pub transfer_rules: &'a [TransferRule],
+    /// What a stored Amazon or PayPal row says about each line (Track D).
+    pub enrichments: &'a [Option<Enrichment>],
 }
 
 /// The `ref_key`s of the lines, in order: `<account>:<external ID>`, or
@@ -153,6 +156,11 @@ fn base_row(
         created_group_id: None,
         counterparty_account_id: propose_counterparty(line, known),
         category_id: None,
+        proposal: proposal(known, position)
+            .map(|p| serde_json::to_string(p).map_err(|e| AppError::Internal(e.to_string())))
+            .transpose()?,
+        use_proposal: true,
+        split_by_item: false,
     })
 }
 
@@ -171,7 +179,7 @@ fn match_existing(
         .collect();
     let matcher_lines: Vec<Line> = open
         .iter()
-        .map(|&i| matcher_line(&lines[i], known))
+        .map(|&i| matcher_line(&lines[i], i, known))
         .collect();
     let (Some(first), Some(last)) = (
         lines.iter().map(|l| l.booked_date).min(),
@@ -208,12 +216,16 @@ fn match_existing(
         .collect())
 }
 
-fn matcher_line(line: &StatementLine, known: &Known<'_>) -> Line {
-    let other_dates = if line.accounting_date == line.booked_date {
+fn matcher_line(line: &StatementLine, position: usize, known: &Known<'_>) -> Line {
+    let mut other_dates = if line.accounting_date == line.booked_date {
         vec![]
     } else {
         vec![line.accounting_date]
     };
+    // A matched Amazon order's date: the purchase may be booked on it (L9).
+    if let Some(Some(enrichment)) = known.enrichments.get(position) {
+        other_dates.extend(enrichment.order_dates.iter().copied());
+    }
     Line {
         date: line.booked_date,
         other_dates,
@@ -310,6 +322,14 @@ fn same_iban(a: &str, b: &str) -> bool {
 /// The proposed counterparty, in order: one of the household's own accounts
 /// by IBAN (a transfer), a transfer rule, an expense or revenue account by
 /// IBAN, then by exact name ignoring case. `None` means "create one".
+fn proposal<'a>(known: &Known<'a>, position: usize) -> Option<&'a super::enrich::Proposal> {
+    known
+        .enrichments
+        .get(position)
+        .and_then(|e| e.as_ref())
+        .map(|e| &e.proposal)
+}
+
 fn propose_counterparty(line: &StatementLine, known: &Known<'_>) -> Option<String> {
     let me = known.account_id.to_string();
     let by_iban = |kinds: &[&str]| {
@@ -343,6 +363,9 @@ fn propose_counterparty(line: &StatementLine, known: &Known<'_>) -> Option<Strin
     if let Some(external) = by_iban(&[kind]) {
         return Some(external);
     }
+    // A proposal's counterparty (the PayPal merchant) is not used here: it
+    // is resolved when committing, so turning the proposal off books the
+    // bank's view.
     let name = line.counterparty.as_deref()?.trim();
     known
         .accounts

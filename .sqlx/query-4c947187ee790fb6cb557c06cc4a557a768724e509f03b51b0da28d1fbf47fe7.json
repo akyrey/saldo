@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO source_rows\n                (id, household_id, kind, external_id, document_id, last_document_id, date, time, amount_minor,\n                 currency_code, row_kind, group_key, counterparty, text, status, excluded, raw)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 17
+    },
+    "nullable": []
+  },
+  "hash": "4c947187ee790fb6cb557c06cc4a557a768724e509f03b51b0da28d1fbf47fe7"
+}

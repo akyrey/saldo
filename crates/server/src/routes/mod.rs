@@ -26,6 +26,7 @@ pub mod reports;
 pub mod rules;
 pub mod saved_views;
 pub mod setup;
+pub mod sources;
 pub mod statement_imports;
 pub mod statement_profiles;
 pub mod subscriptions;
@@ -75,6 +76,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(credit_cards::router())
         .merge(statement_profiles::router())
         .merge(statement_imports::router())
+        .merge(sources::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

@@ -1,0 +1,134 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, kind, filename, sha256, first_date, last_date, row_count, rows_added, rows_updated, created_at\n         FROM source_documents WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "filename",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "filename"
+          }
+        }
+      },
+      {
+        "name": "sha256",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "sha256"
+          }
+        }
+      },
+      {
+        "name": "first_date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "first_date"
+          }
+        }
+      },
+      {
+        "name": "last_date",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "last_date"
+          }
+        }
+      },
+      {
+        "name": "row_count",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "row_count"
+          }
+        }
+      },
+      {
+        "name": "rows_added",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "rows_added"
+          }
+        }
+      },
+      {
+        "name": "rows_updated",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "rows_updated"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_documents",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "84af866753289a4e9bb7b91a1e444c6ec303546f8badf02f6c3fb9886b70b373"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE statement_lines\n         SET action = ?, split_id = ?, created_group_id = ?, counterparty_account_id = ?, category_id = ?,\n             use_proposal = ?, split_by_item = ?\n         WHERE import_id = ? AND position = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "a2c0055e79dfd6e20f56869b8f6830b1846d1ff2fa43a95f1c7d00d0579b26d5"
+}

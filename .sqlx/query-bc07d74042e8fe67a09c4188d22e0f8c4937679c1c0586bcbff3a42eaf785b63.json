@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, kind, external_id, date, time, amount_minor, currency_code, row_kind, group_key,\n                  counterparty, text, excluded AS \"excluded: bool\"\n           FROM source_rows\n           WHERE household_id = ?1\n             AND (date BETWEEN ?2 AND ?3\n                  OR (kind = 'amazon_orders' AND group_key IN (SELECT value FROM json_each(?4))))\n             AND NOT EXISTS (SELECT 1 FROM source_matches m\n                             WHERE m.source_row_id = source_rows.id AND m.split_id IS NOT NULL)\n           ORDER BY date, COALESCE(time, ''), rowid",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "external_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "external_id"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "time",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "time"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "row_kind",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "row_kind"
+          }
+        }
+      },
+      {
+        "name": "group_key",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "group_key"
+          }
+        }
+      },
+      {
+        "name": "counterparty",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "counterparty"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "excluded: bool",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "excluded"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "bc07d74042e8fe67a09c4188d22e0f8c4937679c1c0586bcbff3a42eaf785b63"
+}

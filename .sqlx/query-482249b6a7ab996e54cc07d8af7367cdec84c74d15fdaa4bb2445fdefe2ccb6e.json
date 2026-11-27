@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM source_rows r\n         WHERE r.household_id = ?1 AND (?2 IS NULL OR r.kind = ?2)\n           AND (?3 IS NULL OR r.date >= ?3) AND (?4 IS NULL OR r.date <= ?4)\n           AND (?5 = 0 OR NOT EXISTS (SELECT 1 FROM source_matches m WHERE m.source_row_id = r.id))",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "482249b6a7ab996e54cc07d8af7367cdec84c74d15fdaa4bb2445fdefe2ccb6e"
+}

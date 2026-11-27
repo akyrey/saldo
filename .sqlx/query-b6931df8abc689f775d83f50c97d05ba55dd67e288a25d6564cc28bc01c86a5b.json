@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE source_rows SET last_document_id = document_id WHERE household_id = ?1 AND last_document_id = ?2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b6931df8abc689f775d83f50c97d05ba55dd67e288a25d6564cc28bc01c86a5b"
+}

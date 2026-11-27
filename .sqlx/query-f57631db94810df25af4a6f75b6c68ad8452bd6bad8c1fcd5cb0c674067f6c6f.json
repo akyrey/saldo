@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM source_matches WHERE statement_import_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "f57631db94810df25af4a6f75b6c68ad8452bd6bad8c1fcd5cb0c674067f6c6f"
+}

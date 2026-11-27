@@ -3,14 +3,18 @@
 
 use std::collections::BTreeMap;
 
-use saldo_core::{AccountId, Currency, Money};
-use serde_json::{Map, Value, json};
+use saldo_core::Currency;
+use serde_json::json;
 use sqlx::SqliteConnection;
 
 use super::StatementService;
+use super::booking::{
+    by_item, moves_of, part_accounts, proposal_of, split_input, statement_meta, still_unbooked,
+};
 use super::classify::money_out;
 use super::import_repo::{self, ImportRow, LineRow};
-use super::imports::draft;
+use super::match_repo;
+use super::review::draft;
 use super::views::{ImportDetail, ImportView, detail_of, import_view};
 use crate::accounts::NewAccount;
 use crate::clock::format_timestamp;
@@ -19,7 +23,7 @@ use crate::currencies;
 use crate::error::{AppError, parse_stored};
 use crate::events::{NewEvent, append_event};
 use crate::external_refs::{BANK_STATEMENT, ExternalRefs};
-use crate::transactions::{SplitInput, TransactionInput};
+use crate::transactions::TransactionInput;
 
 /// Longest name given to a counterparty account created from a line.
 const MAX_COUNTERPARTY_CHARS: usize = 100;
@@ -49,6 +53,13 @@ impl StatementService {
             *counts.entry(line.action.clone()).or_insert(0) += 1;
             if line.action != "skip" {
                 still_unbooked(&refs, &row.account_id, line)?;
+            }
+            // The rows behind a proposal may have gone since the draft (a
+            // deleted or newer export): then the bank's text is booked.
+            if line.proposal.is_some()
+                && !match_repo::line_has_matches(&mut tx, id, line.position).await?
+            {
+                line.proposal = None;
             }
             match line.action.as_str() {
                 "create" => {
@@ -85,8 +96,13 @@ impl StatementService {
                 }
                 _ => {}
             }
+            if let (true, Some(split)) = (line.action != "skip", &line.split_id) {
+                match_repo::attach_matches(&mut tx, id, line.position, split).await?;
+            }
             import_repo::update_line(&mut tx, id, line).await?;
         }
+        // Matches of lines that booked nothing (skipped) explain nothing.
+        match_repo::drop_unattached_matches(&mut tx, id).await?;
         import_repo::set_status(&mut tx, id, "committed", Some(&now)).await?;
         row.status = "committed".to_string();
         row.committed_at = Some(now);
@@ -145,6 +161,7 @@ impl StatementService {
         for line in lines.iter().filter(|l| l.action == "link") {
             refs.remove(&mut tx, "split", &line.ref_key).await?;
         }
+        match_repo::drop_matches(&mut tx, id).await?;
         import_repo::set_status(&mut tx, id, "reverted", None).await?;
         row.status = "reverted".to_string();
         let currency = currencies::find(&mut tx, &row.currency_code, "currency").await?;
@@ -168,12 +185,23 @@ impl StatementService {
         part_accounts: &BTreeMap<String, Option<String>>,
         line: &mut LineRow,
     ) -> Result<(), AppError> {
-        let (moves, notes) = moves_of(import, line, currency, part_accounts)?;
+        let (moves, mut notes) = moves_of(import, line, currency, part_accounts)?;
+        let proposal = proposal_of(line)?;
+        // The line as booked: the source's description and counterparty
+        // when the owner keeps them (decision 4); the bank text stays in
+        // the notes.
+        let mut booked = line.clone();
+        if let Some(proposal) = &proposal {
+            booked.description = proposal.description.clone();
+            booked.counterparty_name = Some(proposal.counterparty.clone());
+            notes.extend(proposal.notes.iter().cloned());
+        }
         let first_part = moves.first().map(|(_, minor)| *minor);
         let money_out = money_out(line.amount_minor, first_part);
         let counterparty = self
-            .counterparty(conn, ctx, origin, line, currency, money_out)
+            .counterparty(conn, ctx, origin, &booked, currency, money_out)
             .await?;
+        let moves = by_item(&booked, proposal.as_ref(), moves, currency);
         let notes = notes
             .iter()
             .map(|n| format!("- {n}"))
@@ -183,14 +211,16 @@ impl StatementService {
         let splits = moves
             .iter()
             .enumerate()
-            .map(|(index, (account, minor))| {
+            .map(|(index, (account, minor, description))| {
                 let (source, destination) = if *minor < 0 {
                     (account.as_str(), counterparty.as_str())
                 } else {
                     (counterparty.as_str(), account.as_str())
                 };
+                let mut split_line = booked.clone();
+                split_line.description = description.clone();
                 split_input(
-                    line,
+                    &split_line,
                     currency,
                     source,
                     destination,
@@ -200,7 +230,7 @@ impl StatementService {
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let title = (splits.len() > 1).then(|| line.description.clone());
+        let title = (splits.len() > 1).then(|| booked.description.clone());
         let view = self
             .transactions
             .create_in(conn, ctx, origin, TransactionInput { title, splits })
@@ -248,147 +278,4 @@ impl StatementService {
         };
         Ok(self.accounts.create_in(conn, ctx, origin, input).await?.id)
     }
-}
-
-/// The part column → account map the draft was reviewed with, kept in its
-/// summary at upload (decision 13).
-fn part_accounts(row: &ImportRow) -> Result<BTreeMap<String, Option<String>>, AppError> {
-    let summary: Value = serde_json::from_str(&row.summary)
-        .map_err(|e| AppError::Internal(format!("stored summary: {e}")))?;
-    match summary.get("part_accounts") {
-        Some(value) if !value.is_null() => serde_json::from_value(value.clone())
-            .map_err(|e| AppError::Internal(format!("stored summary: {e}"))),
-        _ => Ok(BTreeMap::new()),
-    }
-}
-
-/// Refuses a line another import booked since this draft was made (two
-/// drafts of one file, or a duplicate forced to create or link), and a link
-/// to a split already linked from this account's statements: either would
-/// book a line twice or overwrite a link a later revert would then lose.
-fn still_unbooked(refs: &ExternalRefs, account_id: &str, line: &LineRow) -> Result<(), AppError> {
-    if refs.resolve("split", &line.ref_key).is_some() {
-        return Err(AppError::Conflict(format!(
-            "row {} is already imported; upload the file again to review it",
-            line.row_number
-        )));
-    }
-    if line.action == "link"
-        && let Some(split) = &line.split_id
-    {
-        let prefix = format!("{account_id}:");
-        let taken = refs
-            .entries("split")
-            .iter()
-            .any(|(key, local)| local == split && key.starts_with(&prefix));
-        if taken {
-            return Err(AppError::Conflict(format!(
-                "row {} links to a transaction already linked to another line of this account",
-                line.row_number
-            )));
-        }
-    }
-    Ok(())
-}
-
-/// `(account ID, signed minor units)` for each account a line moves.
-type Moves = Vec<(String, i64)>;
-
-/// Who pays what for one line: `(account, signed minor)` for the line's
-/// own amount and each mapped part, and the notes (the bank text, the
-/// parser's notes, unmapped parts). One line is one movement, so all moves
-/// must go the same way.
-fn moves_of(
-    import: &ImportRow,
-    line: &LineRow,
-    currency: &Currency,
-    part_accounts: &BTreeMap<String, Option<String>>,
-) -> Result<(Moves, Vec<String>), AppError> {
-    let bad = |e: serde_json::Error| AppError::Internal(format!("stored line: {e}"));
-    let parts: Vec<Value> = serde_json::from_str(&line.parts).map_err(bad)?;
-    let mut notes = vec![format!("Bank: {}", line.description)];
-    notes.extend(serde_json::from_str::<Vec<String>>(&line.notes).map_err(bad)?);
-    let mut moves: Moves = Vec::new();
-    if line.amount_minor != 0 {
-        moves.push((import.account_id.clone(), line.amount_minor));
-    }
-    for part in &parts {
-        let column = part["column"].as_str().unwrap_or_default();
-        let minor = part["amount_minor"].as_i64().unwrap_or_default();
-        let mapped = part_accounts
-            .iter()
-            .find(|(name, _)| name.trim().eq_ignore_ascii_case(column.trim()))
-            .and_then(|(_, account)| account.clone());
-        match mapped {
-            Some(account) => moves.push((account, minor)),
-            None => notes.push(format!(
-                "{column}: {}",
-                Money::new(minor, currency.code()).to_decimal_string(currency)
-            )),
-        }
-    }
-    let row = line.row_number;
-    let Some((_, first)) = moves.first() else {
-        return Err(AppError::invalid(
-            "lines",
-            format!("row {row} has nothing to book: map its part columns to accounts"),
-        ));
-    };
-    if moves.iter().any(|(_, minor)| (*minor < 0) != (*first < 0)) {
-        return Err(AppError::invalid(
-            "lines",
-            format!("row {row} mixes money in and out; skip it and enter it by hand"),
-        ));
-    }
-    Ok((moves, notes))
-}
-
-/// `meta.statement` of a created split (decision 8): where it came from.
-fn statement_meta(import: &ImportRow, line: &LineRow) -> Map<String, Value> {
-    let mut meta = Map::new();
-    meta.insert(
-        "statement".to_string(),
-        json!({
-            "import_id": import.id,
-            "position": line.position,
-            "ref_key": line.ref_key,
-            "accounting_date": line.accounting_date,
-            "value_date": line.value_date,
-        }),
-    );
-    meta
-}
-
-fn split_input(
-    line: &LineRow,
-    currency: &Currency,
-    source: &str,
-    destination: &str,
-    minor: i64,
-    notes: Option<String>,
-    meta: Map<String, Value>,
-) -> Result<SplitInput, AppError> {
-    let source: AccountId = parse_stored(source)?;
-    let destination: AccountId = parse_stored(destination)?;
-    Ok(SplitInput {
-        id: None,
-        date: line
-            .booked_date
-            .parse()
-            .map_err(|_| AppError::Internal(format!("stored date {}", line.booked_date)))?,
-        description: line.description.clone(),
-        source_id: source,
-        destination_id: destination,
-        amount: Money::new(minor.saturating_abs(), currency.code()).to_decimal_string(currency),
-        currency: None,
-        foreign_amount: None,
-        foreign_currency: None,
-        category_id: line.category_id.as_deref().map(parse_stored).transpose()?,
-        budget_id: None,
-        bill_id: None,
-        tag_ids: Vec::new(),
-        reconciled: false,
-        notes,
-        meta,
-    })
 }

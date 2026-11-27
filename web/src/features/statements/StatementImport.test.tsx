@@ -44,6 +44,9 @@ function line(position: number, status: string, action: string, extra: object = 
     created_group_id: null,
     counterparty_account_id: null,
     category_id: null,
+    proposal: null,
+    use_proposal: true,
+    split_by_item: false,
     ...extra,
   };
 }
@@ -83,6 +86,19 @@ function detail(status: string, extra: object = {}) {
     lines: [
       line(0, "possible_match", "link", { split_id: "s1", reason: "same amount, 1 day apart" }),
       line(1, "new", "create", { counterparty_name: "Bar Sport" }),
+      line(2, "new", "create", {
+        description: "AMAZON EU 405-1",
+        proposal: {
+          source: "amazon",
+          description: "Amazon: Moka pot + 1 more",
+          counterparty: "Amazon",
+          notes: ["Amazon order 405-1 (2026-11-02): Moka pot; Filter"],
+          items: [
+            { product: "Moka pot", amount_minor: 1500 },
+            { product: "Filter", amount_minor: 500 },
+          ],
+        },
+      }),
     ],
   };
 }
@@ -110,6 +126,9 @@ function api(committedAfterCommit = true) {
     }),
     "PATCH /api/v1/statement-imports/i1/lines/1": async (request: Request) => ({
       data: line(1, "new", ((await request.json()) as { action?: string }).action ?? "create"),
+    }),
+    "PATCH /api/v1/statement-imports/i1/lines/2": async (request: Request) => ({
+      data: { ...detail("draft").lines[2], ...((await request.json()) as object) },
     }),
     "POST /api/v1/statement-imports/i1/commit": () => {
       committed = committedAfterCommit;
@@ -155,6 +174,24 @@ describe("statement import", () => {
     const reconcile = await screen.findByRole("link", { name: "Reconcile now" });
     expect(reconcile.getAttribute("href")).toContain("/accounts/a1/reconcile");
     expect(reconcile.getAttribute("href")).toContain("date=2026-11-30");
+  });
+
+  it("shows what Amazon proposes and splits a charge by item", async () => {
+    const seen = api();
+    renderApp("/statement-imports/i1");
+    const user = userEvent.setup();
+    expect(await screen.findByText("Amazon: Moka pot + 1 more")).toBeInTheDocument();
+    const keep = screen.getByLabelText("Use Amazon details for 2026-11-05 AMAZON EU 405-1");
+    expect(keep).toBeChecked();
+    // A kept proposal names the account commit will use.
+    expect(screen.getByRole("option", { name: "New account: Amazon" })).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Split by item for 2026-11-05 AMAZON EU 405-1"));
+    await waitFor(() => expect(seen.some((r) => r.url.endsWith("/lines/2"))).toBe(true));
+    const patch = await seen.find((r) => r.url.endsWith("/lines/2"))?.json();
+    expect(patch).toEqual({ split_by_item: true });
+    expect(
+      await screen.findByLabelText("Split by item for 2026-11-05 AMAZON EU 405-1"),
+    ).toBeChecked();
   });
 
   it("shows why a commit was refused, by row", async () => {

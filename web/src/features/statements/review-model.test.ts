@@ -4,6 +4,7 @@ import {
   findingLabel,
   newCounterpartyName,
   partColumns,
+  proposalOf,
   reconcileSearch,
   statusLabel,
   summaryNotes,
@@ -70,6 +71,23 @@ describe("statement review model", () => {
       unsupported: [],
       more: 0,
     });
+  });
+
+  it("reads a proposal defensively", () => {
+    const proposal = {
+      source: "amazon",
+      description: "Amazon: Moka",
+      counterparty: "Amazon",
+      notes: ["order", 3],
+      items: [{ product: "Moka", amount_minor: 1500 }, { product: 1 }],
+    };
+    expect(proposalOf(proposal)).toEqual({
+      ...proposal,
+      notes: ["order"],
+      items: [{ product: "Moka", amount_minor: 1500 }],
+    });
+    expect(proposalOf(null)).toBeNull();
+    expect(proposalOf({ source: "amazon" })).toBeNull();
   });
 
   it("names a new counterparty after the line", () => {
