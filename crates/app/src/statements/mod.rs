@@ -1,15 +1,19 @@
 //! Bank and Satispay statement import (Phase 13, Track B).
 
 mod classify;
+mod commit;
 mod import_repo;
 mod imports;
+mod ledger_repo;
 pub mod parse;
 mod profile_repo;
 mod profiles;
+mod summary;
 mod views;
 
 use sqlx::{SqliteConnection, SqlitePool};
 
+use crate::accounts::AccountService;
 use crate::clock::SharedClock;
 use crate::error::AppError;
 use crate::transactions::TransactionService;
@@ -21,16 +25,22 @@ pub use views::{ImportDetail, ImportView, LineUpdate, LineView, PartView, Upload
 pub struct StatementService {
     pool: SqlitePool,
     clock: SharedClock,
-    #[allow(dead_code)] // used by commit (next step)
     transactions: TransactionService,
+    accounts: AccountService,
 }
 
 impl StatementService {
-    pub fn new(pool: SqlitePool, clock: SharedClock, transactions: TransactionService) -> Self {
+    pub fn new(
+        pool: SqlitePool,
+        clock: SharedClock,
+        transactions: TransactionService,
+        accounts: AccountService,
+    ) -> Self {
         Self {
             pool,
             clock,
             transactions,
+            accounts,
         }
     }
 }

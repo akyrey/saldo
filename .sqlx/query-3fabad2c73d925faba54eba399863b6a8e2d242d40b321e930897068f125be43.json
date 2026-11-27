@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT DISTINCT l.ref_key FROM statement_lines l\n         JOIN statement_imports i ON i.id = l.import_id\n         WHERE i.household_id = ? AND i.account_id = ? AND i.status = 'committed'\n           AND l.action = 'skip' AND l.status NOT IN ('duplicate', 'skipped_before')\n           AND l.ref_key IN (SELECT value FROM json_each(?))",
+  "describe": {
+    "columns": [
+      {
+        "name": "ref_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "ref_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3fabad2c73d925faba54eba399863b6a8e2d242d40b321e930897068f125be43"
+}

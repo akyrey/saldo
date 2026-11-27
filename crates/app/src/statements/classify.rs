@@ -14,7 +14,8 @@ use saldo_core::{AccountId, Currency, CurrencyCode, DateRange, Money, SplitKind}
 use serde_json::{Value, json};
 
 use super::TransferRule;
-use super::import_repo::{AccountRow, LedgerRow, LineRow};
+use super::import_repo::LineRow;
+use super::ledger_repo::{AccountRow, LedgerRow};
 use super::parse::StatementLine;
 use crate::error::{AppError, parse_stored};
 use crate::external_refs::ExternalRefs;
@@ -40,8 +41,10 @@ pub(super) struct Known<'a> {
     pub transfer_rules: &'a [TransferRule],
 }
 
-/// The `ref_key`s of the lines, in order: `<account>:<external ID>`, or the
-/// fingerprint when the bank gives no ID (L17).
+/// The `ref_key`s of the lines, in order: `<account>:<external ID>`, or
+/// `<account>:#<fingerprint>` when the bank gives no ID (L17). Every key
+/// starts with the account, so a split linked to one account's statement
+/// stays a candidate for the other side of a transfer.
 pub(super) fn ref_keys(account: AccountId, lines: &[StatementLine]) -> Vec<String> {
     let keys: Vec<(NaiveDate, Money, &str)> = lines
         .iter()
@@ -53,13 +56,16 @@ pub(super) fn ref_keys(account: AccountId, lines: &[StatementLine]) -> Vec<Strin
         .zip(counts)
         .map(|(line, n)| match &line.external_id {
             Some(id) => format!("{account}:{id}"),
-            None => fingerprint(
-                account,
-                line.accounting_date,
-                line.amount,
-                &line.description,
-                n,
-            ),
+            None => {
+                let print = fingerprint(
+                    account,
+                    line.accounting_date,
+                    line.amount,
+                    &line.description,
+                    n,
+                );
+                format!("{account}:#{print}")
+            }
         })
         .collect()
 }
@@ -284,6 +290,13 @@ fn transfer_rule<'a>(line: &StatementLine, known: &Known<'a>) -> Option<&'a Tran
         .find(|rule| text.contains(&rule.pattern.trim().to_lowercase()))
 }
 
+/// Whether a line takes money out: its own amount, or for a payment made
+/// with parts alone (Satispay vouchers), its first part. Classification and
+/// commit share it, so the proposed counterparty fits the booking.
+pub(super) fn money_out(own_minor: i64, first_part_minor: Option<i64>) -> bool {
+    own_minor < 0 || (own_minor == 0 && first_part_minor.unwrap_or(0) < 0)
+}
+
 fn same_iban(a: &str, b: &str) -> bool {
     let clean = |s: &str| {
         s.chars()
@@ -321,15 +334,16 @@ fn propose_counterparty(line: &StatementLine, known: &Known<'_>) -> Option<Strin
         // first is proposed and the review can pick another.
         return rule.account_ids.first().cloned();
     }
-    if let Some(external) = by_iban(&["expense", "revenue"]) {
-        return Some(external);
-    }
-    let name = line.counterparty.as_deref()?.trim();
-    let kind = if line.amount.minor() < 0 {
+    let first_part = line.parts.first().map(|p| p.amount.minor());
+    let kind = if money_out(line.amount.minor(), first_part) {
         "expense"
     } else {
         "revenue"
     };
+    if let Some(external) = by_iban(&[kind]) {
+        return Some(external);
+    }
+    let name = line.counterparty.as_deref()?.trim();
     known
         .accounts
         .iter()

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.id, s.group_id, s.kind, s.date, s.amount_minor, s.currency_code,\n                s.source_account_id, s.destination_account_id, s.description\n         FROM splits s\n         WHERE s.household_id = ?1\n           AND s.group_id IN (\n               SELECT group_id FROM splits\n               WHERE household_id = ?1 AND date BETWEEN ?3 AND ?4\n                 AND (source_account_id = ?2 OR destination_account_id = ?2))\n           AND NOT EXISTS (\n               SELECT 1 FROM external_refs r\n               WHERE r.household_id = ?1 AND r.source = 'bank-statement'\n                 AND r.entity_type = 'split' AND r.local_id = s.id)\n         ORDER BY s.date, s.group_id, s.position",
+  "query": "SELECT s.id, s.group_id, s.kind, s.date, s.amount_minor, s.currency_code,\n                s.source_account_id, s.destination_account_id, s.description\n         FROM splits s\n         WHERE s.household_id = ?1\n           AND s.group_id IN (\n               SELECT group_id FROM splits\n               WHERE household_id = ?1 AND date BETWEEN ?3 AND ?4\n                 AND (source_account_id = ?2 OR destination_account_id = ?2))\n           AND NOT EXISTS (\n               SELECT 1 FROM external_refs r\n               WHERE r.household_id = ?1 AND r.source = 'bank-statement'\n                 AND r.entity_type = 'split' AND r.local_id = s.id\n                 AND substr(r.external_id, 1, length(?2) + 1) = ?2 || ':')\n         ORDER BY s.date, s.group_id, s.position",
   "describe": {
     "columns": [
       {
@@ -118,5 +118,5 @@
       false
     ]
   },
-  "hash": "6c63440d6f37805c28fb031a2359577031328a1beee555a6f52dca8f7f589cd2"
+  "hash": "c8d25015d08012b3c87c7e9cd15c6b49e76409db6535c59898cc99b3e4486ed4"
 }

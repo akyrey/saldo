@@ -117,6 +117,12 @@ impl App {
         let goals = GoalService::new(pool.clone(), clock.clone());
         let transactions = TransactionService::new(pool.clone(), clock.clone());
         let bills = BillService::new(pool.clone(), clock.clone());
+        let statements = StatementService::new(
+            pool.clone(),
+            clock.clone(),
+            transactions.clone(),
+            accounts.clone(),
+        );
         let attachments =
             AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
@@ -135,7 +141,7 @@ impl App {
                 clock.clone(),
                 transactions.clone(),
             ),
-            statements: StatementService::new(pool.clone(), clock.clone(), transactions.clone()),
+            statements,
             subscriptions: SubscriptionService::new(
                 pool.clone(),
                 clock.clone(),

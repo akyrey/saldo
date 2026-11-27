@@ -935,7 +935,7 @@ Migration `20261127142256_statement_import.sql`.
   - Rows that are not transactions live in `summary`, not in `statement_lines`, so the line columns need no NULLs.
 - **`statement_lines`**: one importable line, keyed `(import_id, position)`.
   - It keeps the three dates, the signed amount, the bank text, the counterparty fields, the notes and the parts.
-  - `ref_key` is the line's identity in `external_refs` (source `bank-statement`, entity `split`): `<account_id>:<external_id>`, or the fingerprint when the bank gives no ID.
+  - `ref_key` is the line's identity in `external_refs` (source `bank-statement`, entity `split`): `<account_id>:<external_id>`, or `<account_id>:#<fingerprint>` when the bank gives no ID. Every key starts with the account, so a split linked to one account's statement (a transfer) is still a match candidate for the other account's statement, while one linked to this account's statements is not.
   - `status` and `action`.
   - `split_id`: the matched split, or the first created one.
   - `created_group_id`, for revert.
@@ -1009,7 +1009,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*`, `net_worth_goal.*` (Phase 10), `statement_profile.*` (Phase 13), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*`, `net_worth_goal.*` (Phase 10), `statement_profile.*` (Phase 13), each with `created`, `updated`, `deleted`; `statement_import.created`, `.committed`, `.discarded`, `.reverted` (Phase 13; the import without its lines; draft line edits append none), with `import.completed` after a commit (`{ source: "bank-statement", import_id, lines: { create, link, skip } }`); also `household.created` (setup) and `household.updated`.
 - `tag.merged`: one per source tag of a merge, with the source as entity and `{ source, into, splits }` as data; it stands for every reference the merge moved (no separate split, recurrence, template or rule events).
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).

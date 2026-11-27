@@ -1,18 +1,20 @@
 //! Statement imports as drafts: upload, review edits, discarding (Phase 13,
 //! Track B). Committing and reverting are in `commit.rs`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use chrono::{Days, NaiveDate};
 use saldo_core::matching::statement_gap;
 use saldo_core::{AccountId, Currency, Money};
-use serde_json::{Value, json};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::SqliteConnection;
 
 use super::classify::{Known, classify, ref_keys};
 use super::import_repo::{self, ImportRow, LineRow};
-use super::parse::{Format, Mapping, ParsedRow, StatementLine, Unsupported, parse_statement};
+use super::ledger_repo;
+use super::parse::{Format, Mapping, StatementLine, parse_statement};
+use super::summary::{clean_filename, hex, split_rows, summary};
 use super::views::{
     ImportDetail, ImportView, LineUpdate, LineView, UploadInput, detail_of, import_view, line_view,
 };
@@ -29,21 +31,50 @@ pub(super) const ENTITY: &str = "statement_import";
 /// How far around the statement's dates existing transactions are loaded:
 /// the widest matching window (a week late, two days early) plus a margin.
 const LEDGER_MARGIN_DAYS: u64 = 10;
+/// Most lines one import may hold, so a commit holds the write lock briefly.
+const MAX_IMPORT_LINES: usize = 5_000;
 
 impl StatementService {
     /// Reads a file with a saved profile, classifies every line and stores
-    /// the draft, appending `statement_import.created`.
+    /// the draft, appending `statement_import.created`. Parsing and
+    /// classifying only read, so they run before the write transaction: a
+    /// large file never holds the database's write lock.
     pub async fn upload(
         &self,
         ctx: &HouseholdCtx,
         origin: Origin,
         input: UploadInput,
     ) -> Result<ImportDetail, AppError> {
+        let (row, lines, currency) = {
+            let mut conn = self.pool.acquire().await?;
+            self.prepare_draft(&mut conn, ctx, input).await?
+        };
         let mut tx = crate::db::begin(&self.pool).await?;
+        import_repo::insert(&mut tx, &ctx.household_id.to_string(), &row).await?;
+        for line in &lines {
+            import_repo::insert_line(&mut tx, &row.id, line).await?;
+        }
+        let detail = detail_of(row, lines, &currency)?;
+        self.emit_import(&mut tx, ctx, origin, &detail.import, "created")
+            .await?;
+        tx.commit().await?;
+        Ok(detail)
+    }
+
+    /// The draft's rows, read and classified without writing anything.
+    async fn prepare_draft(
+        &self,
+        conn: &mut SqliteConnection,
+        ctx: &HouseholdCtx,
+        input: UploadInput,
+    ) -> Result<(ImportRow, Vec<LineRow>, Currency), AppError> {
         let household_id = ctx.household_id.to_string();
-        let profile = profile_repo::find(&mut tx, &household_id, &input.profile_id)
-            .await
-            .map_err(|_| AppError::invalid("profile_id", "no such profile"))?;
+        let profile = match profile_repo::find(conn, &household_id, &input.profile_id).await {
+            Err(AppError::NotFound) => {
+                return Err(AppError::invalid("profile_id", "no such profile"));
+            }
+            other => other?,
+        };
         let account = input
             .account_id
             .clone()
@@ -51,7 +82,7 @@ impl StatementService {
             .ok_or_else(|| {
                 AppError::invalid("account_id", "choose the account the statement belongs to")
             })?;
-        let currency = statement_currency(&mut tx, &household_id, &account).await?;
+        let currency = statement_currency(conn, &household_id, &account).await?;
         let mapping: Mapping = stored(&profile.mapping)?;
         let rules: Vec<TransferRule> = stored(&profile.transfer_rules)?;
         let format = if profile.format == "csv" {
@@ -62,12 +93,17 @@ impl StatementService {
         let parsed = parse_statement(format, &input.bytes, &mapping, &currency)
             .map_err(|error| AppError::invalid("file", error.to_string()))?;
         let (lines, unsupported) = split_rows(parsed.rows);
+        if lines.len() > MAX_IMPORT_LINES {
+            return Err(AppError::invalid(
+                "file",
+                format!("more than {MAX_IMPORT_LINES} lines; split the file"),
+            ));
+        }
         let account_id: AccountId = parse_stored(&account)?;
         let keys = ref_keys(account_id, &lines);
         let (rows, findings) = self
-            .classified(&mut tx, ctx, account_id, &currency, &rules, &lines, &keys)
+            .classified(conn, ctx, account_id, &currency, &rules, &lines, &keys)
             .await?;
-
         let amounts: Vec<Money> = lines.iter().map(|l| l.amount).collect();
         let gap = match (parsed.opening_balance, parsed.closing_balance) {
             (Some(opening), Some(closing)) => statement_gap(opening, &amounts, closing)
@@ -75,11 +111,14 @@ impl StatementService {
                 .map_or(Some(0), |gap| Some(gap.minor())),
             _ => None,
         };
+        // The voucher mapping the draft is reviewed with, kept for the commit
+        // even if the profile changes or goes (decision 13).
+        let part_accounts: Value = stored(&profile.part_accounts)?;
         let row = ImportRow {
             id: new_id(&*self.clock).to_string(),
             account_id: account,
             profile_id: Some(profile.id),
-            filename: input.filename.trim().chars().take(200).collect(),
+            filename: clean_filename(&input.filename),
             sha256: hex(&Sha256::digest(&input.bytes)),
             status: "draft".to_string(),
             currency_code: currency.code().to_string(),
@@ -91,20 +130,12 @@ impl StatementService {
                 .max()
                 .map(|d| d.to_string()),
             gap_minor: gap,
-            summary: summary(&rows, &unsupported, findings).to_string(),
+            summary: summary(&rows, &unsupported, findings, part_accounts).to_string(),
             created_by_user_id: Some(ctx.user_id.to_string()),
             created_at: format_timestamp(self.clock.now()),
             committed_at: None,
         };
-        import_repo::insert(&mut tx, &household_id, &row).await?;
-        for line in &rows {
-            import_repo::insert_line(&mut tx, &row.id, line).await?;
-        }
-        let detail = detail_of(row, rows, &currency)?;
-        self.emit_import(&mut tx, ctx, origin, &detail.import, "created")
-            .await?;
-        tx.commit().await?;
-        Ok(detail)
+        Ok((row, rows, currency))
     }
 
     /// Loads what the classification needs and runs it.
@@ -137,7 +168,7 @@ impl StatementService {
             to.and_then(|d| d.checked_add_days(margin)),
         ) {
             (Some(from), Some(to)) => {
-                import_repo::ledger(
+                ledger_repo::ledger(
                     conn,
                     &household_id,
                     &account,
@@ -148,14 +179,14 @@ impl StatementService {
             }
             _ => Vec::new(),
         };
-        let reconciled_through = import_repo::reconciled_through(conn, &household_id, &account)
+        let reconciled_through = ledger_repo::reconciled_through(conn, &household_id, &account)
             .await?
             .map(|d| {
                 d.parse::<NaiveDate>()
                     .map_err(|_| AppError::Internal(format!("stored date {d}")))
             })
             .transpose()?;
-        let accounts = import_repo::accounts(conn, &household_id).await?;
+        let accounts = ledger_repo::accounts(conn, &household_id).await?;
         let known = Known {
             account_id,
             currency,
@@ -359,45 +390,4 @@ async fn statement_currency(
 
 fn stored<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError> {
     serde_json::from_str(text).map_err(|e| AppError::Internal(format!("stored profile: {e}")))
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn split_rows(rows: Vec<ParsedRow>) -> (Vec<StatementLine>, Vec<(usize, Unsupported)>) {
-    let mut lines = Vec::new();
-    let mut unsupported = Vec::new();
-    for row in rows {
-        match row {
-            ParsedRow::Line(line) => lines.push(line),
-            ParsedRow::Unsupported { row, reason } => unsupported.push((row, reason)),
-        }
-    }
-    (lines, unsupported)
-}
-
-/// Why a row is not a transaction, as the review shows it.
-fn reason_text(reason: &Unsupported) -> String {
-    match reason {
-        Unsupported::NotATransaction => "not a transaction".to_string(),
-        Unsupported::Pending => "pending: the bank has not booked it yet".to_string(),
-        Unsupported::NothingMoved => "nothing moved".to_string(),
-        Unsupported::OtherCurrency(code) => format!("in another currency ({code})"),
-        Unsupported::Skipped(reason) => reason.clone(),
-        Unsupported::UnreadableDate(text) => format!("unreadable date {text:?}"),
-        Unsupported::UnreadableAmount(text) => format!("unreadable amount {text:?}"),
-    }
-}
-
-fn summary(rows: &[LineRow], unsupported: &[(usize, Unsupported)], findings: Vec<Value>) -> Value {
-    let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
-    for row in rows {
-        *counts.entry(row.status.as_str()).or_insert(0) += 1;
-    }
-    let unsupported: Vec<Value> = unsupported
-        .iter()
-        .map(|(row, reason)| json!({ "row": row, "reason": reason_text(reason) }))
-        .collect();
-    json!({ "counts": counts, "unsupported": unsupported, "findings": findings })
 }
