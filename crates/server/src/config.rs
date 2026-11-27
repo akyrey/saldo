@@ -36,6 +36,9 @@ pub struct Config {
     /// Whether email and password login is allowed (`SALDO_PASSWORD_LOGIN`,
     /// default `true`; `false` needs OIDC, or nobody could log in).
     pub password_login: bool,
+    /// Whether the owner may download a snapshot of the whole instance
+    /// (`SALDO_SNAPSHOT_DOWNLOAD`, default `false`): `GET /export/snapshot`.
+    pub snapshot_download: bool,
 }
 
 /// A configuration problem: which variable, and what is wrong with it.
@@ -94,7 +97,13 @@ impl Config {
             }
             _ => return Err(error("SALDO_PASSWORD_LOGIN", "must be true or false")),
         };
+        let snapshot_download = match get("SALDO_SNAPSHOT_DOWNLOAD", "false").as_str() {
+            "true" => true,
+            "false" => false,
+            _ => return Err(error("SALDO_SNAPSHOT_DOWNLOAD", "must be true or false")),
+        };
         Ok(Self {
+            snapshot_download,
             notify,
             database_url,
             data_dir: get("SALDO_DATA_DIR", DEFAULT_DATA_DIR).into(),
@@ -175,6 +184,7 @@ mod tests {
         assert_eq!(config.log, "info");
         assert_eq!(config.data_dir, std::path::PathBuf::from("/data"));
         assert!(!config.cookie_secure);
+        assert!(!config.snapshot_download);
     }
 
     #[test]
@@ -183,8 +193,10 @@ mod tests {
             ("SALDO_PUBLIC_URL", "https://money.example.com/saldo/"),
             ("SALDO_BIND", "127.0.0.1:9000"),
             ("SALDO_DATABASE_URL", "sqlite://saldo.db"),
+            ("SALDO_SNAPSHOT_DOWNLOAD", "true"),
         ])
         .unwrap();
+        assert!(config.snapshot_download);
         assert_eq!(config.public_url, "https://money.example.com/saldo");
         assert_eq!(config.public_origin, "https://money.example.com");
         assert!(config.cookie_secure);
@@ -198,6 +210,7 @@ mod tests {
             ("SALDO_PUBLIC_URL", "ftp://x"),
             ("SALDO_PUBLIC_URL", "https://"),
             ("SALDO_DATABASE_URL", "postgres://x"),
+            ("SALDO_SNAPSHOT_DOWNLOAD", "yes"),
         ];
         for (variable, value) in cases {
             let err = config(&[(variable, value)]).unwrap_err();

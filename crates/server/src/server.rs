@@ -122,7 +122,7 @@ pub async fn open_app(config: &Config) -> Result<App, Box<dyn std::error::Error>
 }
 
 /// `sqlite:///data/saldo.db?mode=rwc` → `/data/saldo.db`; `None` for in-memory.
-fn database_path(url: &str) -> Option<&Path> {
+pub fn database_path(url: &str) -> Option<&Path> {
     let rest = url
         .strip_prefix("sqlite://")
         .or_else(|| url.strip_prefix("sqlite:"))?;

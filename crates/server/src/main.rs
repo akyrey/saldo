@@ -24,6 +24,7 @@ async fn main() -> ExitCode {
             out,
         } => export(format, household, out).await,
         Command::Backup { path } => backup(path).await,
+        Command::Restore { archive } => restore(archive).await,
         Command::VapidKeys => {
             print_vapid_keys();
             Ok(())
@@ -118,4 +119,54 @@ async fn backup(path: std::path::PathBuf) -> MainResult {
     saldo_app::db::backup(&app.pool, &path).await?;
     println!("Backed up the database to {}", path.display());
     Ok(())
+}
+
+async fn restore(archive: std::path::PathBuf) -> MainResult {
+    let config = Config::from_env()?;
+    let database = server::database_path(&config.database_url)
+        .ok_or("SALDO_DATABASE_URL must name a database file to restore into")?;
+    let restored = saldo_app::snapshot::restore(&archive, database, &config.data_dir)?;
+    let scrubbed = match migrate_and_scrub(&config).await {
+        Ok(scrubbed) => scrubbed,
+        Err(error) => {
+            // An unscrubbed copy must not stay behind, and removing it lets
+            // the restore run again.
+            remove_database(database);
+            return Err(error);
+        }
+    };
+    println!(
+        "Restored {} with {} files. Removed {} sessions and tokens, {} webhooks and {} notification channels; log in again.",
+        database.display(),
+        restored.files,
+        scrubbed.sessions,
+        scrubbed.webhooks,
+        scrubbed.notification_channels
+    );
+    Ok(())
+}
+
+async fn migrate_and_scrub(
+    config: &Config,
+) -> Result<saldo_app::snapshot::Scrubbed, Box<dyn std::error::Error>> {
+    let app = server::open_app(config).await?;
+    let scrubbed = saldo_app::snapshot::scrub(&app.pool).await;
+    app.pool.close().await;
+    Ok(scrubbed?)
+}
+
+/// The database and SQLite's `-wal` and `-shm` files beside it.
+fn remove_database(database: &std::path::Path) {
+    for suffix in ["", "-wal", "-shm"] {
+        let mut path = database.as_os_str().to_owned();
+        path.push(suffix);
+        if let Err(error) = std::fs::remove_file(&path)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            eprintln!(
+                "cannot remove {}: {error}",
+                std::path::Path::new(&path).display()
+            );
+        }
+    }
 }

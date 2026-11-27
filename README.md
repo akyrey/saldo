@@ -53,7 +53,24 @@ For regular backups, `scripts/backup.sh <folder>` (run from the compose folder) 
 15 3 * * * cd /opt/saldo && scripts/backup.sh /srv/backups/saldo >> /var/log/saldo-backup.log 2>&1
 ```
 
-To restore: stop the container, put the database copy in the volume as `saldo.db` (delete any `saldo.db-wal` and `saldo.db-shm` beside it), unpack the attachments tarball into the volume, and start it again.
+### Copy an instance into a fresh one (snapshot)
+
+Without shell access to the server, the owner can download a snapshot of the whole instance (database and attachment files) and restore it into a fresh Saldo, for example to try a new version against real data. Set `SALDO_SNAPSHOT_DOWNLOAD=true` on the server (it is off by default; the snapshot holds everything, password hashes and secrets included, and is offered only while the instance has a single household), then:
+
+```sh
+curl -fH "Authorization: Bearer $SALDO_TOKEN" -o snapshot.zip https://money.example.com/api/v1/export/snapshot
+```
+
+On the new instance, before its first start (or after removing its volume):
+
+```sh
+docker compose run --rm -v "$PWD/snapshot.zip:/tmp/snapshot.zip:ro" saldo restore /tmp/snapshot.zip
+docker compose up -d
+```
+
+`saldo restore` refuses to overwrite an existing database. It removes sessions and API tokens, webhooks and notification channels from the copy, so it never calls the original's webhooks or sends reminders to your phone; log in again with your password.
+
+To restore a backup: stop the container, put the database copy in the volume as `saldo.db` (delete any `saldo.db-wal` and `saldo.db-shm` beside it), unpack the attachments tarball into the volume, and start it again.
 
 ## Log in with Authentik
 
