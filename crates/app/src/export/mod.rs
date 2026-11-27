@@ -6,6 +6,7 @@ mod csv;
 mod planning_csv;
 mod recurrence_csv;
 mod savings_csv;
+mod statements_csv;
 mod templates_csv;
 mod views_csv;
 
@@ -30,6 +31,8 @@ use crate::reconciliations::{self, ReconciliationView};
 use crate::recurrences::{self, RecurrenceView};
 use crate::rules::{self, RuleGroupView, RuleView};
 use crate::saved_views::{self, SavedViewView};
+use crate::sources::{self, DocumentView, SourceMatchView, SourceRowView};
+use crate::statements::{self, ProfileView};
 use crate::subscriptions::{self, SubscriptionDismissalView};
 use crate::tags::{self, TagView};
 use crate::templates::{self, TransactionTemplateView};
@@ -88,6 +91,15 @@ pub struct ExportDocument {
     pub credit_card_plans: Vec<CreditCardPlanView>,
     /// Card transactions counted in the month after their date (Phase 12).
     pub credit_card_moves: Vec<CardMoveRecordView>,
+    /// How each bank's statements are read (Phase 13). Statement imports
+    /// and their lines are left out, like `import_runs`.
+    pub statement_profiles: Vec<ProfileView>,
+    /// Uploaded Amazon and PayPal exports, without the files (Phase 13).
+    pub source_documents: Vec<DocumentView>,
+    /// Their rows: the owner's data, not always downloadable again.
+    pub source_rows: Vec<SourceRowView>,
+    /// Which rows explain which booked splits.
+    pub source_matches: Vec<SourceMatchView>,
 }
 
 #[derive(Clone)]
@@ -122,6 +134,7 @@ impl ExportService {
         let (piggy_banks, piggy_bank_events) = piggy_banks::all_in(&mut tx, ctx).await?;
         let today = crate::identity::today_in(&mut tx, ctx, &*self.clock).await?;
         let (credit_card_plans, credit_card_moves) = credit_cards::all_in(&mut tx, ctx).await?;
+        let (source_documents, source_rows, source_matches) = sources::all_in(&mut tx, ctx).await?;
         let document = ExportDocument {
             format: FORMAT.to_string(),
             version: VERSION,
@@ -151,6 +164,10 @@ impl ExportService {
             net_worth_goals: goals::all_in(&mut tx, ctx, today).await?,
             credit_card_plans,
             credit_card_moves,
+            statement_profiles: statements::profiles_all_in(&mut tx, ctx).await?,
+            source_documents,
+            source_rows,
+            source_matches,
         };
         tx.rollback().await?;
         Ok(document)

@@ -169,6 +169,34 @@ impl SourceService {
     }
 }
 
+/// Every upload, row and booked match of the household, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<
+    (
+        Vec<DocumentView>,
+        Vec<SourceRowView>,
+        Vec<crate::sources::SourceMatchView>,
+    ),
+    AppError,
+> {
+    let household_id = ctx.household_id.to_string();
+    let documents = repo::documents(conn, &household_id)
+        .await?
+        .into_iter()
+        .map(document_view)
+        .collect();
+    let currencies = repo::currencies(conn).await?;
+    let (rows, _) = repo::rows(conn, &household_id, None, None, None, false, i64::MAX, 0).await?;
+    let rows = rows
+        .into_iter()
+        .map(|row| row_view(row, &currencies))
+        .collect();
+    let matches = repo::booked_matches(conn, &household_id).await?;
+    Ok((documents, rows, matches))
+}
+
 async fn remove_file(folder: &Path, sha256: &str) -> Result<(), AppError> {
     match tokio::fs::remove_file(folder.join(sha256)).await {
         Ok(()) => Ok(()),

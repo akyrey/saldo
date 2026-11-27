@@ -59,3 +59,14 @@ pub struct RowFilter {
     /// Only rows that explain nothing yet.
     pub unmatched_only: bool,
 }
+
+/// A source row explaining a booked split, for the export.
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
+pub struct SourceMatchView {
+    pub source_row_id: String,
+    pub split_id: String,
+    /// `order_id`, `amount_date`, `approximate`, `funding_pair` or `amount_lag`.
+    pub match_type: String,
+    pub amount_diff_minor: i64,
+    pub created_at: String,
+}

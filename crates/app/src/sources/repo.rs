@@ -342,3 +342,19 @@ pub(crate) async fn delete_document(
     .await?;
     Ok(())
 }
+
+/// The matches that explain booked splits (draft matches are bookkeeping).
+pub(crate) async fn booked_matches(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+) -> Result<Vec<crate::sources::SourceMatchView>, AppError> {
+    Ok(sqlx::query_as!(
+        crate::sources::SourceMatchView,
+        r#"SELECT source_row_id, split_id AS "split_id!", match_type, amount_diff_minor, created_at
+           FROM source_matches WHERE household_id = ? AND split_id IS NOT NULL
+           ORDER BY created_at, source_row_id, split_id"#,
+        household_id
+    )
+    .fetch_all(&mut *conn)
+    .await?)
+}
