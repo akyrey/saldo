@@ -6,6 +6,7 @@ mod import_repo;
 mod imports;
 mod ledger_repo;
 pub mod parse;
+mod preview;
 mod profile_repo;
 mod profiles;
 mod summary;
@@ -18,6 +19,7 @@ use crate::clock::SharedClock;
 use crate::error::AppError;
 use crate::transactions::TransactionService;
 
+pub use preview::{PreviewLine, PreviewView, UnsupportedRow};
 pub use profiles::{Preset, ProfileInput, ProfileView, TransferRule, presets};
 pub use views::{ImportDetail, ImportView, LineUpdate, LineView, PartView, UploadInput};
 

@@ -85,11 +85,8 @@ impl StatementService {
         let currency = statement_currency(conn, &household_id, &account).await?;
         let mapping: Mapping = stored(&profile.mapping)?;
         let rules: Vec<TransferRule> = stored(&profile.transfer_rules)?;
-        let format = if profile.format == "csv" {
-            Format::Csv
-        } else {
-            Format::Xlsx
-        };
+        let format = stored_format(&profile.format)
+            .ok_or_else(|| AppError::Internal(format!("stored format {}", profile.format)))?;
         let parsed = parse_statement(format, &input.bytes, &mapping, &currency)
             .map_err(|error| AppError::invalid("file", error.to_string()))?;
         let (lines, unsupported) = split_rows(parsed.rows);
@@ -366,7 +363,7 @@ async fn apply_update(
 }
 
 /// The currency of the household's asset or liability account.
-async fn statement_currency(
+pub(super) async fn statement_currency(
     conn: &mut SqliteConnection,
     household_id: &str,
     account: &str,
@@ -386,6 +383,15 @@ async fn statement_currency(
         ));
     }
     currencies::find(conn, &row.currency_code, "account_id").await
+}
+
+/// The parser's format for a stored or requested format name.
+pub(super) fn stored_format(name: &str) -> Option<Format> {
+    match name {
+        "csv" => Some(Format::Csv),
+        "xlsx" => Some(Format::Xlsx),
+        _ => None,
+    }
 }
 
 fn stored<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError> {

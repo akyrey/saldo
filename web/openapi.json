@@ -6883,6 +6883,767 @@
         }
       }
     },
+    "/api/v1/statement-imports": {
+      "get": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Imports newest first.",
+        "operationId": "list_imports",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "description": "Only this account's imports.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ImportView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Reads a statement with a saved profile and stores it as a draft, every\nline classified (already imported, skipped before, an existing\ntransaction, flagged in a reconciled period, or new).",
+        "operationId": "upload_import",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ImportDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-imports/{id}": {
+      "get": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "An import with its lines in file order.",
+        "operationId": "get_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ImportDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-imports/{id}/commit": {
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Books a draft: `create` lines become transactions (rules run), `link`\nlines record the link, `skip` lines are remembered.",
+        "operationId": "commit_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ImportDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-imports/{id}/discard": {
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Throws a draft away.",
+        "operationId": "discard_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ImportView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-imports/{id}/lines/{position}": {
+      "patch": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "A review edit of one draft line (409 once the import is not a draft).",
+        "operationId": "update_line",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_LineView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-imports/{id}/revert": {
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Undoes a committed import: deletes the transactions it created and\nforgets its links (409 when one of them is reconciled).",
+        "operationId": "revert_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ImportView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-profiles": {
+      "get": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "The household's profiles by name (unpaginated: a household has a few).",
+        "operationId": "list_profiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_ProfileView"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "operationId": "create_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ProfileView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-profiles/presets": {
+      "get": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "The built-in mappings for Widiba, Mediobanca and Satispay.",
+        "operationId": "list_presets",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_Preset"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-profiles/preview": {
+      "post": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Reads a file with a mapping that is not saved yet: the first 20 lines and\nevery row that would not be imported. Saves nothing.",
+        "operationId": "preview_profile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_PreviewView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/statement-profiles/{id}": {
+      "get": {
+        "tags": [
+          "statements"
+        ],
+        "operationId": "get_profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Replaces every field of a profile.",
+        "operationId": "update_profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "statements"
+        ],
+        "summary": "Deletes a profile; imports made with it keep their lines.",
+        "operationId": "delete_profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/subscription-candidates": {
       "get": {
         "tags": [
@@ -12247,6 +13008,259 @@
           }
         }
       },
+      "Data_ImportDetail": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "An import with its lines, in file order.",
+            "required": [
+              "import",
+              "lines"
+            ],
+            "properties": {
+              "import": {
+                "$ref": "#/components/schemas/ImportView"
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LineView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_ImportView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "One import without its lines (lists, events).",
+            "required": [
+              "id",
+              "account_id",
+              "filename",
+              "status",
+              "currency",
+              "summary",
+              "created_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": "string"
+              },
+              "closing_balance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "closing_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "committed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "created_by_user_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "currency": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "gap": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Opening balance plus the lines minus the closing balance; not zero\nmeans the file is missing lines or holds pending ones."
+              },
+              "id": {
+                "type": "string"
+              },
+              "opening_balance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "profile_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "description": "`draft`, `committed`, `discarded` or `reverted`."
+              },
+              "summary": {
+                "type": "object",
+                "description": "`counts` per status, `unsupported` rows `{ row, reason }`, and\n`findings` about existing transactions."
+              }
+            }
+          }
+        }
+      },
+      "Data_LineView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "One importable line of a statement.",
+            "required": [
+              "position",
+              "row",
+              "accounting_date",
+              "value_date",
+              "booked_date",
+              "amount",
+              "description",
+              "ref_key",
+              "notes",
+              "parts",
+              "status",
+              "action"
+            ],
+            "properties": {
+              "accounting_date": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "description": "`create`, `link` or `skip`."
+              },
+              "amount": {
+                "type": "string",
+                "description": "Signed for the account."
+              },
+              "booked_date": {
+                "type": "string",
+                "description": "The date the transaction gets."
+              },
+              "category": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "category_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "counterparty_account_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The proposed or chosen counterparty; `None` creates an expense or\nrevenue account named after the counterparty on commit."
+              },
+              "counterparty_iban": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "counterparty_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_group_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "parts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PartView"
+                }
+              },
+              "position": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ref_key": {
+                "type": "string",
+                "description": "The line's identity across imports."
+              },
+              "row": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The row in the file, counting from 1."
+              },
+              "split_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The matched split (link), or the first split created (after commit)."
+              },
+              "status": {
+                "type": "string",
+                "description": "`new`, `duplicate`, `possible_match`, `skipped_before` or\n`not_matched_reconciled`."
+              },
+              "value_date": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Data_LoginResponse": {
         "type": "object",
         "description": "A single result.",
@@ -12591,6 +13605,118 @@
                   "string",
                   "null"
                 ]
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Data_PreviewView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "currency",
+              "lines",
+              "total_lines",
+              "unsupported"
+            ],
+            "properties": {
+              "closing_balance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "currency": {
+                "type": "string"
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PreviewLine"
+                },
+                "description": "The first lines of the file."
+              },
+              "opening_balance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "total_lines": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unsupported": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UnsupportedRow"
+                },
+                "description": "Every row that would not be imported, with the reason."
+              }
+            }
+          }
+        }
+      },
+      "Data_ProfileView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "format",
+              "mapping",
+              "part_accounts",
+              "transfer_rules",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "account_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "mapping": {
+                "type": "object",
+                "description": "The column mapping (see `saldo_app::statements::parse::Mapping`)."
+              },
+              "name": {
+                "type": "string"
+              },
+              "part_accounts": {
+                "type": "object",
+                "description": "Part column header → account ID or null."
+              },
+              "transfer_rules": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransferRule"
+                }
               },
               "updated_at": {
                 "type": "string"
@@ -13928,6 +15054,100 @@
                   "type": "string"
                 },
                 "type": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_Preset": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A built-in mapping offered when creating a profile.",
+              "required": [
+                "name",
+                "format",
+                "mapping"
+              ],
+              "properties": {
+                "format": {
+                  "type": "string"
+                },
+                "mapping": {
+                  "type": "object"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Data_Vec_ProfileView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "format",
+                "mapping",
+                "part_accounts",
+                "transfer_rules",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "mapping": {
+                  "type": "object",
+                  "description": "The column mapping (see `saldo_app::statements::parse::Mapping`)."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "part_accounts": {
+                  "type": "object",
+                  "description": "Part column header → account ID or null."
+                },
+                "transfer_rules": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransferRule"
+                  }
+                },
+                "updated_at": {
                   "type": "string"
                 }
               }
@@ -15516,6 +16736,106 @@
           }
         }
       },
+      "ImportDetail": {
+        "type": "object",
+        "description": "An import with its lines, in file order.",
+        "required": [
+          "import",
+          "lines"
+        ],
+        "properties": {
+          "import": {
+            "$ref": "#/components/schemas/ImportView"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineView"
+            }
+          }
+        }
+      },
+      "ImportView": {
+        "type": "object",
+        "description": "One import without its lines (lists, events).",
+        "required": [
+          "id",
+          "account_id",
+          "filename",
+          "status",
+          "currency",
+          "summary",
+          "created_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "closing_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closing_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "committed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "gap": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opening balance plus the lines minus the closing balance; not zero\nmeans the file is missing lines or holds pending ones."
+          },
+          "id": {
+            "type": "string"
+          },
+          "opening_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profile_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`draft`, `committed`, `discarded` or `reverted`."
+          },
+          "summary": {
+            "type": "object",
+            "description": "`counts` per status, `unsupported` rows `{ row, reason }`, and\n`findings` about existing transactions."
+          }
+        }
+      },
       "LimitPatch": {
         "type": "object",
         "properties": {
@@ -15564,6 +16884,168 @@
           "amount": {
             "type": "string",
             "description": "The budget in the card's currency, more than zero."
+          }
+        }
+      },
+      "LinePatch": {
+        "type": "object",
+        "description": "Fields to change on a draft line. Missing fields stay; `null` clears.",
+        "properties": {
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`create`, `link` or `skip`."
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "counterparty_account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null creates an expense or revenue account named after the line."
+          },
+          "split_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The existing split a `link` line is."
+          }
+        }
+      },
+      "LineView": {
+        "type": "object",
+        "description": "One importable line of a statement.",
+        "required": [
+          "position",
+          "row",
+          "accounting_date",
+          "value_date",
+          "booked_date",
+          "amount",
+          "description",
+          "ref_key",
+          "notes",
+          "parts",
+          "status",
+          "action"
+        ],
+        "properties": {
+          "accounting_date": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "`create`, `link` or `skip`."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Signed for the account."
+          },
+          "booked_date": {
+            "type": "string",
+            "description": "The date the transaction gets."
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counterparty_account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The proposed or chosen counterparty; `None` creates an expense or\nrevenue account named after the counterparty on commit."
+          },
+          "counterparty_iban": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counterparty_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_group_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartView"
+            }
+          },
+          "position": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ref_key": {
+            "type": "string",
+            "description": "The line's identity across imports."
+          },
+          "row": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The row in the file, counting from 1."
+          },
+          "split_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The matched split (link), or the first split created (after commit)."
+          },
+          "status": {
+            "type": "string",
+            "description": "`new`, `duplicate`, `possible_match`, `skipped_before` or\n`not_matched_reconciled`."
+          },
+          "value_date": {
+            "type": "string"
           }
         }
       },
@@ -16208,6 +17690,103 @@
                 },
                 "type": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_ImportView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One import without its lines (lists, events).",
+              "required": [
+                "id",
+                "account_id",
+                "filename",
+                "status",
+                "currency",
+                "summary",
+                "created_at"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string"
+                },
+                "closing_balance": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "closing_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "committed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "created_by_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "gap": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Opening balance plus the lines minus the closing balance; not zero\nmeans the file is missing lines or holds pending ones."
+                },
+                "id": {
+                  "type": "string"
+                },
+                "opening_balance": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "description": "`draft`, `committed`, `discarded` or `reverted`."
+                },
+                "summary": {
+                  "type": "object",
+                  "description": "`counts` per status, `unsupported` rows `{ row, reason }`, and\n`findings` about existing transactions."
                 }
               }
             }
@@ -17014,6 +18593,22 @@
           }
         }
       },
+      "PartView": {
+        "type": "object",
+        "description": "One part of a line paid from another account (brief decision 13).",
+        "required": [
+          "column",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "column": {
+            "type": "string"
+          }
+        }
+      },
       "PayRequest": {
         "type": "object",
         "required": [
@@ -17286,6 +18881,122 @@
           }
         }
       },
+      "Preset": {
+        "type": "object",
+        "description": "A built-in mapping offered when creating a profile.",
+        "required": [
+          "name",
+          "format",
+          "mapping"
+        ],
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "mapping": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PreviewForm": {
+        "type": "object",
+        "description": "The preview form (documentation only; the handler reads the parts).",
+        "required": [
+          "format",
+          "mapping",
+          "file"
+        ],
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The account whose currency amounts are read in; the household's\nprimary currency when absent."
+          },
+          "file": {
+            "type": "string",
+            "format": "binary"
+          },
+          "format": {
+            "type": "string",
+            "description": "`csv` or `xlsx`."
+          },
+          "mapping": {
+            "type": "string",
+            "description": "The mapping as JSON text."
+          }
+        }
+      },
+      "PreviewLine": {
+        "type": "object",
+        "required": [
+          "row",
+          "accounting_date",
+          "value_date",
+          "booked_date",
+          "amount",
+          "description",
+          "notes",
+          "parts"
+        ],
+        "properties": {
+          "accounting_date": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "booked_date": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counterparty": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`\"Meal Vouchers: -8.00\"` for each part."
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "value_date": {
+            "type": "string"
+          }
+        }
+      },
       "PreviewRequest": {
         "type": "object",
         "required": [
@@ -17325,6 +19036,149 @@
             "items": {
               "$ref": "#/components/schemas/RepetitionRequest"
             }
+          }
+        }
+      },
+      "PreviewView": {
+        "type": "object",
+        "required": [
+          "currency",
+          "lines",
+          "total_lines",
+          "unsupported"
+        ],
+        "properties": {
+          "closing_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewLine"
+            },
+            "description": "The first lines of the file."
+          },
+          "opening_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_lines": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unsupported": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnsupportedRow"
+            },
+            "description": "Every row that would not be imported, with the reason."
+          }
+        }
+      },
+      "ProfileRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "mapping"
+        ],
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The asset or liability account files are imported into by default."
+          },
+          "format": {
+            "type": "string",
+            "description": "`csv` or `xlsx`."
+          },
+          "mapping": {
+            "type": "object",
+            "description": "The column mapping, as a preset returns it."
+          },
+          "name": {
+            "type": "string"
+          },
+          "part_accounts": {
+            "type": "object",
+            "description": "Part column header (for example \"Meal Vouchers\") → asset account,\nor null to keep that part as a note.",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "transfer_rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferRuleRequest"
+            }
+          }
+        }
+      },
+      "ProfileView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "format",
+          "mapping",
+          "part_accounts",
+          "transfer_rules",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mapping": {
+            "type": "object",
+            "description": "The column mapping (see `saldo_app::statements::parse::Mapping`)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "part_accounts": {
+            "type": "object",
+            "description": "Part column header → account ID or null."
+          },
+          "transfer_rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferRule"
+            }
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       },
@@ -19260,6 +21114,46 @@
           }
         }
       },
+      "TransferRule": {
+        "type": "object",
+        "description": "A line whose description contains `pattern` (ignoring case) is a transfer\nwith one of `account_ids`, the household's own accounts (brief\ndecision 3: a bank line mentioning Satispay is a top-up).",
+        "required": [
+          "pattern",
+          "account_ids"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pattern": {
+            "type": "string"
+          }
+        }
+      },
+      "TransferRuleRequest": {
+        "type": "object",
+        "required": [
+          "pattern",
+          "account_ids"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The household's own asset or liability accounts."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Text the line's description contains (ignoring case)."
+          }
+        }
+      },
       "TriggerView": {
         "type": "object",
         "description": "A trigger as stored and as the API shows it.",
@@ -19279,6 +21173,22 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "UnsupportedRow": {
+        "type": "object",
+        "required": [
+          "row",
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },

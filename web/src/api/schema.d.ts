@@ -1498,6 +1498,191 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/statement-imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Imports newest first. */
+    get: operations["list_imports"];
+    put?: never;
+    /**
+     * Reads a statement with a saved profile and stores it as a draft, every
+     *     line classified (already imported, skipped before, an existing
+     *     transaction, flagged in a reconciled period, or new).
+     */
+    post: operations["upload_import"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-imports/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An import with its lines in file order. */
+    get: operations["get_import"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-imports/{id}/commit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Books a draft: `create` lines become transactions (rules run), `link`
+     *     lines record the link, `skip` lines are remembered.
+     */
+    post: operations["commit_import"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-imports/{id}/discard": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Throws a draft away. */
+    post: operations["discard_import"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-imports/{id}/lines/{position}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** A review edit of one draft line (409 once the import is not a draft). */
+    patch: operations["update_line"];
+    trace?: never;
+  };
+  "/api/v1/statement-imports/{id}/revert": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Undoes a committed import: deletes the transactions it created and
+     *     forgets its links (409 when one of them is reconciled).
+     */
+    post: operations["revert_import"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-profiles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The household's profiles by name (unpaginated: a household has a few). */
+    get: operations["list_profiles"];
+    put?: never;
+    post: operations["create_profile"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-profiles/presets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The built-in mappings for Widiba, Mediobanca and Satispay. */
+    get: operations["list_presets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-profiles/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reads a file with a mapping that is not saved yet: the first 20 lines and
+     *     every row that would not be imported. Saves nothing.
+     */
+    post: operations["preview_profile"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/statement-profiles/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_profile"];
+    /** Replaces every field of a profile. */
+    put: operations["update_profile"];
+    post?: never;
+    /** Deletes a profile; imports made with it keep their lines. */
+    delete: operations["delete_profile"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/subscription-candidates": {
     parameters: {
       query?: never;
@@ -2960,6 +3145,88 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_ImportDetail: {
+      /** @description An import with its lines, in file order. */
+      data: {
+        import: components["schemas"]["ImportView"];
+        lines: components["schemas"]["LineView"][];
+      };
+    };
+    /** @description A single result. */
+    Data_ImportView: {
+      /** @description One import without its lines (lists, events). */
+      data: {
+        account_id: string;
+        closing_balance?: string | null;
+        closing_date?: string | null;
+        committed_at?: string | null;
+        created_at: string;
+        created_by_user_id?: string | null;
+        currency: string;
+        filename: string;
+        /**
+         * @description Opening balance plus the lines minus the closing balance; not zero
+         *     means the file is missing lines or holds pending ones.
+         */
+        gap?: string | null;
+        id: string;
+        opening_balance?: string | null;
+        profile_id?: string | null;
+        /** @description `draft`, `committed`, `discarded` or `reverted`. */
+        status: string;
+        /**
+         * @description `counts` per status, `unsupported` rows `{ row, reason }`, and
+         *     `findings` about existing transactions.
+         */
+        summary: Record<string, never>;
+      };
+    };
+    /** @description A single result. */
+    Data_LineView: {
+      /** @description One importable line of a statement. */
+      data: {
+        accounting_date: string;
+        /** @description `create`, `link` or `skip`. */
+        action: string;
+        /** @description Signed for the account. */
+        amount: string;
+        /** @description The date the transaction gets. */
+        booked_date: string;
+        category?: string | null;
+        category_id?: string | null;
+        /**
+         * @description The proposed or chosen counterparty; `None` creates an expense or
+         *     revenue account named after the counterparty on commit.
+         */
+        counterparty_account_id?: string | null;
+        counterparty_iban?: string | null;
+        counterparty_name?: string | null;
+        created_group_id?: string | null;
+        description: string;
+        external_id?: string | null;
+        notes: string[];
+        parts: components["schemas"]["PartView"][];
+        /** Format: int64 */
+        position: number;
+        reason?: string | null;
+        /** @description The line's identity across imports. */
+        ref_key: string;
+        /**
+         * Format: int64
+         * @description The row in the file, counting from 1.
+         */
+        row: number;
+        /** @description The matched split (link), or the first split created (after commit). */
+        split_id?: string | null;
+        /**
+         * @description `new`, `duplicate`, `possible_match`, `skipped_before` or
+         *     `not_matched_reconciled`.
+         */
+        status: string;
+        value_date: string;
+      };
+    };
+    /** @description A single result. */
     Data_LoginResponse: {
       data: {
         expires_at: string;
@@ -3056,6 +3323,35 @@ export interface components {
         start_date?: string | null;
         target_amount?: string | null;
         target_date?: string | null;
+        updated_at: string;
+      };
+    };
+    /** @description A single result. */
+    Data_PreviewView: {
+      data: {
+        closing_balance?: string | null;
+        currency: string;
+        /** @description The first lines of the file. */
+        lines: components["schemas"]["PreviewLine"][];
+        opening_balance?: string | null;
+        total_lines: number;
+        /** @description Every row that would not be imported, with the reason. */
+        unsupported: components["schemas"]["UnsupportedRow"][];
+      };
+    };
+    /** @description A single result. */
+    Data_ProfileView: {
+      data: {
+        account_id?: string | null;
+        created_at: string;
+        format: string;
+        id: string;
+        /** @description The column mapping (see `saldo_app::statements::parse::Mapping`). */
+        mapping: Record<string, never>;
+        name: string;
+        /** @description Part column header → account ID or null. */
+        part_accounts: Record<string, never>;
+        transfer_rules: components["schemas"]["TransferRule"][];
         updated_at: string;
       };
     };
@@ -3453,6 +3749,30 @@ export interface components {
         description: string;
         label: string;
         type: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_Preset: {
+      data: {
+        format: string;
+        mapping: Record<string, never>;
+        name: string;
+      }[];
+    };
+    /** @description A single result. */
+    Data_Vec_ProfileView: {
+      data: {
+        account_id?: string | null;
+        created_at: string;
+        format: string;
+        id: string;
+        /** @description The column mapping (see `saldo_app::statements::parse::Mapping`). */
+        mapping: Record<string, never>;
+        name: string;
+        /** @description Part column header → account ID or null. */
+        part_accounts: Record<string, never>;
+        transfer_rules: components["schemas"]["TransferRule"][];
+        updated_at: string;
       }[];
     };
     /** @description A single result. */
@@ -3924,6 +4244,37 @@ export interface components {
       timezone: string;
       updated_at: string;
     };
+    /** @description An import with its lines, in file order. */
+    ImportDetail: {
+      import: components["schemas"]["ImportView"];
+      lines: components["schemas"]["LineView"][];
+    };
+    /** @description One import without its lines (lists, events). */
+    ImportView: {
+      account_id: string;
+      closing_balance?: string | null;
+      closing_date?: string | null;
+      committed_at?: string | null;
+      created_at: string;
+      created_by_user_id?: string | null;
+      currency: string;
+      filename: string;
+      /**
+       * @description Opening balance plus the lines minus the closing balance; not zero
+       *     means the file is missing lines or holds pending ones.
+       */
+      gap?: string | null;
+      id: string;
+      opening_balance?: string | null;
+      profile_id?: string | null;
+      /** @description `draft`, `committed`, `discarded` or `reverted`. */
+      status: string;
+      /**
+       * @description `counts` per status, `unsupported` rows `{ row, reason }`, and
+       *     `findings` about existing transactions.
+       */
+      summary: Record<string, never>;
+    };
     LimitPatch: {
       amount?: string | null;
       /** @description A new currency needs a new `amount` too. */
@@ -3938,6 +4289,65 @@ export interface components {
     LimitRequest: {
       /** @description The budget in the card's currency, more than zero. */
       amount: string;
+    };
+    /** @description Fields to change on a draft line. Missing fields stay; `null` clears. */
+    LinePatch: {
+      /** @description `create`, `link` or `skip`. */
+      action?: string | null;
+      /** Format: uuid */
+      category_id?: string | null;
+      /**
+       * Format: uuid
+       * @description Null creates an expense or revenue account named after the line.
+       */
+      counterparty_account_id?: string | null;
+      /**
+       * Format: uuid
+       * @description The existing split a `link` line is.
+       */
+      split_id?: string | null;
+    };
+    /** @description One importable line of a statement. */
+    LineView: {
+      accounting_date: string;
+      /** @description `create`, `link` or `skip`. */
+      action: string;
+      /** @description Signed for the account. */
+      amount: string;
+      /** @description The date the transaction gets. */
+      booked_date: string;
+      category?: string | null;
+      category_id?: string | null;
+      /**
+       * @description The proposed or chosen counterparty; `None` creates an expense or
+       *     revenue account named after the counterparty on commit.
+       */
+      counterparty_account_id?: string | null;
+      counterparty_iban?: string | null;
+      counterparty_name?: string | null;
+      created_group_id?: string | null;
+      description: string;
+      external_id?: string | null;
+      notes: string[];
+      parts: components["schemas"]["PartView"][];
+      /** Format: int64 */
+      position: number;
+      reason?: string | null;
+      /** @description The line's identity across imports. */
+      ref_key: string;
+      /**
+       * Format: int64
+       * @description The row in the file, counting from 1.
+       */
+      row: number;
+      /** @description The matched split (link), or the first split created (after commit). */
+      split_id?: string | null;
+      /**
+       * @description `new`, `duplicate`, `possible_match`, `skipped_before` or
+       *     `not_matched_reconciled`.
+       */
+      status: string;
+      value_date: string;
     };
     ListMeta: {
       /** Format: int32 */
@@ -4108,6 +4518,35 @@ export interface components {
         /** Format: int64 */
         seq: number;
         type: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_ImportView: {
+      data: {
+        account_id: string;
+        closing_balance?: string | null;
+        closing_date?: string | null;
+        committed_at?: string | null;
+        created_at: string;
+        created_by_user_id?: string | null;
+        currency: string;
+        filename: string;
+        /**
+         * @description Opening balance plus the lines minus the closing balance; not zero
+         *     means the file is missing lines or holds pending ones.
+         */
+        gap?: string | null;
+        id: string;
+        opening_balance?: string | null;
+        profile_id?: string | null;
+        /** @description `draft`, `committed`, `discarded` or `reverted`. */
+        status: string;
+        /**
+         * @description `counts` per status, `unsupported` rows `{ row, reason }`, and
+         *     `findings` about existing transactions.
+         */
+        summary: Record<string, never>;
       }[];
       meta: components["schemas"]["ListMeta"];
     };
@@ -4328,6 +4767,11 @@ export interface components {
       /** @description For the button: "Log in with <name>". */
       name: string;
     };
+    /** @description One part of a line paid from another account (brief decision 13). */
+    PartView: {
+      amount: string;
+      column: string;
+    };
     PayRequest: {
       /**
        * Format: uuid
@@ -4420,6 +4864,41 @@ export interface components {
        */
       settlement_day: number;
     };
+    /** @description A built-in mapping offered when creating a profile. */
+    Preset: {
+      format: string;
+      mapping: Record<string, never>;
+      name: string;
+    };
+    /** @description The preview form (documentation only; the handler reads the parts). */
+    PreviewForm: {
+      /**
+       * Format: uuid
+       * @description The account whose currency amounts are read in; the household's
+       *     primary currency when absent.
+       */
+      account_id?: string | null;
+      /** Format: binary */
+      file: string;
+      /** @description `csv` or `xlsx`. */
+      format: string;
+      /** @description The mapping as JSON text. */
+      mapping: string;
+    };
+    PreviewLine: {
+      accounting_date: string;
+      amount: string;
+      booked_date: string;
+      category?: string | null;
+      counterparty?: string | null;
+      description: string;
+      external_id?: string | null;
+      notes: string[];
+      /** @description `"Meal Vouchers: -8.00"` for each part. */
+      parts: string[];
+      row: number;
+      value_date: string;
+    };
     PreviewRequest: {
       /** @description How many dates (default 5, at most 100). */
       count?: number | null;
@@ -4430,6 +4909,49 @@ export interface components {
       /** Format: date */
       repeat_until?: string | null;
       repetitions: components["schemas"]["RepetitionRequest"][];
+    };
+    PreviewView: {
+      closing_balance?: string | null;
+      currency: string;
+      /** @description The first lines of the file. */
+      lines: components["schemas"]["PreviewLine"][];
+      opening_balance?: string | null;
+      total_lines: number;
+      /** @description Every row that would not be imported, with the reason. */
+      unsupported: components["schemas"]["UnsupportedRow"][];
+    };
+    ProfileRequest: {
+      /**
+       * Format: uuid
+       * @description The asset or liability account files are imported into by default.
+       */
+      account_id?: string | null;
+      /** @description `csv` or `xlsx`. */
+      format: string;
+      /** @description The column mapping, as a preset returns it. */
+      mapping: Record<string, never>;
+      name: string;
+      /**
+       * @description Part column header (for example "Meal Vouchers") → asset account,
+       *     or null to keep that part as a note.
+       */
+      part_accounts?: {
+        [key: string]: string | null;
+      };
+      transfer_rules?: components["schemas"]["TransferRuleRequest"][];
+    };
+    ProfileView: {
+      account_id?: string | null;
+      created_at: string;
+      format: string;
+      id: string;
+      /** @description The column mapping (see `saldo_app::statements::parse::Mapping`). */
+      mapping: Record<string, never>;
+      name: string;
+      /** @description Part column header → account ID or null. */
+      part_accounts: Record<string, never>;
+      transfer_rules: components["schemas"]["TransferRule"][];
+      updated_at: string;
     };
     /** @description What reconciling up to a date starts from. */
     ReconciliationDraftView: {
@@ -5030,12 +5552,31 @@ export interface components {
       title?: string | null;
       updated_at: string;
     };
+    /**
+     * @description A line whose description contains `pattern` (ignoring case) is a transfer
+     *     with one of `account_ids`, the household's own accounts (brief
+     *     decision 3: a bank line mentioning Satispay is a top-up).
+     */
+    TransferRule: {
+      account_ids: string[];
+      pattern: string;
+    };
+    TransferRuleRequest: {
+      /** @description The household's own asset or liability accounts. */
+      account_ids: string[];
+      /** @description Text the line's description contains (ignoring case). */
+      pattern: string;
+    };
     /** @description A trigger as stored and as the API shows it. */
     TriggerView: {
       /** @description Firefly's keyword, for example `description_contains`. */
       kind: string;
       negate?: boolean;
       value?: string | null;
+    };
+    UnsupportedRow: {
+      reason: string;
+      row: number;
     };
     /** @description The multipart form (documentation only; the handler reads the parts). */
     UploadForm: {
@@ -9451,6 +9992,497 @@ export interface operations {
         };
       };
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_imports: {
+    parameters: {
+      query?: {
+        /** @description Only this account's imports. */
+        account_id?: string;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_ImportView"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  upload_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["UploadForm"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ImportDetail"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ImportDetail"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  commit_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ImportDetail"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  discard_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ImportView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_line: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        position: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LinePatch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_LineView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  revert_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ImportView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_profiles: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_ProfileView"];
+        };
+      };
+    };
+  };
+  create_profile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProfileRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ProfileView"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_presets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_Preset"];
+        };
+      };
+    };
+  };
+  preview_profile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["PreviewForm"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_PreviewView"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  get_profile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ProfileView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  update_profile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProfileRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_ProfileView"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_profile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

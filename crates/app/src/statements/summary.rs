@@ -29,7 +29,7 @@ pub(super) fn split_rows(rows: Vec<ParsedRow>) -> (Vec<StatementLine>, Vec<(usiz
 }
 
 /// Why a row is not a transaction, as the review shows it.
-fn reason_text(reason: &Unsupported) -> String {
+pub(super) fn reason_text(reason: &Unsupported) -> String {
     match reason {
         Unsupported::NotATransaction => "not a transaction".to_string(),
         Unsupported::Pending => "pending: the bank has not booked it yet".to_string(),
