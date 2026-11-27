@@ -93,6 +93,9 @@ Choices the briefs left open (crate picked, naming, a trade-off), with one line 
   - Float artefacts in number cells are tidied, but only when the extra digits start with six 0s or six 9s.
   - Thousands separators are accepted only between groups of three digits.
   - Mapping JSON refuses unknown fields; `Mapping::validate()` runs before a profile is saved.
+- 2026-11-27 Phase 13 storage (deviations from the brief, recorded in ARCHITECTURE.md 5.6b):
+  - Committed groups carry the caller's origin (`api`) instead of `import`, so the rules run (decision 5) without a new option and archived accounts are refused. The events table's `origin` CHECK would need a table rebuild for a new value.
+  - Unsupported rows live in the import's `summary`, not as `statement_lines` with NULL dates and amounts.
 - 2026-11-26 Phase 12 (differences from the brief; the owner may revisit):
   - The accounts list gets each card's current month from a new `GET /credit-cards` instead of a `credit_card` field on `GET /accounts` and `/accounts/balances`: `AccountView` is also the event payload, and one small call per page is simpler.
   - The plan is set up and edited from a "Monthly plan" card on the card's account page, not on the account edit page, so it has its own save button and sits next to what it controls.

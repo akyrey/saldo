@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO statement_profiles\n            (id, household_id, name, account_id, format, mapping, part_accounts, transfer_rules, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "b0e5b8dc2803efa2475093263f8120ef6ce01b4c9e11146cc9e37638aff0beb3"
+}

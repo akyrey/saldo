@@ -20,6 +20,7 @@ use crate::clock::{SharedClock, format_timestamp, new_id};
 use crate::ctx::{HouseholdCtx, Origin};
 use crate::error::AppError;
 use crate::events::{NewEvent, append_event};
+use crate::external_refs::forget_statement_links;
 
 pub use input::input_from_view;
 pub use list::TransactionFilter;
@@ -247,6 +248,7 @@ impl TransactionService {
             &plan.dropped,
         )
         .await?;
+        forget_statement_links(&mut *conn, &household_id, &plan.dropped).await?;
         repo::park_positions(&mut *conn, &household_id, &id).await?;
         let kept = &plan.kept;
         repo::write_splits(
@@ -296,6 +298,7 @@ impl TransactionService {
         repo::delete_group(&mut *conn, &ctx.household_id.to_string(), &id).await?;
         let split_ids: Vec<String> = view.splits.iter().map(|s| s.id.clone()).collect();
         delete_all_of_in(&mut *conn, &*self.clock, ctx, origin, "split", &split_ids).await?;
+        forget_statement_links(&mut *conn, &ctx.household_id.to_string(), &split_ids).await?;
         let event = NewEvent::new(&*self.clock, "transaction", "deleted", id, &view)?;
         append_event(&mut *conn, ctx, origin, event).await?;
         Ok(())

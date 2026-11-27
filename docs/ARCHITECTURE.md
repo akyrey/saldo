@@ -919,6 +919,29 @@ CREATE TABLE import_runs (
 ) STRICT;
 ```
 
+### 5.6b Statement import (Phase 13)
+
+Migration `20261127142256_statement_import.sql`.
+
+- **`statement_profiles`**: a household's saved way of reading one bank's export.
+  - Columns: `name` (unique per household), an optional default `account_id` (an asset or liability account; `ON DELETE SET NULL`), `format` (`csv`, `xlsx`), and `mapping`, the JSON of `saldo_app::statements::parse::Mapping`.
+  - `part_accounts` (JSON): part column header → asset account ID, or null to keep that part as a note (brief decision 13).
+  - `transfer_rules` (JSON): `[{ pattern, account_ids }]`.
+  - The service checks every account against the household and runs `Mapping::validate()` before saving.
+- **`statement_imports`**: one uploaded file.
+  - `status` is `draft`, `committed`, `discarded` or `reverted`.
+  - It also stores the account's currency, the opening and closing balances, the closing date, and `gap_minor` (opening + lines − closing).
+  - `summary` (JSON) holds the counts, the unsupported rows with their reasons, and the findings about existing transactions.
+  - Rows that are not transactions live in `summary`, not in `statement_lines`, so the line columns need no NULLs.
+- **`statement_lines`**: one importable line, keyed `(import_id, position)`.
+  - It keeps the three dates, the signed amount, the bank text, the counterparty fields, the notes and the parts.
+  - `ref_key` is the line's identity in `external_refs` (source `bank-statement`, entity `split`): `<account_id>:<external_id>`, or the fingerprint when the bank gives no ID.
+  - `status` and `action`.
+  - `split_id`: the matched split, or the first created one.
+  - `created_group_id`, for revert.
+- **Deleting splits:** deleting a split (with its group, or dropped by a replace) removes its `bank-statement` references in the same transaction (brief decision 11).
+- **Origin of created groups:** groups created by a commit carry the caller's origin (`api` from the web app), so the rules run and archived accounts are refused, like hand-made transactions. The import itself is recorded by its own `statement_import.*` events. The events table's `origin` CHECK has no room for a new value without rebuilding the table.
+
 ## 6. API
 
 Base path `/api/v1`. JSON only. The OpenAPI document is served at `/api/v1/openapi.json` and written to `web/openapi.json` by `saldo openapi`, so the TypeScript client can be generated without a running server.
@@ -986,7 +1009,7 @@ Every state change is one service method that opens a transaction, validates thr
 
 Event types are `<entity>.<verb>`:
 
-- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*`, `net_worth_goal.*` (Phase 10), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
+- CRUD: `account.*`, `transaction.*`, `category.*`, `tag.*`, `budget.*`, `budget_limit.*`, `bill.*`, `piggy_bank.*`, `recurrence.*`, `rule.*`, `rule_group.*`, `household_member.*`, `webhook.*`, `notification_channel.*` (secret-free data), `attachment.*`, `template.*` (transaction templates, Phase 8), `subscription_dismissal.created`/`.deleted` (Phase 9; entity ID `<account_id>:<currency>`), `reconciliation.created`/`.deleted` (Phase 9; setting the splits' flags appends no `transaction.updated`: the reconciliation event lists them), `saved_view.*`, `net_worth_goal.*` (Phase 10), `statement_profile.*` (Phase 13), each with `created`, `updated`, `deleted`; also `household.created` (setup) and `household.updated`.
 - `tag.merged`: one per source tag of a merge, with the source as entity and `{ source, into, splits }` as data; it stands for every reference the merge moved (no separate split, recurrence, template or rule events).
 - No events (owner-approved): webhook delivery attempts and redelivery, notification rows and their send status (they are outboxes; events would feed back into them), recurrence and consumer cursors, and bill periods created ahead by the scheduler (the bill's own events cover them).
 - Setup appends four events in its one transaction: `household.created`, `household_member.created` and two `account.created` (the equity accounts).

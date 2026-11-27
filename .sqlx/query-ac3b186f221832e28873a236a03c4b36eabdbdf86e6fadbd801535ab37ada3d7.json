@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE statement_profiles\n         SET name = ?, account_id = ?, format = ?, mapping = ?, part_accounts = ?, transfer_rules = ?, updated_at = ?\n         WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "ac3b186f221832e28873a236a03c4b36eabdbdf86e6fadbd801535ab37ada3d7"
+}
