@@ -1,0 +1,2 @@
+# Export fixtures keep their exact bytes (line endings included).
+crates/app/tests/fixtures/statements/** -text
