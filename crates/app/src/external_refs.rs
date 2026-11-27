@@ -11,6 +11,36 @@ use crate::error::AppError;
 /// The `source` value for Firefly III.
 pub const FIREFLY: &str = "firefly-iii";
 
+/// The `source` value for bank statement lines (Phase 13): the external ID
+/// is the line's `ref_key`, the local ID the split it became or matched.
+pub const BANK_STATEMENT: &str = "bank-statement";
+
+/// Forgets the bank-statement links of splits that are gone, in the same
+/// transaction that removes them (brief decision 11): a re-import then
+/// proposes those lines again instead of calling them duplicates of
+/// nothing. Links from other sources are their importer's business.
+pub(crate) async fn forget_statement_links(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    split_ids: &[String],
+) -> Result<(), AppError> {
+    if split_ids.is_empty() {
+        return Ok(());
+    }
+    let list = crate::db::json_list(split_ids)?;
+    sqlx::query!(
+        "DELETE FROM external_refs
+         WHERE household_id = ? AND source = ? AND entity_type = 'split'
+           AND local_id IN (SELECT value FROM json_each(?))",
+        household_id,
+        BANK_STATEMENT,
+        list,
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
 /// All references of one household and source, held in memory for the run.
 /// Writes go to the database and the map together; an unchanged mapping is
 /// not written at all, so a repeated import leaves the table untouched.

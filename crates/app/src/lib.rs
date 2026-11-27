@@ -68,6 +68,7 @@ use crate::rules::RuleService;
 use crate::safe_to_spend::SafeToSpendService;
 use crate::saved_views::SavedViewService;
 use crate::snapshot::SnapshotService;
+use crate::statements::StatementService;
 use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
 use crate::templates::TemplateService;
@@ -107,6 +108,7 @@ pub struct App {
     pub safe_to_spend: SafeToSpendService,
     pub credit_cards: CreditCardService,
     pub snapshots: SnapshotService,
+    pub statements: StatementService,
 }
 
 impl App {
@@ -133,6 +135,7 @@ impl App {
                 clock.clone(),
                 transactions.clone(),
             ),
+            statements: StatementService::new(pool.clone(), clock.clone(), transactions.clone()),
             subscriptions: SubscriptionService::new(
                 pool.clone(),
                 clock.clone(),

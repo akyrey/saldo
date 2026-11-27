@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, account_id, format, mapping, part_accounts, transfer_rules, created_at, updated_at\n         FROM statement_profiles WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "format",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "format"
+          }
+        }
+      },
+      {
+        "name": "mapping",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "mapping"
+          }
+        }
+      },
+      {
+        "name": "part_accounts",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "part_accounts"
+          }
+        }
+      },
+      {
+        "name": "transfer_rules",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "transfer_rules"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_profiles",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c5b3b4e1e9b08a402bda53572f1f6e5abd2a8e2447ba45b4ae39c1f945e5a80a"
+}

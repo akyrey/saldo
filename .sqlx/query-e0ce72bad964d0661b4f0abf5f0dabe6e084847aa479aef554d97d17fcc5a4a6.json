@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM external_refs\n         WHERE household_id = ? AND source = ? AND entity_type = 'split'\n           AND local_id IN (SELECT value FROM json_each(?))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e0ce72bad964d0661b4f0abf5f0dabe6e084847aa479aef554d97d17fcc5a4a6"
+}
