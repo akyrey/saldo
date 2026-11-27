@@ -94,7 +94,11 @@ export function EnrichPage() {
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="enrich-from" label="From">
-          <DatePicker id="enrich-from" value={from} onChange={(v) => v && changeRange({ from: v })} />
+          <DatePicker
+            id="enrich-from"
+            value={from}
+            onChange={(v) => v && changeRange({ from: v })}
+          />
         </Field>
         <Field id="enrich-to" label="To">
           <DatePicker id="enrich-to" value={to} onChange={(v) => v && changeRange({ to: v })} />
