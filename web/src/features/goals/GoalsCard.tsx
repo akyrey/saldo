@@ -4,12 +4,8 @@ import { Amount } from "@/components/Amount";
 import { QueryState } from "@/components/QueryState";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { progressWidth } from "./progress";
 import { type Goal, goalsQuery } from "./queries";
-
-/** Progress as a CSS width: basis points (0 to 10 000) as a percentage. */
-export function progressWidth(bp: number): string {
-  return `${Math.min(100, Math.max(0, bp / 100))}%`;
-}
 
 /** Active goals with their progress, on the dashboard. */
 export function GoalsCard() {

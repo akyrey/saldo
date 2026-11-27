@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CURRENCIES, fakeApi, json, list, ME, MEMBERS } from "@/test/fake-api";
 import { renderApp } from "@/test/render-app";
-import { progressWidth } from "./GoalsCard";
+import { progressWidth } from "./progress";
 
 beforeAll(() => {
   vi.stubGlobal(
