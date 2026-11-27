@@ -4,6 +4,16 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-27
+
+### Changed
+
+- Credit card plans: in the plan's first month, the purchases of the month before the plan are listed under "<Month>, before the plan" with "Count in this month", so a purchase billed with the first statement counts toward its budget and payment. "Move back" undoes it until that month's payment day.
+
+### Security
+
+- Updated the `url` crate to 2.5.9 (RUSTSEC-2026-0592).
+
 ## [0.12.0] - 2026-11-27
 
 ### Added
