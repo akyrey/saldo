@@ -115,3 +115,35 @@ export function summaryNotes(summary: unknown): {
   const total = typeof s.unsupported_total === "number" ? s.unsupported_total : 0;
   return { findings, unsupported, more: Math.max(0, total - unsupported.length) };
 }
+
+export interface Proposal {
+  source: string;
+  description: string;
+  counterparty: string;
+  notes: string[];
+  items: { product: string; amount_minor: number }[];
+}
+
+/** A line's proposal from the server, checked; `null` when there is none. */
+export function proposalOf(value: unknown): Proposal | null {
+  const p = value as Partial<Record<keyof Proposal, unknown>> | null;
+  if (typeof p !== "object" || p === null) return null;
+  if (!isString(p.source) || !isString(p.description) || !isString(p.counterparty)) return null;
+  const notes = Array.isArray(p.notes) ? p.notes.filter(isString) : [];
+  const items = Array.isArray(p.items)
+    ? p.items.filter(
+        (i: unknown): i is { product: string; amount_minor: number } =>
+          typeof i === "object" &&
+          i !== null &&
+          isString((i as { product?: unknown }).product) &&
+          typeof (i as { amount_minor?: unknown }).amount_minor === "number",
+      )
+    : [];
+  return {
+    source: p.source,
+    description: p.description,
+    counterparty: p.counterparty,
+    notes,
+    items,
+  };
+}

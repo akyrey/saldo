@@ -26,13 +26,17 @@ pub(crate) fn path_of(data_dir: &Path, sha256: &str) -> PathBuf {
 /// Writes the file unless it exists. Writing to a temporary name and renaming
 /// means a crash never leaves a half-written file under the real name.
 pub(crate) async fn store(data_dir: &Path, sha256: &str, bytes: &[u8]) -> Result<(), AppError> {
-    let target = path_of(data_dir, sha256);
+    store_in(&folder(data_dir), sha256, bytes).await
+}
+
+/// [`store`] into any folder: companion source files (Phase 13) live apart
+/// from attachments, which the attachment sweep owns.
+pub(crate) async fn store_in(folder: &Path, sha256: &str, bytes: &[u8]) -> Result<(), AppError> {
+    let target = folder.join(sha256);
     if tokio::fs::try_exists(&target).await.map_err(io_error)? {
         return Ok(());
     }
-    tokio::fs::create_dir_all(folder(data_dir))
-        .await
-        .map_err(io_error)?;
+    tokio::fs::create_dir_all(folder).await.map_err(io_error)?;
     let temporary = target.with_extension("partial");
     tokio::fs::write(&temporary, bytes)
         .await

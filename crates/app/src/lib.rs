@@ -68,6 +68,7 @@ use crate::rules::RuleService;
 use crate::safe_to_spend::SafeToSpendService;
 use crate::saved_views::SavedViewService;
 use crate::snapshot::SnapshotService;
+use crate::sources::SourceService;
 use crate::statements::StatementService;
 use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
@@ -109,6 +110,7 @@ pub struct App {
     pub credit_cards: CreditCardService,
     pub snapshots: SnapshotService,
     pub statements: StatementService,
+    pub sources: SourceService,
 }
 
 impl App {
@@ -142,6 +144,11 @@ impl App {
                 transactions.clone(),
             ),
             statements,
+            sources: SourceService::new(
+                pool.clone(),
+                clock.clone(),
+                PathBuf::from(DEFAULT_DATA_DIR),
+            ),
             subscriptions: SubscriptionService::new(
                 pool.clone(),
                 clock.clone(),
@@ -193,6 +200,7 @@ impl App {
     pub fn with_data_dir(self, data_dir: PathBuf) -> Self {
         let attachments =
             AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir.clone());
+        let sources = SourceService::new(self.pool.clone(), self.clock.clone(), data_dir.clone());
         let snapshots = SnapshotService::new(self.pool.clone(), data_dir);
         let export = ExportService::new(
             self.pool.clone(),
@@ -204,6 +212,7 @@ impl App {
             attachments,
             export,
             snapshots,
+            sources,
             ..self
         }
     }

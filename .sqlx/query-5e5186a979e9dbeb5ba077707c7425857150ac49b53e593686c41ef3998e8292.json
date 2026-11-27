@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO source_matches\n            (household_id, source_row_id, statement_import_id, line_position, match_type, amount_diff_minor, created_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "5e5186a979e9dbeb5ba077707c7425857150ac49b53e593686c41ef3998e8292"
+}

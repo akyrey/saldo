@@ -311,6 +311,12 @@ const statementProfilesRoute = createRoute({
   ),
 });
 
+const sourcesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "sources",
+  component: lazyRouteComponent(() => import("@/features/statements/SourcesPage"), "SourcesPage"),
+});
+
 export const forecastRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "forecast",
@@ -391,6 +397,7 @@ const routeTree = rootRoute.addChildren([
     importStatementRoute,
     statementReviewRoute,
     statementProfilesRoute,
+    sourcesRoute,
     editAccountRoute,
     transactionsRoute,
     newTransactionRoute,

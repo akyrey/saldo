@@ -38,14 +38,22 @@ pub async fn now_in(
     ctx: &HouseholdCtx,
     clock: &dyn Clock,
 ) -> Result<NaiveDateTime, AppError> {
+    let zone = household_zone(conn, ctx).await?;
+    Ok(clock.now().with_timezone(&zone).naive_local())
+}
+
+/// The household's timezone (Amazon's UTC order times become its dates).
+pub async fn household_zone(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Tz, AppError> {
     let id = ctx.household_id.to_string();
     let name = sqlx::query_scalar!("SELECT timezone FROM households WHERE id = ?", id)
         .fetch_optional(&mut *conn)
         .await?
         .ok_or(AppError::NotFound)?;
     // A timezone stored before validation existed falls back to UTC.
-    let zone = parse_timezone("timezone", &name).unwrap_or(Tz::UTC);
-    Ok(clock.now().with_timezone(&zone).naive_local())
+    Ok(parse_timezone("timezone", &name).unwrap_or(Tz::UTC))
 }
 
 impl IdentityService {

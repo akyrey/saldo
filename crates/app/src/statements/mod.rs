@@ -1,14 +1,19 @@
 //! Bank and Satispay statement import (Phase 13, Track B).
 
+mod booking;
 mod classify;
 mod commit;
+mod enrich;
 mod import_repo;
 mod imports;
 mod ledger_repo;
+mod match_repo;
 pub mod parse;
 mod preview;
 mod profile_repo;
 mod profiles;
+mod review;
+mod source_lookup;
 mod summary;
 mod views;
 

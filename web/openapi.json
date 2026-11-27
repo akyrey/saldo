@@ -6883,6 +6883,242 @@
         }
       }
     },
+    "/api/v1/source-documents": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "The household's uploads, newest first (unpaginated: a few a year).",
+        "operationId": "list_documents",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_DocumentView"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Stores an Amazon or PayPal export: new rows are added, known ones\nrefreshed. The same file twice is a 409.",
+        "operationId": "upload_document",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_DocumentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/source-documents/{id}": {
+      "delete": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Deletes an upload and the rows no other upload holds (409 when such a\nrow explains a booked transaction).",
+        "operationId": "delete_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/source-rows": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Stored rows by date.",
+        "operationId": "list_rows",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`amazon_orders` or `paypal`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "unmatched",
+            "in": "query",
+            "description": "Only rows that explain nothing yet.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "At most 200; default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_SourceRowView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/statement-imports": {
       "get": {
         "tags": [
@@ -12934,6 +13170,67 @@
           }
         }
       },
+      "Data_DocumentView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "filename",
+              "row_count",
+              "rows_added",
+              "rows_updated",
+              "created_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "first_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The earliest and latest row dates in the file."
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "last_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "row_count": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "rows_added": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Rows this upload added, and known rows it changed."
+              },
+              "rows_updated": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
       "Data_ForecastReport": {
         "type": "object",
         "description": "A single result.",
@@ -13148,7 +13445,9 @@
               "notes",
               "parts",
               "status",
-              "action"
+              "action",
+              "use_proposal",
+              "split_by_item"
             ],
             "properties": {
               "accounting_date": {
@@ -13228,6 +13527,13 @@
                 "type": "integer",
                 "format": "int64"
               },
+              "proposal": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "What a matched Amazon or PayPal row proposes: `{ source,\ndescription, counterparty, notes, items: [{ product, amount_minor }] }`."
+              },
               "reason": {
                 "type": [
                   "string",
@@ -13243,6 +13549,10 @@
                 "format": "int64",
                 "description": "The row in the file, counting from 1."
               },
+              "split_by_item": {
+                "type": "boolean",
+                "description": "Book an Amazon charge as one split per item."
+              },
               "split_id": {
                 "type": [
                   "string",
@@ -13253,6 +13563,10 @@
               "status": {
                 "type": "string",
                 "description": "`new`, `duplicate`, `possible_match`, `skipped_before` or\n`not_matched_reconciled`."
+              },
+              "use_proposal": {
+                "type": "boolean",
+                "description": "Book the proposal's description and counterparty (default true)."
               },
               "value_date": {
                 "type": "string"
@@ -14908,6 +15222,70 @@
           }
         }
       },
+      "Data_Vec_DocumentView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "kind",
+                "filename",
+                "row_count",
+                "rows_added",
+                "rows_updated",
+                "created_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "first_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The earliest and latest row dates in the file."
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "last_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "row_count": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "rows_added": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Rows this upload added, and known rows it changed."
+                },
+                "rows_updated": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_MemberView": {
         "type": "object",
         "description": "A single result.",
@@ -15894,6 +16272,58 @@
           },
           "currency": {
             "type": "string"
+          }
+        }
+      },
+      "DocumentView": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "filename",
+          "row_count",
+          "rows_added",
+          "rows_updated",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "first_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The earliest and latest row dates in the file."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "row_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rows_added": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Rows this upload added, and known rows it changed."
+          },
+          "rows_updated": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -16913,6 +17343,13 @@
             "format": "uuid",
             "description": "Null creates an expense or revenue account named after the line."
           },
+          "split_by_item": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Book an Amazon charge as one split per item."
+          },
           "split_id": {
             "type": [
               "string",
@@ -16920,6 +17357,13 @@
             ],
             "format": "uuid",
             "description": "The existing split a `link` line is."
+          },
+          "use_proposal": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Book the matched Amazon or PayPal details (description, counterparty)."
           }
         }
       },
@@ -16938,7 +17382,9 @@
           "notes",
           "parts",
           "status",
-          "action"
+          "action",
+          "use_proposal",
+          "split_by_item"
         ],
         "properties": {
           "accounting_date": {
@@ -17018,6 +17464,13 @@
             "type": "integer",
             "format": "int64"
           },
+          "proposal": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "What a matched Amazon or PayPal row proposes: `{ source,\ndescription, counterparty, notes, items: [{ product, amount_minor }] }`."
+          },
           "reason": {
             "type": [
               "string",
@@ -17033,6 +17486,10 @@
             "format": "int64",
             "description": "The row in the file, counting from 1."
           },
+          "split_by_item": {
+            "type": "boolean",
+            "description": "Book an Amazon charge as one split per item."
+          },
           "split_id": {
             "type": [
               "string",
@@ -17043,6 +17500,10 @@
           "status": {
             "type": "string",
             "description": "`new`, `duplicate`, `possible_match`, `skipped_before` or\n`not_matched_reconciled`."
+          },
+          "use_proposal": {
+            "type": "boolean",
+            "description": "Book the proposal's description and counterparty (default true)."
           },
           "value_date": {
             "type": "string"
@@ -18120,6 +18581,100 @@
                 },
                 "updated_at": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        }
+      },
+      "List_SourceRowView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "kind",
+                "external_id",
+                "date",
+                "amount",
+                "currency",
+                "row_kind",
+                "excluded",
+                "matched"
+              ],
+              "properties": {
+                "amount": {
+                  "type": "string",
+                  "description": "Signed as the source writes it."
+                },
+                "counterparty": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "excluded": {
+                  "type": "boolean",
+                  "description": "Never reaches a bank (cancelled, or paid by gift card alone)."
+                },
+                "external_id": {
+                  "type": "string"
+                },
+                "group_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Amazon: the order ID."
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "matched": {
+                  "type": "boolean",
+                  "description": "Explains a statement line or a transaction."
+                },
+                "row_kind": {
+                  "type": "string",
+                  "description": "Amazon `item`; PayPal `funding`, `withdrawal`, `payment`, `refund` or `other`."
+                },
+                "status": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "time": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             }
@@ -20178,6 +20733,103 @@
           "needed": {
             "type": "boolean",
             "description": "True while no user exists."
+          }
+        }
+      },
+      "SourceForm": {
+        "type": "object",
+        "description": "The upload form (documentation only; the handler reads the parts).",
+        "required": [
+          "kind",
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "At most 5 MB."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`amazon_orders` or `paypal`."
+          }
+        }
+      },
+      "SourceRowView": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "external_id",
+          "date",
+          "amount",
+          "currency",
+          "row_kind",
+          "excluded",
+          "matched"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Signed as the source writes it."
+          },
+          "counterparty": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "excluded": {
+            "type": "boolean",
+            "description": "Never reaches a bank (cancelled, or paid by gift card alone)."
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "group_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Amazon: the order ID."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean",
+            "description": "Explains a statement line or a transaction."
+          },
+          "row_kind": {
+            "type": "string",
+            "description": "Amazon `item`; PayPal `funding`, `withdrawal`, `payment`, `refund` or `other`."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

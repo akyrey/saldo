@@ -1,0 +1,177 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT r.id, r.kind, r.external_id, r.date, r.time, r.amount_minor, r.currency_code, r.row_kind,\n                  r.group_key, r.counterparty, r.text, r.status, r.excluded AS \"excluded: bool\",\n                  EXISTS (SELECT 1 FROM source_matches m WHERE m.source_row_id = r.id) AS \"matched!: bool\"\n           FROM source_rows r\n           WHERE r.household_id = ?1 AND (?2 IS NULL OR r.kind = ?2)\n             AND (?3 IS NULL OR r.date >= ?3) AND (?4 IS NULL OR r.date <= ?4)\n             AND (?5 = 0 OR NOT EXISTS (SELECT 1 FROM source_matches m WHERE m.source_row_id = r.id))\n           ORDER BY r.date, COALESCE(r.time, ''), r.rowid\n           LIMIT ?6 OFFSET ?7",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "external_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "external_id"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "time",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "time"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "row_kind",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "row_kind"
+          }
+        }
+      },
+      {
+        "name": "group_key",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "group_key"
+          }
+        }
+      },
+      {
+        "name": "counterparty",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "counterparty"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "excluded: bool",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "excluded"
+          }
+        }
+      },
+      {
+        "name": "matched!: bool",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "9c9fb0f45b5fa7bf75de05371a9e2336abd8ff263983264c19bdc0c5740014c2"
+}

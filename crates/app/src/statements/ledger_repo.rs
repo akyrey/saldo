@@ -89,3 +89,52 @@ pub(super) async fn accounts(
     .fetch_all(&mut *conn)
     .await?)
 }
+
+/// A stored Amazon or PayPal row, for enriching lines (Track D).
+#[derive(Debug, Clone)]
+pub(super) struct SourceRowRecord {
+    pub id: String,
+    pub kind: String,
+    pub external_id: String,
+    pub date: String,
+    pub time: Option<String>,
+    pub amount_minor: i64,
+    pub currency_code: String,
+    pub row_kind: String,
+    pub group_key: Option<String>,
+    pub counterparty: Option<String>,
+    pub text: Option<String>,
+    pub excluded: bool,
+}
+
+/// The household's source rows not yet explaining a transaction (each
+/// explains one at most), dated in the range, plus every Amazon item
+/// of the orders named in `order_ids` whatever its date (an order ID matches
+/// however late the charge came, L19).
+pub(super) async fn source_rows(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    from: &str,
+    to: &str,
+    order_ids: &[String],
+) -> Result<Vec<SourceRowRecord>, AppError> {
+    let ids = crate::db::json_list(order_ids)?;
+    Ok(sqlx::query_as!(
+        SourceRowRecord,
+        r#"SELECT id, kind, external_id, date, time, amount_minor, currency_code, row_kind, group_key,
+                  counterparty, text, excluded AS "excluded: bool"
+           FROM source_rows
+           WHERE household_id = ?1
+             AND (date BETWEEN ?2 AND ?3
+                  OR (kind = 'amazon_orders' AND group_key IN (SELECT value FROM json_each(?4))))
+             AND NOT EXISTS (SELECT 1 FROM source_matches m
+                             WHERE m.source_row_id = source_rows.id AND m.split_id IS NOT NULL)
+           ORDER BY date, COALESCE(time, ''), rowid"#,
+        household_id,
+        from,
+        to,
+        ids
+    )
+    .fetch_all(&mut *conn)
+    .await?)
+}

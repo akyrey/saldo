@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, date, time, amount_minor, currency_code, row_kind, group_key, counterparty, text, status, excluded, raw\n         FROM source_rows WHERE household_id = ? AND kind = ? AND external_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "time",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "time"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "row_kind",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "row_kind"
+          }
+        }
+      },
+      {
+        "name": "group_key",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "group_key"
+          }
+        }
+      },
+      {
+        "name": "counterparty",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "counterparty"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "excluded",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "excluded"
+          }
+        }
+      },
+      {
+        "name": "raw",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "source_rows",
+            "name": "raw"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "3dfe71e245e64017a3e697bfab439401602e4f20eac4de8abcf5dbe2d97a4518"
+}

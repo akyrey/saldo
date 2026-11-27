@@ -68,6 +68,7 @@ const KEYS: Record<string, QueryKey[]> = {
     ["credit-cards"],
   ],
   statement_profile: [["statement-profiles"]],
+  source_document: [["sources"], ["statement-imports"]],
   statement_import: [
     ["statement-imports"],
     ["transactions"],

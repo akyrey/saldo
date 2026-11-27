@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM source_rows r\n         WHERE r.household_id = ?1 AND r.document_id = ?2 AND r.last_document_id = ?2\n           AND EXISTS (SELECT 1 FROM source_matches m WHERE m.source_row_id = r.id AND m.split_id IS NOT NULL)",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2ac81487f8c6de1dc672443b07b2f47976d8eed6a0aa2ed1dfa5e4636975af3e"
+}

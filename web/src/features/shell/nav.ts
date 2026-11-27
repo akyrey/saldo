@@ -12,6 +12,7 @@ import {
   PiggyBank,
   Receipt,
   Repeat,
+  ShoppingBag,
   Tags,
   Target,
   Wallet,
@@ -46,6 +47,7 @@ export const MORE_NAV: readonly NavItem[] = [
   { to: "/rules", label: "Rules", icon: Wand2 },
   { to: "/templates", label: "Templates", icon: ClipboardCopy },
   { to: "/statement-profiles", label: "Statement profiles", icon: FileSpreadsheet },
+  { to: "/sources", label: "Sources", icon: ShoppingBag },
   { to: "/settings/sessions", label: "Sessions", icon: MonitorSmartphone },
 ];
 

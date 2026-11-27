@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM source_rows WHERE household_id = ?1 AND document_id = ?2 AND last_document_id = ?2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "034723664580c681f63664bc3941673e811368e2e8d6e0ffe22eab7d33b5d95b"
+}

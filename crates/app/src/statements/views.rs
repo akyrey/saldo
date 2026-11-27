@@ -83,6 +83,14 @@ pub struct LineView {
     /// revenue account named after the counterparty on commit.
     pub counterparty_account_id: Option<String>,
     pub category_id: Option<String>,
+    /// What a matched Amazon or PayPal row proposes: `{ source,
+    /// description, counterparty, notes, items: [{ product, amount_minor }] }`.
+    #[schema(value_type = Option<Object>)]
+    pub proposal: Option<Value>,
+    /// Book the proposal's description and counterparty (default true).
+    pub use_proposal: bool,
+    /// Book an Amazon charge as one split per item.
+    pub split_by_item: bool,
 }
 
 /// An import with its lines, in file order.
@@ -100,6 +108,8 @@ pub struct LineUpdate {
     pub split_id: Option<Option<String>>,
     pub counterparty_account_id: Option<Option<String>>,
     pub category_id: Option<Option<String>>,
+    pub use_proposal: Option<bool>,
+    pub split_by_item: Option<bool>,
 }
 
 fn money(minor: i64, currency: &Currency) -> String {
@@ -160,6 +170,14 @@ pub(super) fn line_view(row: LineRow, currency: &Currency) -> Result<LineView, A
         created_group_id: row.created_group_id,
         counterparty_account_id: row.counterparty_account_id,
         category_id: row.category_id,
+        proposal: row
+            .proposal
+            .as_deref()
+            .map(serde_json::from_str)
+            .transpose()
+            .map_err(bad)?,
+        use_proposal: row.use_proposal,
+        split_by_item: row.split_by_item,
     })
 }
 

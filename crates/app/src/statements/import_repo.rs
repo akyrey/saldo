@@ -48,6 +48,10 @@ pub(super) struct LineRow {
     pub created_group_id: Option<String>,
     pub counterparty_account_id: Option<String>,
     pub category_id: Option<String>,
+    /// What a matched Amazon or PayPal row proposes (JSON), if any.
+    pub proposal: Option<String>,
+    pub use_proposal: bool,
+    pub split_by_item: bool,
 }
 
 pub(super) async fn insert(
@@ -93,8 +97,8 @@ pub(super) async fn insert_line(
             (import_id, position, row_number, accounting_date, value_date, booked_date, amount_minor,
              currency_code, description, category, counterparty_name, counterparty_iban, external_id,
              ref_key, notes, parts, status, action, reason, split_id, created_group_id,
-             counterparty_account_id, category_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             counterparty_account_id, category_id, proposal, use_proposal, split_by_item)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         import_id,
         line.position,
         line.row_number,
@@ -118,6 +122,9 @@ pub(super) async fn insert_line(
         line.created_group_id,
         line.counterparty_account_id,
         line.category_id,
+        line.proposal,
+        line.use_proposal,
+        line.split_by_item,
     )
     .execute(&mut *conn)
     .await?;
@@ -182,11 +189,12 @@ pub(super) async fn lines(
 ) -> Result<Vec<LineRow>, AppError> {
     Ok(sqlx::query_as!(
         LineRow,
-        "SELECT position, row_number, accounting_date, value_date, booked_date, amount_minor,
+        r#"SELECT position, row_number, accounting_date, value_date, booked_date, amount_minor,
                 currency_code, description, category, counterparty_name, counterparty_iban,
                 external_id, ref_key, notes, parts, status, action, reason, split_id,
-                created_group_id, counterparty_account_id, category_id
-         FROM statement_lines WHERE import_id = ? ORDER BY position",
+                created_group_id, counterparty_account_id, category_id, proposal,
+                use_proposal AS "use_proposal: bool", split_by_item AS "split_by_item: bool"
+         FROM statement_lines WHERE import_id = ? ORDER BY position"#,
         import_id
     )
     .fetch_all(&mut *conn)
@@ -201,13 +209,16 @@ pub(super) async fn update_line(
 ) -> Result<(), AppError> {
     sqlx::query!(
         "UPDATE statement_lines
-         SET action = ?, split_id = ?, created_group_id = ?, counterparty_account_id = ?, category_id = ?
+         SET action = ?, split_id = ?, created_group_id = ?, counterparty_account_id = ?, category_id = ?,
+             use_proposal = ?, split_by_item = ?
          WHERE import_id = ? AND position = ?",
         line.action,
         line.split_id,
         line.created_group_id,
         line.counterparty_account_id,
         line.category_id,
+        line.use_proposal,
+        line.split_by_item,
         import_id,
         line.position,
     )

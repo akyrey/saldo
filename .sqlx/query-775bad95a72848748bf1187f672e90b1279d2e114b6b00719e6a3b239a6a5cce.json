@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO statement_lines\n            (import_id, position, row_number, accounting_date, value_date, booked_date, amount_minor,\n             currency_code, description, category, counterparty_name, counterparty_iban, external_id,\n             ref_key, notes, parts, status, action, reason, split_id, created_group_id,\n             counterparty_account_id, category_id, proposal, use_proposal, split_by_item)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 26
+    },
+    "nullable": []
+  },
+  "hash": "775bad95a72848748bf1187f672e90b1279d2e114b6b00719e6a3b239a6a5cce"
+}

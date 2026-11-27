@@ -137,6 +137,10 @@ pub struct LinePatch {
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<Uuid>)]
     pub category_id: Option<Option<Uuid>>,
+    /// Book the matched Amazon or PayPal details (description, counterparty).
+    pub use_proposal: Option<bool>,
+    /// Book an Amazon charge as one split per item.
+    pub split_by_item: Option<bool>,
 }
 
 fn text_of(value: Option<Option<Uuid>>) -> Option<Option<String>> {
@@ -159,6 +163,8 @@ pub async fn update_line(
         split_id: text_of(body.split_id),
         counterparty_account_id: text_of(body.counterparty_account_id),
         category_id: text_of(body.category_id),
+        use_proposal: body.use_proposal,
+        split_by_item: body.split_by_item,
     };
     let view = state
         .app

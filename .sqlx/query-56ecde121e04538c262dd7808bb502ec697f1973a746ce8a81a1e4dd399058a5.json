@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT position, row_number, accounting_date, value_date, booked_date, amount_minor,\n                currency_code, description, category, counterparty_name, counterparty_iban,\n                external_id, ref_key, notes, parts, status, action, reason, split_id,\n                created_group_id, counterparty_account_id, category_id\n         FROM statement_lines WHERE import_id = ? ORDER BY position",
+  "query": "SELECT position, row_number, accounting_date, value_date, booked_date, amount_minor,\n                currency_code, description, category, counterparty_name, counterparty_iban,\n                external_id, ref_key, notes, parts, status, action, reason, split_id,\n                created_group_id, counterparty_account_id, category_id, proposal,\n                use_proposal AS \"use_proposal: bool\", split_by_item AS \"split_by_item: bool\"\n         FROM statement_lines WHERE import_id = ? ORDER BY position",
   "describe": {
     "columns": [
       {
@@ -244,6 +244,39 @@
             "name": "category_id"
           }
         }
+      },
+      {
+        "name": "proposal",
+        "ordinal": 22,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "proposal"
+          }
+        }
+      },
+      {
+        "name": "use_proposal: bool",
+        "ordinal": 23,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "use_proposal"
+          }
+        }
+      },
+      {
+        "name": "split_by_item: bool",
+        "ordinal": 24,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "split_by_item"
+          }
+        }
       }
     ],
     "parameters": {
@@ -271,8 +304,11 @@
       true,
       true,
       true,
-      true
+      true,
+      true,
+      false,
+      false
     ]
   },
-  "hash": "922de6d05ebb8e8a79ff7dc268384a3a1af6cc783096005346aa2a0e14f34bf8"
+  "hash": "56ecde121e04538c262dd7808bb502ec697f1973a746ce8a81a1e4dd399058a5"
 }

@@ -1498,6 +1498,64 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/source-documents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The household's uploads, newest first (unpaginated: a few a year). */
+    get: operations["list_documents"];
+    put?: never;
+    /**
+     * Stores an Amazon or PayPal export: new rows are added, known ones
+     *     refreshed. The same file twice is a 409.
+     */
+    post: operations["upload_document"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/source-documents/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Deletes an upload and the rows no other upload holds (409 when such a
+     *     row explains a booked transaction).
+     */
+    delete: operations["delete_document"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/source-rows": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Stored rows by date. */
+    get: operations["list_rows"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/statement-imports": {
     parameters: {
       query?: never;
@@ -3122,6 +3180,27 @@ export interface components {
       };
     };
     /** @description A single result. */
+    Data_DocumentView: {
+      data: {
+        created_at: string;
+        filename: string;
+        /** @description The earliest and latest row dates in the file. */
+        first_date?: string | null;
+        id: string;
+        kind: string;
+        last_date?: string | null;
+        /** Format: int64 */
+        row_count: number;
+        /**
+         * Format: int64
+         * @description Rows this upload added, and known rows it changed.
+         */
+        rows_added: number;
+        /** Format: int64 */
+        rows_updated: number;
+      };
+    };
+    /** @description A single result. */
     Data_ForecastReport: {
       data: {
         currencies: components["schemas"]["ForecastCurrency"][];
@@ -3208,6 +3287,11 @@ export interface components {
         parts: components["schemas"]["PartView"][];
         /** Format: int64 */
         position: number;
+        /**
+         * @description What a matched Amazon or PayPal row proposes: `{ source,
+         *     description, counterparty, notes, items: [{ product, amount_minor }] }`.
+         */
+        proposal?: Record<string, never> | null;
         reason?: string | null;
         /** @description The line's identity across imports. */
         ref_key: string;
@@ -3216,6 +3300,8 @@ export interface components {
          * @description The row in the file, counting from 1.
          */
         row: number;
+        /** @description Book an Amazon charge as one split per item. */
+        split_by_item: boolean;
         /** @description The matched split (link), or the first split created (after commit). */
         split_id?: string | null;
         /**
@@ -3223,6 +3309,8 @@ export interface components {
          *     `not_matched_reconciled`.
          */
         status: string;
+        /** @description Book the proposal's description and counterparty (default true). */
+        use_proposal: boolean;
         value_date: string;
       };
     };
@@ -3713,6 +3801,27 @@ export interface components {
       }[];
     };
     /** @description A single result. */
+    Data_Vec_DocumentView: {
+      data: {
+        created_at: string;
+        filename: string;
+        /** @description The earliest and latest row dates in the file. */
+        first_date?: string | null;
+        id: string;
+        kind: string;
+        last_date?: string | null;
+        /** Format: int64 */
+        row_count: number;
+        /**
+         * Format: int64
+         * @description Rows this upload added, and known rows it changed.
+         */
+        rows_added: number;
+        /** Format: int64 */
+        rows_updated: number;
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_MemberView: {
       data: {
         display_name: string;
@@ -3991,6 +4100,24 @@ export interface components {
        */
       account_id: string;
       currency: string;
+    };
+    DocumentView: {
+      created_at: string;
+      filename: string;
+      /** @description The earliest and latest row dates in the file. */
+      first_date?: string | null;
+      id: string;
+      kind: string;
+      last_date?: string | null;
+      /** Format: int64 */
+      row_count: number;
+      /**
+       * Format: int64
+       * @description Rows this upload added, and known rows it changed.
+       */
+      rows_added: number;
+      /** Format: int64 */
+      rows_updated: number;
     };
     DraftSplitView: {
       /** @description Positive when money came into the account. */
@@ -4301,11 +4428,15 @@ export interface components {
        * @description Null creates an expense or revenue account named after the line.
        */
       counterparty_account_id?: string | null;
+      /** @description Book an Amazon charge as one split per item. */
+      split_by_item?: boolean | null;
       /**
        * Format: uuid
        * @description The existing split a `link` line is.
        */
       split_id?: string | null;
+      /** @description Book the matched Amazon or PayPal details (description, counterparty). */
+      use_proposal?: boolean | null;
     };
     /** @description One importable line of a statement. */
     LineView: {
@@ -4332,6 +4463,11 @@ export interface components {
       parts: components["schemas"]["PartView"][];
       /** Format: int64 */
       position: number;
+      /**
+       * @description What a matched Amazon or PayPal row proposes: `{ source,
+       *     description, counterparty, notes, items: [{ product, amount_minor }] }`.
+       */
+      proposal?: Record<string, never> | null;
       reason?: string | null;
       /** @description The line's identity across imports. */
       ref_key: string;
@@ -4340,6 +4476,8 @@ export interface components {
        * @description The row in the file, counting from 1.
        */
       row: number;
+      /** @description Book an Amazon charge as one split per item. */
+      split_by_item: boolean;
       /** @description The matched split (link), or the first split created (after commit). */
       split_id?: string | null;
       /**
@@ -4347,6 +4485,8 @@ export interface components {
        *     `not_matched_reconciled`.
        */
       status: string;
+      /** @description Book the proposal's description and counterparty (default true). */
+      use_proposal: boolean;
       value_date: string;
     };
     ListMeta: {
@@ -4632,6 +4772,31 @@ export interface components {
         splits: components["schemas"]["TemplateSplitView"][];
         title: string;
         updated_at: string;
+      }[];
+      meta: components["schemas"]["ListMeta"];
+    };
+    /** @description A page of results. */
+    List_SourceRowView: {
+      data: {
+        /** @description Signed as the source writes it. */
+        amount: string;
+        counterparty?: string | null;
+        currency: string;
+        date: string;
+        /** @description Never reaches a bank (cancelled, or paid by gift card alone). */
+        excluded: boolean;
+        external_id: string;
+        /** @description Amazon: the order ID. */
+        group_key?: string | null;
+        id: string;
+        kind: string;
+        /** @description Explains a statement line or a transaction. */
+        matched: boolean;
+        /** @description Amazon `item`; PayPal `funding`, `withdrawal`, `payment`, `refund` or `other`. */
+        row_kind: string;
+        status?: string | null;
+        text?: string | null;
+        time?: string | null;
       }[];
       meta: components["schemas"]["ListMeta"];
     };
@@ -5282,6 +5447,37 @@ export interface components {
     SetupStatus: {
       /** @description True while no user exists. */
       needed: boolean;
+    };
+    /** @description The upload form (documentation only; the handler reads the parts). */
+    SourceForm: {
+      /**
+       * Format: binary
+       * @description At most 5 MB.
+       */
+      file: string;
+      /** @description `amazon_orders` or `paypal`. */
+      kind: string;
+    };
+    SourceRowView: {
+      /** @description Signed as the source writes it. */
+      amount: string;
+      counterparty?: string | null;
+      currency: string;
+      date: string;
+      /** @description Never reaches a bank (cancelled, or paid by gift card alone). */
+      excluded: boolean;
+      external_id: string;
+      /** @description Amazon: the order ID. */
+      group_key?: string | null;
+      id: string;
+      kind: string;
+      /** @description Explains a statement line or a transaction. */
+      matched: boolean;
+      /** @description Amazon `item`; PayPal `funding`, `withdrawal`, `payment`, `refund` or `other`. */
+      row_kind: string;
+      status?: string | null;
+      text?: string | null;
+      time?: string | null;
     };
     /** @description One split. Money moves from `source_id` to `destination_id`. */
     SplitRequest: {
@@ -9989,6 +10185,144 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_documents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_DocumentView"];
+        };
+      };
+    };
+  };
+  upload_document: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["SourceForm"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_DocumentView"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  delete_document: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_rows: {
+    parameters: {
+      query?: {
+        /** @description `amazon_orders` or `paypal`. */
+        kind?: string;
+        from?: string;
+        to?: string;
+        /** @description Only rows that explain nothing yet. */
+        unmatched?: boolean;
+        page?: number;
+        /** @description At most 200; default 50. */
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_SourceRowView"];
         };
       };
       422: {

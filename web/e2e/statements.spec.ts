@@ -60,3 +60,57 @@ test("a CSV statement is imported with a new profile, committed and reconciled",
   await expect(page.getByText(/Reconciled up to 2026-11-06/)).toBeVisible();
   await expect(page.getByRole("region", { name: "Statement imports" })).toContainText("committed");
 });
+
+const ORDER = "405-7654321-7654321";
+
+test("an Amazon export names a bank charge, which is split by item", async ({ page }) => {
+  await login(page);
+  const accountId = await createAccount(page, "Amazon bank", "asset");
+
+  await page.goto("/sources");
+  await page.getByLabel("Export").selectOption("amazon_orders");
+  const orders = [
+    "Order ID,Order Date,Currency,Total Amount,Product Name,Order Status,Payment Method Type,ASIN",
+    `${ORDER},2026-11-02T10:00:00Z,EUR,15.00,Moka pot,Closed,Visa - 1,B1`,
+    `${ORDER},2026-11-02T10:00:00Z,EUR,5.00,Filter,Closed,Visa - 1,B2`,
+    "",
+  ].join("\n");
+  await page.getByLabel("File").setInputFiles({
+    name: "orders.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(orders),
+  });
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByRole("status")).toHaveText("2 new rows, 0 updated.");
+
+  // The profile from the first flow reads this CSV too.
+  await page.goto(`/accounts/${accountId}/import`);
+  await page.getByLabel("Profile").selectOption({ label: "Statement bank CSV" });
+  const statement = ["Data;Descrizione;Importo", `20/11/2026;AMAZON EU SARL ${ORDER};-19,00`, ""];
+  await page.getByLabel("Statement file").setInputFiles({
+    name: "amazon.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(statement.join("\n")),
+  });
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByText("Amazon: Moka pot + 1 more")).toBeVisible();
+  // The box shows the saved state once the server answers.
+  await page.getByLabel(/^Split by item for/).click();
+  await expect(page.getByLabel(/^Split by item for/)).toBeChecked();
+  await page.getByRole("button", { name: /^Commit: 1 to create/ }).click();
+  await expect(page.getByRole("button", { name: "Revert import" })).toBeVisible();
+
+  const origin = new URL(page.url()).origin;
+  const response = await page.request.get(`/api/v1/transactions?account_id=${accountId}`, {
+    headers: { Origin: origin },
+  });
+  const body = (await response.json()) as {
+    data: { title: string; splits: { description: string; amount: string }[] }[];
+  };
+  expect(body.data).toHaveLength(1);
+  expect(body.data[0]?.title).toBe("Amazon: Moka pot + 1 more");
+  expect(body.data[0]?.splits.map((s) => [s.description, s.amount])).toEqual([
+    ["Moka pot", "14.00"],
+    ["Filter", "5.00"],
+  ]);
+});

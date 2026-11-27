@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE source_rows\n         SET last_document_id = ?, date = ?, time = ?, amount_minor = ?, currency_code = ?, row_kind = ?,\n             group_key = ?, counterparty = ?, text = ?, status = ?, excluded = ?, raw = ?\n         WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "a2491b90a703ae0c11579d30b1145a60e5b90688aa6d977e8213b79dbc42d1df"
+}
