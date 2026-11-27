@@ -138,3 +138,52 @@ pub(super) async fn source_rows(
     .fetch_all(&mut *conn)
     .await?)
 }
+
+/// The account's splits in the range no source row explains yet (Track E).
+pub(super) async fn unexplained_splits(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    account_id: &str,
+    from: &str,
+    to: &str,
+) -> Result<Vec<LedgerRow>, AppError> {
+    Ok(sqlx::query_as!(
+        LedgerRow,
+        "SELECT s.id, s.group_id, s.kind, s.date, s.amount_minor, s.currency_code,
+                s.source_account_id, s.destination_account_id, s.description
+         FROM splits s
+         WHERE s.household_id = ?1 AND (s.source_account_id = ?2 OR s.destination_account_id = ?2)
+           AND s.date BETWEEN ?3 AND ?4 AND s.kind IN ('withdrawal', 'deposit', 'transfer')
+           AND NOT EXISTS (SELECT 1 FROM source_matches m WHERE m.split_id = s.id)
+         ORDER BY s.date, s.id",
+        household_id,
+        account_id,
+        from,
+        to
+    )
+    .fetch_all(&mut *conn)
+    .await?)
+}
+
+/// One of the account's splits, if no source row explains it yet.
+pub(super) async fn unexplained_split(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    account_id: &str,
+    split_id: &str,
+) -> Result<Option<LedgerRow>, AppError> {
+    Ok(sqlx::query_as!(
+        LedgerRow,
+        "SELECT s.id, s.group_id, s.kind, s.date, s.amount_minor, s.currency_code,
+                s.source_account_id, s.destination_account_id, s.description
+         FROM splits s
+         WHERE s.household_id = ?1 AND (s.source_account_id = ?2 OR s.destination_account_id = ?2)
+           AND s.id = ?3 AND s.kind IN ('withdrawal', 'deposit', 'transfer')
+           AND NOT EXISTS (SELECT 1 FROM source_matches m WHERE m.split_id = s.id)",
+        household_id,
+        account_id,
+        split_id
+    )
+    .fetch_optional(&mut *conn)
+    .await?)
+}

@@ -4,6 +4,7 @@ mod booking;
 mod classify;
 mod commit;
 mod enrich;
+mod history;
 mod import_repo;
 mod imports;
 mod ledger_repo;
@@ -24,6 +25,7 @@ use crate::clock::SharedClock;
 use crate::error::AppError;
 use crate::transactions::TransactionService;
 
+pub use history::{EnrichmentAccept, EnrichmentCandidate};
 pub use preview::{PreviewLine, PreviewView, UnsupportedRow};
 pub(crate) use profiles::all_in as profiles_all_in;
 pub use profiles::{Preset, ProfileInput, ProfileView, TransferRule, presets};

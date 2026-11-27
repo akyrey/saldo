@@ -94,3 +94,29 @@ pub(super) async fn drop_unattached_matches(
     .await?;
     Ok(())
 }
+
+/// Records that a source row explains an existing split (Track E).
+pub(super) async fn insert_split_match(
+    conn: &mut SqliteConnection,
+    household_id: &str,
+    source_row_id: &str,
+    split_id: &str,
+    match_type: &str,
+    amount_diff_minor: i64,
+    created_at: &str,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "INSERT INTO source_matches
+            (household_id, source_row_id, split_id, match_type, amount_diff_minor, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)",
+        household_id,
+        source_row_id,
+        split_id,
+        match_type,
+        amount_diff_minor,
+        created_at
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}

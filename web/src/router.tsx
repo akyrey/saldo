@@ -311,6 +311,12 @@ const statementProfilesRoute = createRoute({
   ),
 });
 
+const enrichRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "accounts/$accountId/enrich",
+  component: lazyRouteComponent(() => import("@/features/statements/EnrichPage"), "EnrichPage"),
+});
+
 const sourcesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "sources",
@@ -398,6 +404,7 @@ const routeTree = rootRoute.addChildren([
     statementReviewRoute,
     statementProfilesRoute,
     sourcesRoute,
+    enrichRoute,
     editAccountRoute,
     transactionsRoute,
     newTransactionRoute,

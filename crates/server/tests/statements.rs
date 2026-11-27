@@ -295,3 +295,69 @@ async fn amazon_and_paypal_exports_over_http() {
         0
     );
 }
+
+#[tokio::test]
+async fn existing_transactions_are_enriched_over_http() {
+    let server = server().await;
+    let owner = Auth::Cookie(server.setup_and_login().await);
+    let checking = server
+        .post(
+            "/api/v1/accounts",
+            json!({ "name": "Checking", "type": "asset" }),
+            &owner,
+        )
+        .await;
+    let shop = server
+        .post(
+            "/api/v1/accounts",
+            json!({ "name": "Shop", "type": "expense" }),
+            &owner,
+        )
+        .await;
+    let (checking, shop) = (
+        checking.body["data"]["id"].as_str().unwrap().to_string(),
+        shop.body["data"]["id"].as_str().unwrap().to_string(),
+    );
+    let created = server
+        .post(
+            "/api/v1/transactions",
+            json!({ "splits": [{ "date": "2026-11-05", "description": "AMAZON 405-1234567-1234567", "source_id": checking, "destination_id": shop, "amount": "15.00" }] }),
+            &owner,
+        )
+        .await;
+    let split_id = created.body["data"]["splits"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let csv = b"Order ID,Order Date,Currency,Total Amount,Product Name,Order Status,Payment Method Type,ASIN\n405-1234567-1234567,2026-11-02T10:00:00Z,EUR,15.00,Moka pot,Closed,Visa - 1,B1\n";
+    let body = form(&[("kind", "amazon_orders")], Some(("orders.csv", csv)));
+    server
+        .send_raw(
+            Method::POST,
+            "/api/v1/source-documents",
+            &multipart(),
+            body,
+            &owner,
+        )
+        .await;
+
+    let path = format!("/api/v1/accounts/{checking}/enrichment?from=2026-11-01&to=2026-11-30");
+    let candidates = server.get(&path, &owner).await;
+    assert_eq!(candidates.status, StatusCode::OK, "{:?}", candidates.body);
+    assert_eq!(
+        candidates.body["data"][0]["proposal"]["description"],
+        "Amazon: Moka pot"
+    );
+    let accepted = server
+        .post(
+            &format!("/api/v1/accounts/{checking}/enrichment/accept"),
+            json!({ "items": [{ "split_id": split_id }] }),
+            &owner,
+        )
+        .await;
+    assert_eq!(accepted.status, StatusCode::OK, "{:?}", accepted.body);
+    assert_eq!(
+        accepted.body["data"][0]["splits"][0]["description"],
+        "Amazon: Moka pot"
+    );
+}
