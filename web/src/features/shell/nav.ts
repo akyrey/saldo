@@ -5,6 +5,7 @@ import {
   ChartColumn,
   ClipboardCopy,
   Download,
+  FileSpreadsheet,
   FolderTree,
   type LucideIcon,
   MonitorSmartphone,
@@ -44,6 +45,7 @@ export const MORE_NAV: readonly NavItem[] = [
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/rules", label: "Rules", icon: Wand2 },
   { to: "/templates", label: "Templates", icon: ClipboardCopy },
+  { to: "/statement-profiles", label: "Statement profiles", icon: FileSpreadsheet },
   { to: "/settings/sessions", label: "Sessions", icon: MonitorSmartphone },
 ];
 

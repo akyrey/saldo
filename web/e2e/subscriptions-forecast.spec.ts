@@ -1,7 +1,7 @@
 // Phase 9 flows against the real server: accepting a subscription
 // suggestion, and the cash-flow forecast's horizon. Runs after
 // flows.spec.ts, which sets up the household. (The statement import flow
-// waits for Phase 9 Track E.)
+// is in statements.spec.ts.)
 import { expect, test, type Page } from "@playwright/test";
 import { createAccount, login } from "./helpers";
 

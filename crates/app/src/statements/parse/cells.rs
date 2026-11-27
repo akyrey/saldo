@@ -46,7 +46,7 @@ impl Cell {
 /// and a record spanning lines sits at its first line. A UTF-8 byte order
 /// mark is dropped; a file that is not valid UTF-8 is read as Windows-1252
 /// (what Italian banks use when it is not UTF-8). The delimiter is the one
-/// of `,`, `;` and tab that appears most in the first line (L5). Reading
+/// of `,`, `;` and tab that appears most in the first lines (L5). Reading
 /// stops at the row and column limits.
 pub fn read_csv(bytes: &[u8]) -> Result<Vec<Vec<Cell>>, ParseError> {
     let text = decode(bytes);
@@ -100,9 +100,17 @@ fn decode(bytes: &[u8]) -> String {
     }
 }
 
+/// Lines looked at to guess the delimiter: enough to get past a title or a
+/// block of account details above the header.
+const SNIFF_LINES: usize = 20;
+
 fn sniff_delimiter(text: &str) -> u8 {
-    let first = text.lines().next().unwrap_or("");
-    let count = |delimiter: u8| first.bytes().filter(|b| *b == delimiter).count();
+    let head: Vec<&str> = text.lines().take(SNIFF_LINES).collect();
+    let count = |delimiter: u8| {
+        head.iter()
+            .map(|line| line.bytes().filter(|b| *b == delimiter).count())
+            .sum::<usize>()
+    };
     // The most frequent wins; on a tie, or when none appears (a one-column
     // file), the earlier in this list.
     let mut best = b',';
@@ -505,6 +513,14 @@ mod tests {
         assert_eq!(sniff_delimiter("Descrizione\nx"), b',');
         assert_eq!(sniff_delimiter("a;b,c"), b',');
         assert_eq!(sniff_delimiter("a;b;c,d"), b';');
+    }
+
+    #[test]
+    fn a_title_line_before_the_header_does_not_hide_the_delimiter() {
+        let text = "Estratto conto\nSaldo iniziale;0,00\nData;Descrizione;Importo\n05/11/2026;Coffee;-1,50\n";
+        assert_eq!(sniff_delimiter(text), b';');
+        let rows = read_csv(text.as_bytes()).unwrap();
+        assert_eq!(rows[2].len(), 3);
     }
 
     #[test]

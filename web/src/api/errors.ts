@@ -48,3 +48,17 @@ export function errorMessage(error: unknown): string {
   }
   return "Something went wrong.";
 }
+
+/**
+ * The fullest message for a person: the field messages when the server sent
+ * some (they say what is wrong), else the general message; a plain `Error`'s
+ * own message (a check made before calling the server).
+ */
+export function explain(error: unknown): string {
+  if (error instanceof ApiError) {
+    const details = error.details.map((d) => d.message).filter((m) => m.trim() !== "");
+    return details.length > 0 ? details.join("; ") : errorMessage(error);
+  }
+  if (error instanceof Error) return error.message;
+  return errorMessage(error);
+}
