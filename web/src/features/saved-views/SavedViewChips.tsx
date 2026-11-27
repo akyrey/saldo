@@ -26,7 +26,7 @@ const UNCATEGORISED: TransactionSearch = { category_id: NONE };
 
 interface SavedViewChipsProps {
   filters: TransactionSearch;
-  /** Replaces every filter with these (the scope stays). */
+  /** Replaces every filter with these (the scope stays); `{}` clears them. */
   onApply: (filters: TransactionSearch) => void;
 }
 
@@ -59,6 +59,9 @@ export function SavedViewChips({ filters, onApply }: SavedViewChipsProps) {
   const list = views.data ?? [];
   const active = list.find((v) => sameFilters(parseTransactionSearch(v.filters), filters));
   const hasFilters = Object.keys(viewFilters(filters)).length > 0;
+  // Clicking the chip that is already active toggles it off and clears the filters.
+  const toggle = (isActive: boolean, next: TransactionSearch) => onApply(isActive ? {} : next);
+  const uncategorisedActive = sameFilters(UNCATEGORISED, filters);
 
   const startEditing = (next: NonNullable<Editing>) => {
     save.reset();
@@ -73,14 +76,17 @@ export function SavedViewChips({ filters, onApply }: SavedViewChipsProps) {
   return (
     <div className="mb-3">
       <nav aria-label="Saved views" className="flex flex-wrap items-center gap-2">
-        <Chip active={sameFilters(UNCATEGORISED, filters)} onClick={() => onApply(UNCATEGORISED)}>
+        <Chip
+          active={uncategorisedActive}
+          onClick={() => toggle(uncategorisedActive, UNCATEGORISED)}
+        >
           Uncategorised
         </Chip>
         {list.map((view) => (
           <Chip
             key={view.id}
             active={view.id === active?.id}
-            onClick={() => onApply(parseTransactionSearch(view.filters))}
+            onClick={() => toggle(view.id === active?.id, parseTransactionSearch(view.filters))}
           >
             {view.name}
           </Chip>

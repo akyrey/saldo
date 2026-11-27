@@ -50,6 +50,30 @@ describe("SavedViewChips", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ category_id: "none" }));
   });
 
+  it("clears the filters when the active chip is clicked again", async () => {
+    api();
+    const { router } = renderApp("/transactions");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Big spends" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Big spends" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: "Big spends" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(screen.getByRole("button", { name: "Big spends" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Uncategorised" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ category_id: "none" }));
+    await user.click(screen.getByRole("button", { name: "Uncategorised" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
   it("marks a saved view active when its filters come from a hand-typed URL", async () => {
     api();
     renderApp("/transactions?amount_min=100&kind=withdrawal");
