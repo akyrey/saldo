@@ -34,6 +34,8 @@ pub mod saved_views;
 pub mod scope;
 mod search;
 pub mod snapshot;
+pub mod sources;
+pub mod statements;
 pub mod subscriptions;
 pub mod tags;
 pub mod templates;

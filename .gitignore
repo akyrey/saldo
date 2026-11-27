@@ -5,3 +5,6 @@ target/
 .env
 node_modules/
 web/dist/
+
+# Real bank, PayPal, Satispay and Amazon exports for local runs; never committed.
+crates/app/tests/fixtures/statements/private/
