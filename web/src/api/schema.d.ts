@@ -817,6 +817,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/export/snapshot": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The whole instance (database and attachment files) as a zip, to restore
+     *     into a fresh Saldo with `saldo restore`. Off (404) unless
+     *     `SALDO_SNAPSHOT_DOWNLOAD=true`; 409 while the instance has another household.
+     */
+    get: operations["export_snapshot"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/household": {
     parameters: {
       query?: never;
@@ -7371,6 +7392,50 @@ export interface operations {
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  export_snapshot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Zip archive: saldo.db and attachments/ */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/zip": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };

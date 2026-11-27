@@ -3605,6 +3605,58 @@
         ]
       }
     },
+    "/api/v1/export/snapshot": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "summary": "The whole instance (database and attachment files) as a zip, to restore\ninto a fresh Saldo with `saldo restore`. Off (404) unless\n`SALDO_SNAPSHOT_DOWNLOAD=true`; 409 while the instance has another household.",
+        "operationId": "export_snapshot",
+        "responses": {
+          "200": {
+            "description": "Zip archive: saldo.db and attachments/",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/household": {
       "get": {
         "tags": [

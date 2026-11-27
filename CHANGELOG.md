@@ -4,6 +4,10 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+
+- Snapshots: with `SALDO_SNAPSHOT_DOWNLOAD=true`, the household owner can download the whole instance (database and attachment files) as a zip at `GET /api/v1/export/snapshot`, and `saldo restore <zip>` unpacks it into a fresh Saldo. The copy loses its sessions, API tokens, webhooks and notification channels, so it never reaches the original's endpoints. Only offered while the instance has a single household.
+
 ## [0.12.1] - 2026-11-27
 
 ### Changed
