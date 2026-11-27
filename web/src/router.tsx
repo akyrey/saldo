@@ -284,6 +284,33 @@ export const reconcileRoute = createRoute({
   ),
 });
 
+const importStatementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "accounts/$accountId/import",
+  component: lazyRouteComponent(
+    () => import("@/features/statements/ImportStatementPage"),
+    "ImportStatementPage",
+  ),
+});
+
+const statementReviewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "statement-imports/$importId",
+  component: lazyRouteComponent(
+    () => import("@/features/statements/StatementReviewPage"),
+    "StatementReviewPage",
+  ),
+});
+
+const statementProfilesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "statement-profiles",
+  component: lazyRouteComponent(
+    () => import("@/features/statements/StatementProfilesPage"),
+    "StatementProfilesPage",
+  ),
+});
+
 export const forecastRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "forecast",
@@ -361,6 +388,9 @@ const routeTree = rootRoute.addChildren([
     newAccountRoute,
     accountRoute,
     reconcileRoute,
+    importStatementRoute,
+    statementReviewRoute,
+    statementProfilesRoute,
     editAccountRoute,
     transactionsRoute,
     newTransactionRoute,

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, ListChecks, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, FileUp, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage } from "@/api/errors";
@@ -17,6 +17,7 @@ import { categoriesQuery } from "@/features/categories/queries";
 import { CreditCardPanel } from "@/features/credit-cards/CreditCardPanel";
 import { byId } from "@/features/shared/lookup";
 import { pageCount } from "@/features/shared/pagination";
+import { StatementImportsHistory } from "@/features/statements/StatementImportsHistory";
 import { Pager } from "@/features/transactions/Pager";
 import { transactionsQuery } from "@/features/transactions/queries";
 import { TransactionTable } from "@/features/transactions/TransactionTable";
@@ -74,11 +75,18 @@ export function AccountDetailPage() {
           isEquity ? null : (
             <>
               {canReconcile ? (
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/accounts/$accountId/reconcile" params={{ accountId }} search={{}}>
-                    <ListChecks /> Reconcile
-                  </Link>
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/accounts/$accountId/import" params={{ accountId }}>
+                      <FileUp /> Import statement
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/accounts/$accountId/reconcile" params={{ accountId }} search={{}}>
+                      <ListChecks /> Reconcile
+                    </Link>
+                  </Button>
+                </>
               ) : null}
               <Button variant="outline" size="sm" asChild>
                 <Link to="/accounts/$accountId/edit" params={{ accountId }}>
@@ -151,6 +159,7 @@ export function AccountDetailPage() {
         <CreditCardPanel card={data} />
       ) : null}
       {canReconcile ? <ReconciliationHistory accountId={accountId} /> : null}
+      {canReconcile ? <StatementImportsHistory accountId={accountId} /> : null}
       <h2 className="mb-2 font-semibold">Transactions</h2>
       <QueryState isPending={transactions.isPending} error={transactions.error} />
       {transactions.data ? (
