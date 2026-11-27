@@ -1,0 +1,278 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT position, row_number, accounting_date, value_date, booked_date, amount_minor,\n                currency_code, description, category, counterparty_name, counterparty_iban,\n                external_id, ref_key, notes, parts, status, action, reason, split_id,\n                created_group_id, counterparty_account_id, category_id\n         FROM statement_lines WHERE import_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "position",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "position"
+          }
+        }
+      },
+      {
+        "name": "row_number",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "row_number"
+          }
+        }
+      },
+      {
+        "name": "accounting_date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "accounting_date"
+          }
+        }
+      },
+      {
+        "name": "value_date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "value_date"
+          }
+        }
+      },
+      {
+        "name": "booked_date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "booked_date"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "category",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "name": "counterparty_name",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "counterparty_name"
+          }
+        }
+      },
+      {
+        "name": "counterparty_iban",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "counterparty_iban"
+          }
+        }
+      },
+      {
+        "name": "external_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "external_id"
+          }
+        }
+      },
+      {
+        "name": "ref_key",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "ref_key"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "name": "parts",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "parts"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 15,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "action",
+        "ordinal": 16,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "action"
+          }
+        }
+      },
+      {
+        "name": "reason",
+        "ordinal": 17,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "name": "split_id",
+        "ordinal": 18,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "split_id"
+          }
+        }
+      },
+      {
+        "name": "created_group_id",
+        "ordinal": 19,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "created_group_id"
+          }
+        }
+      },
+      {
+        "name": "counterparty_account_id",
+        "ordinal": 20,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "counterparty_account_id"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 21,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_lines",
+            "name": "category_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "922de6d05ebb8e8a79ff7dc268384a3a1af6cc783096005346aa2a0e14f34bf8"
+}

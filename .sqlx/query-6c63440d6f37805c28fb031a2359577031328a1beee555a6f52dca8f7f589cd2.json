@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id, s.group_id, s.kind, s.date, s.amount_minor, s.currency_code,\n                s.source_account_id, s.destination_account_id, s.description\n         FROM splits s\n         WHERE s.household_id = ?1\n           AND s.group_id IN (\n               SELECT group_id FROM splits\n               WHERE household_id = ?1 AND date BETWEEN ?3 AND ?4\n                 AND (source_account_id = ?2 OR destination_account_id = ?2))\n           AND NOT EXISTS (\n               SELECT 1 FROM external_refs r\n               WHERE r.household_id = ?1 AND r.source = 'bank-statement'\n                 AND r.entity_type = 'split' AND r.local_id = s.id)\n         ORDER BY s.date, s.group_id, s.position",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "group_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "amount_minor",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "source_account_id",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "source_account_id"
+          }
+        }
+      },
+      {
+        "name": "destination_account_id",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "destination_account_id"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "splits",
+            "name": "description"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6c63440d6f37805c28fb031a2359577031328a1beee555a6f52dca8f7f589cd2"
+}

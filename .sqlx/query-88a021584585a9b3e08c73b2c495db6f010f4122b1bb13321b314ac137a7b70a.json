@@ -1,0 +1,194 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, account_id, profile_id, filename, sha256, status, currency_code,\n                opening_balance_minor, closing_balance_minor, closing_date, gap_minor, summary,\n                created_by_user_id, created_at, committed_at\n         FROM statement_imports\n         WHERE household_id = ?1 AND (?2 IS NULL OR account_id = ?2)\n         ORDER BY created_at DESC, id DESC LIMIT ?3 OFFSET ?4",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "profile_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "profile_id"
+          }
+        }
+      },
+      {
+        "name": "filename",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "filename"
+          }
+        }
+      },
+      {
+        "name": "sha256",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "sha256"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "currency_code"
+          }
+        }
+      },
+      {
+        "name": "opening_balance_minor",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "opening_balance_minor"
+          }
+        }
+      },
+      {
+        "name": "closing_balance_minor",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "closing_balance_minor"
+          }
+        }
+      },
+      {
+        "name": "closing_date",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "closing_date"
+          }
+        }
+      },
+      {
+        "name": "gap_minor",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "gap_minor"
+          }
+        }
+      },
+      {
+        "name": "summary",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "summary"
+          }
+        }
+      },
+      {
+        "name": "created_by_user_id",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "created_by_user_id"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "committed_at",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statement_imports",
+            "name": "committed_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "88a021584585a9b3e08c73b2c495db6f010f4122b1bb13321b314ac137a7b70a"
+}

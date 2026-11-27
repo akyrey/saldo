@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT MAX(statement_date) FROM reconciliations WHERE household_id = ? AND account_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "MAX(statement_date)",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "1b4d7b5cd49dc5ba02294cc658896bac546d1a38d787749b8a780bc8b4324b2e"
+}
