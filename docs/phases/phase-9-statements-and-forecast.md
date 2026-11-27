@@ -131,6 +131,8 @@ The fix itself landed on 2026-11-16 (5b061f8): every write goes through `saldo_a
 
 ### Track E: bank statement import
 
+> **Replaced on 2026-11-27 by [Phase 13](phase-13-statement-import.md)** (owner's request), which adds xlsx, Amazon, PayPal and Satispay matching and the lessons from firefly-iii-reconcile. The text below is kept for history; build from Phase 13. Track E's acceptance criteria and its Playwright flow move there too.
+
 - **Dependencies** (`cargo add` in `saldo-app`): `csv`, `quick-xml`, `encoding_rs`.
 - **Schema**:
   - `statement_profiles`: `id`, `household_id`, `name` (unique per household), `account_id` (nullable default account), `format` (`csv`, `camt053`, `ofx`), `csv` (JSON, CSV only), `created_at`, `updated_at`. The `csv` JSON has:

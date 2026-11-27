@@ -1,6 +1,6 @@
 # Saldo plan
 
-Saldo is built in twelve phases, numbered 0 to 11. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
+Saldo is built in fourteen phases, numbered 0 to 13. Each phase has a self-contained brief in `docs/phases/` that an agent with no other context can execute. `docs/ARCHITECTURE.md` is the contract; `docs/STATUS.md` is the running log.
 
 ## Phases
 
@@ -18,6 +18,8 @@ Saldo is built in twelve phases, numbered 0 to 11. Each phase has a self-contain
 | 9 | [phase-9-statements-and-forecast.md](phases/phase-9-statements-and-forecast.md) | Statement import, reconciliation, forecast, subscription suggestions, budget carry-over | 5, 8 |
 | 10 | [phase-10-usability.md](phases/phase-10-usability.md) | Dark mode, more filters and saved views, shortcuts and command palette, alerts and digest, new reports, net worth goals and safe to spend | 9 (forecast, carry-over) |
 | 11 | [phase-11-bill-history.md](phases/phase-11-bill-history.md) | Bill detail page: linked transactions, a payment chart over the bill's whole duration, and a payment summary | 5 (can run beside 10) |
+| 12 | [phase-12-credit-cards.md](phases/phase-12-credit-cards.md) | Credit card plans: monthly budget, available amount, automatic settlement | 5, 9 |
+| 13 | [phase-13-statement-import.md](phases/phase-13-statement-import.md) | Bank statement import (xlsx, CSV, CAMT.053, OFX) with Amazon, PayPal and Satispay matching; replaces Phase 9 Track E | 9 (reconciliation) |
 
 ## Order and parallel work
 
