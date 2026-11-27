@@ -33,6 +33,7 @@ pub mod safe_to_spend;
 pub mod saved_views;
 pub mod scope;
 mod search;
+pub mod snapshot;
 pub mod subscriptions;
 pub mod tags;
 pub mod templates;
@@ -64,6 +65,7 @@ use crate::reports::ReportService;
 use crate::rules::RuleService;
 use crate::safe_to_spend::SafeToSpendService;
 use crate::saved_views::SavedViewService;
+use crate::snapshot::SnapshotService;
 use crate::subscriptions::SubscriptionService;
 use crate::tags::TagService;
 use crate::templates::TemplateService;
@@ -102,6 +104,7 @@ pub struct App {
     pub goals: GoalService,
     pub safe_to_spend: SafeToSpendService,
     pub credit_cards: CreditCardService,
+    pub snapshots: SnapshotService,
 }
 
 impl App {
@@ -113,6 +116,7 @@ impl App {
         let attachments =
             AttachmentService::new(pool.clone(), clock.clone(), PathBuf::from(DEFAULT_DATA_DIR));
         Self {
+            snapshots: SnapshotService::new(pool.clone(), PathBuf::from(DEFAULT_DATA_DIR)),
             export: ExportService::new(
                 pool.clone(),
                 clock.clone(),
@@ -173,9 +177,12 @@ impl App {
 pub const DEFAULT_DATA_DIR: &str = "/data";
 
 impl App {
-    /// Stores attachment files under `data_dir` (`SALDO_DATA_DIR`).
+    /// Stores attachment files (and snapshot temporaries) under `data_dir`
+    /// (`SALDO_DATA_DIR`).
     pub fn with_data_dir(self, data_dir: PathBuf) -> Self {
-        let attachments = AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir);
+        let attachments =
+            AttachmentService::new(self.pool.clone(), self.clock.clone(), data_dir.clone());
+        let snapshots = SnapshotService::new(self.pool.clone(), data_dir);
         let export = ExportService::new(
             self.pool.clone(),
             self.clock.clone(),
@@ -185,6 +192,7 @@ impl App {
         Self {
             attachments,
             export,
+            snapshots,
             ..self
         }
     }

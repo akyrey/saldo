@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM notification_channels",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "8359cfe432ed03b9005496ac7e2fc4248e4789988c39c4894dff5a70d84f68dc"
+}
