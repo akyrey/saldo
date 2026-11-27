@@ -55,7 +55,7 @@ For regular backups, `scripts/backup.sh <folder>` (run from the compose folder) 
 
 ### Copy an instance into a fresh one (snapshot)
 
-Without shell access to the server, the owner can download a snapshot of the whole instance (database and attachment files) and restore it into a fresh Saldo, for example to try a new version against real data. Set `SALDO_SNAPSHOT_DOWNLOAD=true` on the server (it is off by default; the snapshot holds everything, password hashes and secrets included, and is offered only while the instance has a single household), then:
+Without shell access to the server, the owner can download a snapshot of the whole instance (database, attachment files and stored statement exports) and restore it into a fresh Saldo, for example to try a new version against real data. Set `SALDO_SNAPSHOT_DOWNLOAD=true` on the server (it is off by default; the snapshot holds everything, password hashes and secrets included, and is offered only while the instance has a single household), then:
 
 ```sh
 curl -fH "Authorization: Bearer $SALDO_TOKEN" -o snapshot.zip https://money.example.com/api/v1/export/snapshot
