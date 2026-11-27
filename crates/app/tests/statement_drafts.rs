@@ -185,7 +185,13 @@ async fn a_split_already_linked_to_a_bank_line_is_no_candidate_but_a_firefly_one
         .await
         .unwrap();
     statement
-        .upsert(&mut conn, "split", "other-line", &linked, "t")
+        .upsert(
+            &mut conn,
+            "split",
+            &format!("{}:other-line", f.checking.id),
+            &linked,
+            "t",
+        )
         .await
         .unwrap();
     let mut firefly = ExternalRefs::load(&mut conn, &f.ctx, saldo_app::external_refs::FIREFLY)
@@ -503,4 +509,23 @@ async fn the_owners_widiba_model_uploads() {
         "not a transaction"
     );
     assert_eq!(detail.import.gap, None);
+}
+
+#[tokio::test]
+async fn the_filename_is_kept_as_a_plain_basename() {
+    let f = fixture().await;
+    let input = UploadInput {
+        account_id: None,
+        profile_id: f.profile.id.clone(),
+        filename: "../../etc/\u{7}novem\u{0}ber.csv".to_string(),
+        bytes: format!("{HEADER}10/11/2026;x;-1,00;;;\n").into_bytes(),
+    };
+    let detail = f
+        .test
+        .app
+        .statements
+        .upload(&f.ctx, Origin::Api, input)
+        .await
+        .unwrap();
+    assert_eq!(detail.import.filename, "november.csv");
 }
