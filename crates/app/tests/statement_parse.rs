@@ -5,7 +5,7 @@
 
 use chrono::NaiveDate;
 use saldo_app::statements::parse::{
-    Format, Mapping, ParseError, ParsedRow, StatementLine, Unsupported, parse_statement,
+    Format, LinePart, Mapping, ParseError, ParsedRow, StatementLine, Unsupported, parse_statement,
 };
 use saldo_core::{Currency, CurrencyCode, Money};
 
@@ -136,8 +136,17 @@ fn satispay_imports_the_balance_part_and_derives_the_balances() {
             (day(2025, 8, 3), -100, "Merchant 3"),
         ]
     );
-    assert_eq!(found[1].notes, vec!["Meal Vouchers: -8".to_string()]);
-    assert!(found[0].notes.is_empty());
+    // The voucher part is a part of its own, for a split from the
+    // meal-voucher account.
+    assert_eq!(
+        found[1].parts,
+        vec![LinePart {
+            column: "Meal Vouchers".to_string(),
+            amount: money(-800)
+        }]
+    );
+    assert!(found[0].parts.is_empty());
+    assert!(found[1].notes.is_empty());
     assert_eq!(
         found[0].external_id.as_deref(),
         Some("01987a1e-bad5-703d-9b27-f8d671eb8846")
@@ -252,21 +261,60 @@ fn running_balances_also_work_oldest_first() {
                01/08/2025 09:00;A;-1.00;99.00;x;ok;1\n\
                02/08/2025 09:00;B;-2.00;97.00;x;ok;2\n";
     let mut mapping = Mapping::satispay();
-    mapping.note_columns = vec![];
+    mapping.part_columns = vec![];
     let parsed = parse_statement(Format::Csv, csv.as_bytes(), &mapping, &eur()).unwrap();
     assert_eq!(parsed.opening_balance, Some(money(10_000)));
     assert_eq!(parsed.closing_balance, Some(money(9_700)));
 }
 
 #[test]
-fn a_satispay_payment_made_only_with_vouchers_moved_nothing() {
+fn a_satispay_payment_made_only_with_vouchers_is_a_line_with_parts() {
+    let csv = "Date;Name;Balance;Meal Vouchers;Shopping Vouchers;Balance after transaction;Type;Status;ID\n\
+               01/08/2025 09:00;Bar;;-8.00;;99.00;x;ok;1\n\
+               01/08/2025 10:00;Shop;-2.00;-3.00;-5.00;97.00;x;ok;2\n\
+               01/08/2025 11:00;Nothing;;;;97.00;x;ok;3\n";
+    let parsed =
+        parse_statement(Format::Csv, csv.as_bytes(), &Mapping::satispay(), &eur()).unwrap();
+    let found = lines(&parsed.rows);
+    // Nothing left the Satispay balance, but 8.00 left the vouchers.
+    assert_eq!(found[0].amount, money(0));
+    assert_eq!(
+        found[0].parts,
+        vec![LinePart {
+            column: "Meal Vouchers".to_string(),
+            amount: money(-800)
+        }]
+    );
+    assert_eq!(found[1].amount, money(-200));
+    assert_eq!(
+        found[1].parts,
+        vec![
+            LinePart {
+                column: "Meal Vouchers".to_string(),
+                amount: money(-300)
+            },
+            LinePart {
+                column: "Shopping Vouchers".to_string(),
+                amount: money(-500)
+            },
+        ]
+    );
+    // A row that moved nothing anywhere is still not a transaction.
+    assert_eq!(
+        unsupported(&parsed.rows),
+        vec![(4, Unsupported::NothingMoved)]
+    );
+}
+
+#[test]
+fn an_unreadable_part_makes_the_row_unreadable() {
     let csv = "Date;Name;Balance;Meal Vouchers;Balance after transaction;Type;Status;ID\n\
-               01/08/2025 09:00;Bar;;-8.00;99.00;x;ok;1\n";
+               01/08/2025 09:00;Bar;-1.00;abc;99.00;x;ok;1\n";
     let parsed =
         parse_statement(Format::Csv, csv.as_bytes(), &Mapping::satispay(), &eur()).unwrap();
     assert_eq!(
         unsupported(&parsed.rows),
-        vec![(2, Unsupported::NothingMoved)]
+        vec![(2, Unsupported::UnreadableAmount("abc".to_string()))]
     );
 }
 
@@ -327,7 +375,7 @@ fn running_balances_on_one_day_oldest_first_follow_the_chain() {
                05/01/2025 09:00;A;5.00;15.00;x;ok;1\n\
                05/01/2025 10:00;B;5.00;20.00;x;ok;2\n";
     let mut mapping = Mapping::satispay();
-    mapping.note_columns = vec![];
+    mapping.part_columns = vec![];
     let parsed = parse_statement(Format::Csv, csv.as_bytes(), &mapping, &eur()).unwrap();
     assert_eq!(parsed.opening_balance, Some(money(1_000)));
     assert_eq!(parsed.closing_balance, Some(money(2_000)));
@@ -339,7 +387,7 @@ fn a_broken_running_balance_chain_gives_no_balance_rather_than_a_guess() {
                05/01/2025 09:00;A;-1.00;99.00;x;ok;1\n\
                04/01/2025 09:00;B;-2.00;50.00;x;ok;2\n";
     let mut mapping = Mapping::satispay();
-    mapping.note_columns = vec![];
+    mapping.part_columns = vec![];
     let parsed = parse_statement(Format::Csv, csv.as_bytes(), &mapping, &eur()).unwrap();
     assert_eq!(parsed.opening_balance, None);
     assert_eq!(parsed.closing_balance, None);
@@ -381,7 +429,7 @@ fn an_unreadable_row_with_a_balance_breaks_the_chain() {
                05/01/2025 09:00;B;-1.00;99.00;x;ok;2\n\
                04/01/2025 09:00;C;-1.00;100.00;x;ok;3\n";
     let mut mapping = Mapping::satispay();
-    mapping.note_columns = vec![];
+    mapping.part_columns = vec![];
     let parsed = parse_statement(Format::Csv, csv.as_bytes(), &mapping, &eur()).unwrap();
     assert_eq!(parsed.closing_balance, None);
     assert_eq!(parsed.opening_balance, None);
@@ -393,7 +441,7 @@ fn a_chain_that_reads_both_ways_gives_no_balance() {
                05/01/2025 09:00;A;5.00;10.00;x;ok;1\n\
                05/01/2025 09:00;B;-5.00;5.00;x;ok;2\n";
     let mut mapping = Mapping::satispay();
-    mapping.note_columns = vec![];
+    mapping.part_columns = vec![];
     let parsed = parse_statement(Format::Csv, csv.as_bytes(), &mapping, &eur()).unwrap();
     assert_eq!(parsed.closing_balance, None);
 }
@@ -405,4 +453,27 @@ fn an_invalid_stored_mapping_is_refused_when_parsing() {
     let error =
         parse_statement(Format::Xlsx, &fixture("widiba.xlsx"), &mapping, &eur()).unwrap_err();
     assert!(matches!(error, ParseError::InvalidMapping(_)), "{error:?}");
+}
+
+#[test]
+fn voucher_only_lines_keep_the_balance_they_did_not_move() {
+    let csv = "Date;Name;Balance;Meal Vouchers;Balance after transaction;Type;Status;ID\n\
+               05/01/2025 09:00;A;;-8.00;40.00;x;ok;1\n\
+               04/01/2025 09:00;B;;-4.00;40.00;x;ok;2\n";
+    let parsed =
+        parse_statement(Format::Csv, csv.as_bytes(), &Mapping::satispay(), &eur()).unwrap();
+    assert_eq!(parsed.opening_balance, Some(money(4_000)));
+    assert_eq!(parsed.closing_balance, Some(money(4_000)));
+}
+
+#[test]
+fn part_columns_all_missing_is_an_error_since_money_would_go_missing() {
+    let csv = "Date;Name;Balance;Balance after transaction;Type;Status;ID\n\
+               05/01/2025 09:00;A;-1.00;40.00;x;ok;1\n";
+    let error =
+        parse_statement(Format::Csv, csv.as_bytes(), &Mapping::satispay(), &eur()).unwrap_err();
+    assert_eq!(
+        error,
+        ParseError::MissingColumn(vec!["Meal Vouchers".to_string()])
+    );
 }

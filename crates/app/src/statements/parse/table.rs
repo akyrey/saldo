@@ -5,7 +5,9 @@ use saldo_core::{Currency, Money};
 
 use super::mapping::{AmountColumns, BookOn, ColumnNames};
 use super::values::{amount, date};
-use super::{Cell, Mapping, ParseError, ParsedRow, ParsedStatement, StatementLine, Unsupported};
+use super::{
+    Cell, LinePart, Mapping, ParseError, ParsedRow, ParsedStatement, StatementLine, Unsupported,
+};
 
 /// Column positions in the header row, resolved once.
 struct Columns {
@@ -20,6 +22,8 @@ struct Columns {
     currency: Option<usize>,
     /// `(header text, position)`.
     notes: Vec<(String, usize)>,
+    /// `(header text, position)`.
+    parts: Vec<(String, usize)>,
     running_balance: Option<usize>,
     /// `(position, lowercase text, reason)`.
     skip: Vec<(usize, String, String)>,
@@ -174,11 +178,8 @@ fn resolve(header: &[Cell], mapping: &Mapping) -> Result<Columns, ParseError> {
         external_id: optional(header, &mapping.external_id_column)?,
         currency: optional(header, &mapping.currency_column)?,
         // Voucher columns come and go between exports: a missing one is fine.
-        notes: mapping
-            .note_columns
-            .iter()
-            .filter_map(|names| find(header, names).map(|at| (header[at].text(), at)))
-            .collect(),
+        notes: present(header, &mapping.note_columns),
+        parts: parts_present(header, &mapping.part_columns)?,
         running_balance: optional(header, &mapping.running_balance_column)?,
         skip,
     })
@@ -218,6 +219,10 @@ fn read_line(
     let description = describe(row, &columns.description);
     check_rules(row, &description, columns, mapping)?;
     let amount = line_amount(row, &columns.amount, mapping.decimal_separator, currency)?;
+    let parts = line_parts(row, &columns.parts, mapping.decimal_separator, currency)?;
+    if amount.minor() == 0 && parts.is_empty() {
+        return Err(Unsupported::NothingMoved);
+    }
     Ok(StatementLine {
         row: number,
         accounting_date,
@@ -235,8 +240,52 @@ fn read_line(
                 text(row, Some(*at)).map(|value| format!("{header}: {value}"))
             })
             .collect(),
+        parts,
         description,
     })
+}
+
+/// The columns of `lists` the header has, as `(header text, position)`.
+fn present(header: &[Cell], lists: &[ColumnNames]) -> Vec<(String, usize)> {
+    lists
+        .iter()
+        .filter_map(|names| find(header, names).map(|at| (header[at].text(), at)))
+        .collect()
+}
+
+/// The part columns the header has. Some may be missing (exports drop an
+/// unused voucher column), but not all: those amounts are money that would
+/// silently go missing from the import.
+fn parts_present(
+    header: &[Cell],
+    lists: &[ColumnNames],
+) -> Result<Vec<(String, usize)>, ParseError> {
+    let found = present(header, lists);
+    match lists.first() {
+        Some(first) if found.is_empty() => Err(ParseError::MissingColumn(first.clone())),
+        _ => Ok(found),
+    }
+}
+
+/// The non-zero amounts in the part columns (Satispay's vouchers).
+fn line_parts(
+    row: &[Cell],
+    parts: &[(String, usize)],
+    separator: char,
+    currency: &Currency,
+) -> Result<Vec<LinePart>, Unsupported> {
+    let mut found = Vec::new();
+    for (column, at) in parts {
+        let read =
+            amount(cell(row, *at), separator, currency).map_err(Unsupported::UnreadableAmount)?;
+        if let Some(money) = read.filter(|money| money.minor() != 0) {
+            found.push(LinePart {
+                column: column.clone(),
+                amount: money,
+            });
+        }
+    }
+    Ok(found)
 }
 
 fn describe(row: &[Cell], columns: &[usize]) -> String {
@@ -309,9 +358,9 @@ fn line_amount(
             }
         }
     };
-    signed
-        .filter(|money| money.minor() != 0)
-        .ok_or(Unsupported::NothingMoved)
+    // Zero when the column is empty: the caller decides whether the parts
+    // make it a line.
+    Ok(signed.unwrap_or(Money::zero(currency.code())))
 }
 
 /// The accounting date moved by the first matching date rule (L8).
@@ -363,6 +412,9 @@ fn balances_from_running(running: &[(Money, Option<Money>)]) -> Option<(Money, M
         (true, true) if chain.len() == 1 => (first, last),
         (true, false) => (first, last),
         (false, true) => (last, first),
+        // Lines that moved nothing (voucher payments) leave the balance as
+        // it was, which reads both ways and is still certain.
+        (true, true) if chain.iter().all(|(amount, _)| amount.minor() == 0) => (first, last),
         // Both ways at once (+5 then -5) or neither: no guess.
         (true, true) | (false, false) => return None,
     };
