@@ -4,6 +4,15 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-28
+
+### Added
+
+- Statement import: upload a bank or card statement (xlsx or CSV), review every line with its proposed match, and commit it. Importing the same or an overlapping file again creates nothing new, and a whole import can be undone. Presets for Widiba, Mediobanca and Satispay; other banks get a profile of their own, with a preview. The review checks that the statement adds up (opening balance plus lines equals closing balance) and offers "Reconcile now". Satispay meal vouchers become a split from their own account.
+- Sources: upload Amazon order and PayPal exports, and newer ones whenever you like; only new rows are added. Bank lines they explain get the order's products or the merchant as description (the bank's text stays in the notes), and an Amazon charge can be split by item.
+- Enrich from sources: an account page lists existing transactions that stored Amazon and PayPal rows explain, and accepting one books the better description.
+- Exports: the JSON export and the CSV zip include statement profiles and the stored Amazon and PayPal rows, and snapshots include the stored export files.
+
 ## [0.13.0] - 2026-11-27
 
 ### Added
