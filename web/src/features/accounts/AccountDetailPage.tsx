@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, FileUp, ListChecks, Pencil, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  FileUp,
+  ListChecks,
+  Pencil,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { api, call } from "@/api/client";
 import { errorMessage } from "@/api/errors";
@@ -79,6 +87,11 @@ export function AccountDetailPage() {
                   <Button variant="outline" size="sm" asChild>
                     <Link to="/accounts/$accountId/import" params={{ accountId }}>
                       <FileUp /> Import statement
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/accounts/$accountId/enrich" params={{ accountId }}>
+                      <Sparkles /> Enrich from sources
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild>

@@ -80,3 +80,25 @@ async fn only_public_routes_work_without_authentication() {
     }
     assert!(checked >= 30, "only {checked} operations checked");
 }
+
+#[test]
+fn operation_ids_are_unique() {
+    // Generated TypeScript keys operations by ID: a duplicate silently
+    // merges two operations' types.
+    let document = document();
+    let mut ids: Vec<String> = document["paths"]
+        .as_object()
+        .unwrap()
+        .values()
+        .flat_map(|item| item.as_object().unwrap().values())
+        .filter_map(|op| op["operationId"].as_str().map(str::to_string))
+        .collect();
+    ids.sort();
+    let mut duplicates = ids.clone();
+    duplicates.dedup();
+    let repeated: Vec<&String> = duplicates
+        .iter()
+        .filter(|id| ids.iter().filter(|other| other == id).count() > 1)
+        .collect();
+    assert!(repeated.is_empty(), "duplicate operation IDs: {repeated:?}");
+}

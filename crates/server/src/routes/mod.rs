@@ -10,6 +10,7 @@ pub mod budgets;
 pub mod categories;
 pub mod credit_cards;
 pub mod currencies;
+pub mod enrichment;
 pub mod event_stream;
 pub mod events;
 pub mod export;
@@ -77,6 +78,7 @@ pub fn api_router() -> OpenApiRouter<AppState> {
         .merge(statement_profiles::router())
         .merge(statement_imports::router())
         .merge(sources::router())
+        .merge(enrichment::router())
 }
 
 /// Checks `page` and `per_page` from a query string.

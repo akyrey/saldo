@@ -996,6 +996,139 @@
         ]
       }
     },
+    "/api/v1/accounts/{id}/enrichment": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "The account's transactions in the range that a stored Amazon or PayPal\nrow explains, with what it proposes (computed on each request).",
+        "operationId": "list_enrichment_candidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_EnrichmentCandidate"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{id}/enrichment/accept": {
+      "post": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Books the accepted details: the proposal's description, the old text in\nthe notes, and optionally one split per Amazon item. 409 when nothing\nexplains a transaction any more.",
+        "operationId": "accept_enrichment_candidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TransactionGroupView"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/accounts/{id}/reconciliations": {
       "get": {
         "tags": [
@@ -9772,6 +9905,36 @@
           }
         }
       },
+      "AcceptItem": {
+        "type": "object",
+        "required": [
+          "split_id"
+        ],
+        "properties": {
+          "split_by_item": {
+            "type": "boolean",
+            "description": "Book a one-split Amazon purchase as one split per item."
+          },
+          "split_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AcceptRequest": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcceptItem"
+            }
+          }
+        }
+      },
       "AccountPatch": {
         "type": "object",
         "description": "Fields to change. Missing fields stay; `null` clears a nullable field.",
@@ -15286,6 +15449,52 @@
           }
         }
       },
+      "Data_Vec_EnrichmentCandidate": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An existing transaction a stored source row explains.",
+              "required": [
+                "split_id",
+                "group_id",
+                "date",
+                "amount",
+                "description",
+                "proposal"
+              ],
+              "properties": {
+                "amount": {
+                  "type": "string",
+                  "description": "Signed for the account."
+                },
+                "date": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "group_id": {
+                  "type": "string"
+                },
+                "proposal": {
+                  "type": "object",
+                  "description": "`{ source, description, counterparty, notes, items }`."
+                },
+                "split_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_MemberView": {
         "type": "object",
         "description": "A single result.",
@@ -15974,6 +16183,56 @@
           }
         }
       },
+      "Data_Vec_TransactionGroupView": {
+        "type": "object",
+        "description": "A single result.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "created_at",
+                "updated_at",
+                "splits"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string"
+                },
+                "created_by_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "splits": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitView"
+                  }
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Data_Vec_WebhookView": {
         "type": "object",
         "description": "A single result.",
@@ -16351,6 +16610,40 @@
             "type": "string"
           },
           "id": {
+            "type": "string"
+          }
+        }
+      },
+      "EnrichmentCandidate": {
+        "type": "object",
+        "description": "An existing transaction a stored source row explains.",
+        "required": [
+          "split_id",
+          "group_id",
+          "date",
+          "amount",
+          "description",
+          "proposal"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Signed for the account."
+          },
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "group_id": {
+            "type": "string"
+          },
+          "proposal": {
+            "type": "object",
+            "description": "`{ source, description, counterparty, notes, items }`."
+          },
+          "split_id": {
             "type": "string"
           }
         }

@@ -171,6 +171,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/accounts/{id}/enrichment": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The account's transactions in the range that a stored Amazon or PayPal
+     *     row explains, with what it proposes (computed on each request).
+     */
+    get: operations["list_enrichment_candidates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/accounts/{id}/enrichment/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Books the accepted details: the proposal's description, the old text in
+     *     the notes, and optionally one split per Amazon item. 409 when nothing
+     *     explains a transaction any more.
+     */
+    post: operations["accept_enrichment_candidates"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/accounts/{id}/reconciliations": {
     parameters: {
       query?: never;
@@ -2127,6 +2168,15 @@ export interface components {
        */
       split_ids: string[];
     };
+    AcceptItem: {
+      /** @description Book a one-split Amazon purchase as one split per item. */
+      split_by_item?: boolean;
+      /** Format: uuid */
+      split_id: string;
+    };
+    AcceptRequest: {
+      items: components["schemas"]["AcceptItem"][];
+    };
     /** @description Fields to change. Missing fields stay; `null` clears a nullable field. */
     AccountPatch: {
       account_number?: string | null;
@@ -3822,6 +3872,19 @@ export interface components {
       }[];
     };
     /** @description A single result. */
+    Data_Vec_EnrichmentCandidate: {
+      data: {
+        /** @description Signed for the account. */
+        amount: string;
+        date: string;
+        description: string;
+        group_id: string;
+        /** @description `{ source, description, counterparty, notes, items }`. */
+        proposal: Record<string, never>;
+        split_id: string;
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_MemberView: {
       data: {
         display_name: string;
@@ -4001,6 +4064,17 @@ export interface components {
       }[];
     };
     /** @description A single result. */
+    Data_Vec_TransactionGroupView: {
+      data: {
+        created_at: string;
+        created_by_user_id?: string | null;
+        id: string;
+        splits: components["schemas"]["SplitView"][];
+        title?: string | null;
+        updated_at: string;
+      }[];
+    };
+    /** @description A single result. */
     Data_Vec_WebhookView: {
       data: {
         active: boolean;
@@ -4126,6 +4200,17 @@ export interface components {
       description: string;
       group_id: string;
       id: string;
+    };
+    /** @description An existing transaction a stored source row explains. */
+    EnrichmentCandidate: {
+      /** @description Signed for the account. */
+      amount: string;
+      date: string;
+      description: string;
+      group_id: string;
+      /** @description `{ source, description, counterparty, notes, items }`. */
+      proposal: Record<string, never>;
+      split_id: string;
     };
     ErrorBody: {
       /** @description Stable machine-readable code, for example `validation_failed`. */
@@ -6457,6 +6542,79 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  list_enrichment_candidates: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_EnrichmentCandidate"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  accept_enrichment_candidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Data_Vec_TransactionGroupView"];
         };
       };
       409: {
