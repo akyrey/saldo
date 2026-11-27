@@ -285,3 +285,54 @@ async fn another_households_profiles_and_accounts_are_out_of_reach() {
         .await;
     assert!(matches!(deleted, Err(AppError::NotFound)));
 }
+
+#[tokio::test]
+async fn a_preview_reads_a_file_with_an_unsaved_mapping_and_saves_nothing() {
+    let f = fixture().await;
+    let bytes = std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/statements/widiba.xlsx"
+    ))
+    .unwrap();
+    let preview = f
+        .test
+        .app
+        .statements
+        .preview(
+            &f.ctx,
+            "xlsx",
+            Mapping::widiba(),
+            Some(f.widiba.id.clone()),
+            &bytes,
+        )
+        .await
+        .unwrap();
+    assert_eq!(preview.total_lines, 1);
+    assert_eq!(preview.lines[0].amount, "-41.76");
+    assert_eq!(preview.lines[0].booked_date, "2026-11-25");
+    assert_eq!(preview.unsupported[0].row, 21);
+    assert_eq!(preview.unsupported[0].reason, "not a transaction");
+    assert_eq!(preview.currency, "EUR");
+    assert_eq!(count(&f.test, "statement_imports").await, 0);
+
+    let wrong = f
+        .test
+        .app
+        .statements
+        .preview(&f.ctx, "xlsx", Mapping::satispay(), None, &bytes)
+        .await;
+    assert!(
+        matches!(&wrong, Err(AppError::Invalid { field, .. }) if field == "file"),
+        "{wrong:?}"
+    );
+    let format = f
+        .test
+        .app
+        .statements
+        .preview(&f.ctx, "ofx", Mapping::widiba(), None, &bytes)
+        .await;
+    assert!(
+        matches!(&format, Err(AppError::Invalid { field, .. }) if field == "format"),
+        "{format:?}"
+    );
+}
