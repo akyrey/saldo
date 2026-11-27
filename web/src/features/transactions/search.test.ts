@@ -73,6 +73,18 @@ describe("Phase 10 filters", () => {
     expect(Object.values(result).every((v) => v === undefined)).toBe(true);
   });
 
+  it("keeps amounts and search text the router parsed as numbers", () => {
+    // A hand-typed `?amount_min=100&q=2024` reaches us as numbers, not strings.
+    expect(parseTransactionSearch({ amount_min: 100, amount_max: 12.5, q: 2024 })).toMatchObject({
+      amount_min: "100",
+      amount_max: "12.5",
+      q: "2024",
+    });
+    expect(parseTransactionSearch({ amount_min: -3, amount_max: Number.NaN }).amount_min).toBe(
+      undefined,
+    );
+  });
+
   it("counts the new folded filters", () => {
     expect(activeFilterCount({ amount_min: "5", reconciled: true, budget_id: "none" })).toBe(3);
   });

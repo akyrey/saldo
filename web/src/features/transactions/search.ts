@@ -45,9 +45,18 @@ function idOrNone(value: unknown): string | undefined {
   return value === NONE ? NONE : pick(value, UUID);
 }
 
+/**
+ * The router JSON-parses search params, so a hand-typed `?amount_min=100`
+ * arrives as the number 100; turn finite numbers back into the text we store.
+ */
+function asText(value: unknown): unknown {
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : value;
+}
+
 /** A non-negative decimal; a comma is read as the decimal separator. */
 function amount(value: unknown): string | undefined {
-  const text = typeof value === "string" ? value.trim().replace(",", ".") : value;
+  const raw = asText(value);
+  const text = typeof raw === "string" ? raw.trim().replace(",", ".") : raw;
   return pick(text, AMOUNT);
 }
 
@@ -64,7 +73,8 @@ function flag(value: unknown): boolean | undefined {
  */
 export function parseTransactionSearch(raw: Record<string, unknown>): TransactionSearch {
   const kind = SPLIT_KINDS.find((k) => k === raw.kind);
-  const q = typeof raw.q === "string" && raw.q.trim() !== "" ? raw.q.trim() : undefined;
+  const text = asText(raw.q);
+  const q = typeof text === "string" && text.trim() !== "" ? text.trim() : undefined;
   const page = Number(raw.page);
   return {
     from: pick(raw.from, DATE),

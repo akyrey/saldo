@@ -50,6 +50,13 @@ describe("SavedViewChips", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ category_id: "none" }));
   });
 
+  it("marks a saved view active when its filters come from a hand-typed URL", async () => {
+    api();
+    renderApp("/transactions?amount_min=100&kind=withdrawal");
+    const chip = await screen.findByRole("button", { name: "Big spends" });
+    await waitFor(() => expect(chip).toHaveAttribute("aria-pressed", "true"));
+  });
+
   it("saves the current filters under a name", async () => {
     const seen = api([]);
     renderApp("/transactions?kind=deposit&reconciled=false");
