@@ -16515,7 +16515,11 @@
           "saved_views",
           "net_worth_goals",
           "credit_card_plans",
-          "credit_card_moves"
+          "credit_card_moves",
+          "statement_profiles",
+          "source_documents",
+          "source_rows",
+          "source_matches"
         ],
         "properties": {
           "accounts": {
@@ -16652,6 +16656,34 @@
               "$ref": "#/components/schemas/SavedViewView"
             },
             "description": "Saved list filters (Phase 10)."
+          },
+          "source_documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentView"
+            },
+            "description": "Uploaded Amazon and PayPal exports, without the files (Phase 13)."
+          },
+          "source_matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceMatchView"
+            },
+            "description": "Which rows explain which booked splits."
+          },
+          "source_rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRowView"
+            },
+            "description": "Their rows: the owner's data, not always downloadable again."
+          },
+          "statement_profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileView"
+            },
+            "description": "How each bank's statements are read (Phase 13). Statement imports\nand their lines are left out, like `import_runs`."
           },
           "subscription_dismissals": {
             "type": "array",
@@ -20752,6 +20784,36 @@
           "kind": {
             "type": "string",
             "description": "`amazon_orders` or `paypal`."
+          }
+        }
+      },
+      "SourceMatchView": {
+        "type": "object",
+        "description": "A source row explaining a booked split, for the export.",
+        "required": [
+          "source_row_id",
+          "split_id",
+          "match_type",
+          "amount_diff_minor",
+          "created_at"
+        ],
+        "properties": {
+          "amount_diff_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "match_type": {
+            "type": "string",
+            "description": "`order_id`, `amount_date`, `approximate`, `funding_pair` or `amount_lag`."
+          },
+          "source_row_id": {
+            "type": "string"
+          },
+          "split_id": {
+            "type": "string"
           }
         }
       },

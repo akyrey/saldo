@@ -328,3 +328,15 @@ fn view_of(row: ProfileRow) -> Result<ProfileView, AppError> {
         updated_at: row.updated_at,
     })
 }
+
+/// Every profile of the household, for the export.
+pub(crate) async fn all_in(
+    conn: &mut SqliteConnection,
+    ctx: &HouseholdCtx,
+) -> Result<Vec<ProfileView>, AppError> {
+    profile_repo::list(conn, &ctx.household_id.to_string())
+        .await?
+        .into_iter()
+        .map(view_of)
+        .collect()
+}

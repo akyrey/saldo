@@ -425,3 +425,26 @@ async fn a_line_switched_from_skip_to_create_keeps_its_details() {
     let group = created(&f, &commit(&f, &draft).await, 0).await;
     assert_eq!(group.splits[0].description, "Amazon: Moka pot + 1 more");
 }
+
+#[tokio::test]
+async fn the_export_holds_profiles_sources_and_their_booked_matches() {
+    let f = fixture("export").await;
+    amazon_order(&f).await;
+    let done = commit(
+        &f,
+        &statement(&f, &format!("20/11/2026;AMAZON {ORDER};-20,00\n")).await,
+    )
+    .await;
+    let doc = f.test.app.export.json(&f.ctx).await.unwrap();
+    assert_eq!(doc.statement_profiles.len(), 1);
+    assert_eq!(doc.statement_profiles[0].name, "Bank");
+    assert_eq!(doc.source_documents.len(), 1);
+    assert_eq!(doc.source_rows.len(), 2);
+    let split = done.lines[0].split_id.clone().unwrap();
+    assert_eq!(doc.source_matches.len(), 2);
+    assert!(
+        doc.source_matches
+            .iter()
+            .all(|m| m.split_id == split && m.match_type == "order_id")
+    );
+}

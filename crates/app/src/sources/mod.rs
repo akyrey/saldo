@@ -7,4 +7,5 @@ mod service;
 mod views;
 
 pub use service::SourceService;
-pub use views::{DocumentView, RowFilter, SourceRowView, SourceUpload};
+pub(crate) use service::all_in;
+pub use views::{DocumentView, RowFilter, SourceMatchView, SourceRowView, SourceUpload};

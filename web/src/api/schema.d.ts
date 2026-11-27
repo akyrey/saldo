@@ -4203,6 +4203,17 @@ export interface components {
       rules: components["schemas"]["RuleView"][];
       /** @description Saved list filters (Phase 10). */
       saved_views: components["schemas"]["SavedViewView"][];
+      /** @description Uploaded Amazon and PayPal exports, without the files (Phase 13). */
+      source_documents: components["schemas"]["DocumentView"][];
+      /** @description Which rows explain which booked splits. */
+      source_matches: components["schemas"]["SourceMatchView"][];
+      /** @description Their rows: the owner's data, not always downloadable again. */
+      source_rows: components["schemas"]["SourceRowView"][];
+      /**
+       * @description How each bank's statements are read (Phase 13). Statement imports
+       *     and their lines are left out, like `import_runs`.
+       */
+      statement_profiles: components["schemas"]["ProfileView"][];
       /** @description Subscription suggestions the household dismissed (Phase 9). */
       subscription_dismissals: components["schemas"]["SubscriptionDismissalView"][];
       tags: components["schemas"]["TagView"][];
@@ -5457,6 +5468,16 @@ export interface components {
       file: string;
       /** @description `amazon_orders` or `paypal`. */
       kind: string;
+    };
+    /** @description A source row explaining a booked split, for the export. */
+    SourceMatchView: {
+      /** Format: int64 */
+      amount_diff_minor: number;
+      created_at: string;
+      /** @description `order_id`, `amount_date`, `approximate`, `funding_pair` or `amount_lag`. */
+      match_type: string;
+      source_row_id: string;
+      split_id: string;
     };
     SourceRowView: {
       /** @description Signed as the source writes it. */

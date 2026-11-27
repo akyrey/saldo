@@ -25,6 +25,7 @@ use crate::error::AppError;
 use crate::transactions::TransactionService;
 
 pub use preview::{PreviewLine, PreviewView, UnsupportedRow};
+pub(crate) use profiles::all_in as profiles_all_in;
 pub use profiles::{Preset, ProfileInput, ProfileView, TransferRule, presets};
 pub use views::{ImportDetail, ImportView, LineUpdate, LineView, PartView, UploadInput};
 
