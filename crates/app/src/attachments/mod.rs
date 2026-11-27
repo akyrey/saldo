@@ -1,7 +1,7 @@
 //! Attachments: files linked to a split, an account, a tag or a bill
 //! (budgets and piggy banks can join later).
 
-mod storage;
+pub(crate) mod storage;
 
 use std::path::PathBuf;
 use std::time::Duration;

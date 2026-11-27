@@ -87,7 +87,7 @@ pub(crate) async fn stored_files(data_dir: &Path) -> Result<Vec<(String, Duratio
     Ok(files)
 }
 
-fn is_sha256(name: &str) -> bool {
+pub(crate) fn is_sha256(name: &str) -> bool {
     name.len() == 64 && name.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
