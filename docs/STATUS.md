@@ -85,7 +85,9 @@ Choices the briefs left open (crate picked, naming, a trade-off), with one line 
   - `saldo-core` now depends on `sha2` for fingerprints.
 - 2026-11-27 Phase 13 parsers: decisions taken while building the parsers.
   - The owner's banks offer only xlsx (no CAMT.053 or OFX), so both were dropped from the phase, with the owner's samples as the reason (brief decision 1).
-  - PayPal exports xlsx; Satispay's imported amount is the `Balance` column, not `Amount` (vouchers pay the rest), and its running balance gives the opening and closing balances when the chain of balances is consistent.
+  - PayPal exports a CSV. An earlier xlsx model was a copy Excel had made in a US locale, reading `02/01/2025` as 1 February, and it was replaced by the real CSV.
+  - Satispay's own amount is the `Balance` column, not `Amount`. The voucher columns become parts of the line, and on import a split from the voucher account (owner, 2026-11-27: meal vouchers are an asset account of their own; brief decision 13).
+  - Satispay's running balance gives the opening and closing balances when the chain of balances is consistent.
   - A row with no date is "not a transaction" even if it has an amount, because Widiba's `Totale (€)` footer looks exactly like that.
   - xlsx files are read cell by cell with limits: 10,000 rows, 64 columns, 10 MB of text, 50 MB declared uncompressed, and 1,000,000 shared strings. This is so a crafted file cannot exhaust memory.
   - Float artefacts in number cells are tidied, but only when the extra digits start with six 0s or six 9s.

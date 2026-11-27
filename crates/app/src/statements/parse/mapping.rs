@@ -82,9 +82,14 @@ pub struct Mapping {
     /// The line's currency; the account's when absent.
     #[serde(default)]
     pub currency_column: Option<ColumnNames>,
-    /// Non-empty cells become "Header: value" notes (Satispay's vouchers).
+    /// Non-empty cells become "Header: value" notes.
     #[serde(default)]
     pub note_columns: Vec<ColumnNames>,
+    /// Amounts paid from other accounts on the same line (Satispay's meal
+    /// and shopping vouchers), each becoming a [`super::LinePart`]. A
+    /// missing column is fine: they come and go between exports.
+    #[serde(default)]
+    pub part_columns: Vec<ColumnNames>,
     /// Labelled cells anywhere in the sheet; the value is the first
     /// non-empty cell to the right of the label (L1).
     #[serde(default)]
@@ -140,6 +145,7 @@ impl Mapping {
             self.date_formats.len(),
             self.description_columns.len(),
             self.note_columns.len(),
+            self.part_columns.len(),
             self.pending_when.len(),
             self.skip_when.len(),
             self.date_rules.len(),
@@ -157,6 +163,7 @@ impl Mapping {
         let mut columns: Vec<&ColumnNames> = vec![&self.date_column];
         columns.extend(self.description_columns.iter());
         columns.extend(self.note_columns.iter());
+        columns.extend(self.part_columns.iter());
         columns.extend(self.skip_when.iter().map(|rule| &rule.column));
         match &self.amount {
             AmountColumns::Signed { column } => columns.push(column),
@@ -237,6 +244,7 @@ impl Mapping {
             external_id_column: None,
             currency_column: None,
             note_columns: vec![],
+            part_columns: vec![],
             opening_balance_label: Some("Saldo iniziale (€)".to_string()),
             closing_balance_label: Some("Saldo finale (€)".to_string()),
             running_balance_column: None,
@@ -268,6 +276,7 @@ impl Mapping {
             external_id_column: None,
             currency_column: Some(names(&["Divisa"])),
             note_columns: vec![],
+            part_columns: vec![],
             opening_balance_label: None,
             closing_balance_label: None,
             running_balance_column: None,
@@ -298,7 +307,8 @@ impl Mapping {
                 "ID",
             ])),
             currency_column: None,
-            note_columns: vec![names(&["Meal Vouchers"]), names(&["Shopping Vouchers"])],
+            note_columns: vec![],
+            part_columns: vec![names(&["Meal Vouchers"]), names(&["Shopping Vouchers"])],
             opening_balance_label: None,
             closing_balance_label: None,
             running_balance_column: Some(names(&["Balance after transaction"])),

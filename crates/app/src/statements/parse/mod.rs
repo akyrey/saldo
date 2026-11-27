@@ -95,7 +95,8 @@ pub struct StatementLine {
     /// The date the transaction gets: the accounting date, unless a date
     /// rule moved it (L8).
     pub booked_date: NaiveDate,
-    /// Signed for the account: negative when money left it.
+    /// Signed for the account: negative when money left it. Zero only when
+    /// `parts` paid it all (a Satispay payment made with vouchers).
     pub amount: Money,
     /// The bank's text, kept verbatim apart from joining columns.
     pub description: String,
@@ -104,6 +105,19 @@ pub struct StatementLine {
     pub counterparty_iban: Option<String>,
     pub external_id: Option<String>,
     pub notes: Vec<String>,
+    /// Parts of the same payment that left *other* accounts, such as
+    /// Satispay's meal vouchers; the import turns each into a split from
+    /// the account the profile assigns to its column.
+    pub parts: Vec<LinePart>,
+}
+
+/// An amount from a part column (see [`Mapping::part_columns`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LinePart {
+    /// The column's header as the file writes it ("Meal Vouchers").
+    pub column: String,
+    /// Signed, non-zero: negative when money left that account.
+    pub amount: Money,
 }
 
 /// One row of the file that was neither empty nor above the header.
