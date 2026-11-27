@@ -111,6 +111,7 @@ async fn manages_a_plan_its_months_and_moves_over_the_api() {
     assert_eq!(detail.status, StatusCode::OK);
     assert_eq!(detail.body["data"]["settlement"]["amount"], "100.00");
     assert_eq!(detail.body["data"]["splits"][1]["moved_out"], true);
+    assert_eq!(detail.body["data"]["earlier"], json!([]));
 
     let summaries = s.server.get("/api/v1/credit-cards", &s.auth).await;
     assert_eq!(summaries.body["data"][0]["account_name"], "Visa");
@@ -182,8 +183,8 @@ async fn rejects_bad_input_and_closed_months() {
         .await;
     assert_eq!(past.status, StatusCode::UNPROCESSABLE_ENTITY);
 
-    let october = s.buy("2026-10-20", "5.00").await;
-    let closed = s.put(&s.path(&format!("/moves/{october}")), None).await;
+    let september = s.buy("2026-09-20", "5.00").await;
+    let closed = s.put(&s.path(&format!("/moves/{september}")), None).await;
     assert_eq!(closed.status, StatusCode::CONFLICT, "{}", closed.body);
     let unknown = s
         .put(&s.path(&format!("/moves/{}", uuid::Uuid::new_v4())), None)

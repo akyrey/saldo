@@ -2155,6 +2155,11 @@ export interface components {
     /** @description One month with the transactions that count toward it. */
     CardCycleDetailView: components["schemas"]["CardCycleView"] & {
       /**
+       * @description Only in the plan's first month: the transactions of the month before
+       *     the plan that are not counted here and can be moved in. Oldest first.
+       */
+      earlier: components["schemas"]["CardSplitView"][];
+      /**
        * @description Oldest first: the month's own transactions (also those moved out,
        *     which do not count here) and those moved in from the month before.
        */
@@ -2788,6 +2793,11 @@ export interface components {
     Data_CardCycleDetailView: {
       /** @description One month with the transactions that count toward it. */
       data: components["schemas"]["CardCycleView"] & {
+        /**
+         * @description Only in the plan's first month: the transactions of the month before
+         *     the plan that are not counted here and can be moved in. Oldest first.
+         */
+        earlier: components["schemas"]["CardSplitView"][];
         /**
          * @description Oldest first: the month's own transactions (also those moved out,
          *     which do not count here) and those moved in from the month before.

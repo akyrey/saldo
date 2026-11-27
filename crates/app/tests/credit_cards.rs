@@ -404,9 +404,9 @@ async fn moving_shifts_a_purchase_to_the_next_month_and_back() {
 #[tokio::test]
 async fn moves_are_refused_outside_open_months_and_for_other_splits() {
     let f = fixture().await;
-    let october = buy(&f, ymd(2026, 10, 30), "10.00").await;
+    let september = buy(&f, ymd(2026, 9, 30), "10.00").await;
     assert!(matches!(
-        move_split(&f, &october).await,
+        move_split(&f, &september).await,
         Err(AppError::Conflict(_))
     ));
     let transfer = book(&f, dated(date(4), &f.checking, &f.card, "10.00")).await;
@@ -429,6 +429,51 @@ async fn moves_are_refused_outside_open_months_and_for_other_splits() {
     ));
     let in_december = buy(&f, ymd(2026, 12, 20), "10.00").await;
     move_split(&f, &in_december).await.unwrap();
+}
+
+#[tokio::test]
+async fn a_purchase_from_before_the_plan_can_count_in_its_first_month() {
+    let f = fixture().await;
+    let october = buy(&f, ymd(2026, 10, 30), "40.00").await;
+    buy(&f, ymd(2026, 10, 5), "7.00").await;
+    buy(&f, date(3), "100.00").await;
+    let cards = &f.test.app.credit_cards;
+    let detail = cards.cycle(&f.ctx, account_id(&f.card), month(2026, 11));
+    let earlier = detail.await.unwrap().earlier;
+    let dates: Vec<_> = earlier.iter().map(|s| s.date.as_str()).collect();
+    assert_eq!(dates, ["2026-10-05", "2026-10-30"]);
+
+    move_split(&f, &october).await.unwrap();
+    let event = last_event(&f.test, &f.ctx).await;
+    assert_eq!(event.payload["data"]["from_cycle"], "2026-10");
+    assert_eq!(event.payload["data"]["to_cycle"], "2026-11");
+    let detail = cards.cycle(&f.ctx, account_id(&f.card), month(2026, 11));
+    let detail = detail.await.unwrap();
+    assert_eq!(detail.cycle.spent, "140.00");
+    assert_eq!(detail.cycle.moved_in, "40.00");
+    assert_eq!(detail.earlier.len(), 1);
+    assert!(
+        detail
+            .splits
+            .iter()
+            .any(|s| s.moved_in && s.amount == "40.00")
+    );
+    sync(&f).await;
+    assert_eq!(
+        settlement(&f, 2026, 11).await.unwrap().splits[0].amount,
+        "140.00"
+    );
+    let december_detail = cards.cycle(&f.ctx, account_id(&f.card), month(2026, 12));
+    assert!(december_detail.await.unwrap().earlier.is_empty());
+
+    unmove_split(&f, &october).await.unwrap();
+    assert_eq!(cycle(&f, 2026, 11).await.spent, "100.00");
+    move_split(&f, &october).await.unwrap();
+    december(&f, 15);
+    assert!(matches!(
+        unmove_split(&f, &october).await,
+        Err(AppError::Conflict(_))
+    ));
 }
 
 #[tokio::test]

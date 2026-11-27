@@ -128,7 +128,12 @@ function CycleDetail({ card, plan, cycle }: { card: Account; plan: CardPlan; cyc
   return (
     <>
       <CycleSummary plan={plan} cycle={detail.data} />
-      <CycleSplits card={card} cycle={cycle} splits={detail.data.splits} />
+      <CycleSplits
+        card={card}
+        cycle={cycle}
+        splits={detail.data.splits}
+        earlier={detail.data.earlier}
+      />
     </>
   );
 }
@@ -201,10 +206,12 @@ function CycleSplits({
   card,
   cycle,
   splits,
+  earlier,
 }: {
   card: Account;
   cycle: string;
   splits: CardSplit[];
+  earlier: CardSplit[];
 }) {
   const queryClient = useQueryClient();
   const move = useMutation({
@@ -215,49 +222,80 @@ function CycleSplits({
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["credit-cards"] }),
   });
-  if (splits.length === 0) {
-    return <p className="text-sm text-muted-foreground">No card transactions in this month.</p>;
-  }
+  const row = (s: CardSplit, action: string, back: boolean) => (
+    <SplitRow
+      key={s.split_id}
+      card={card}
+      cycle={cycle}
+      split={s}
+      action={action}
+      disabled={move.isPending}
+      onAction={() => move.mutate({ split: s.split_id, back })}
+    />
+  );
   return (
     <div className="flex flex-col gap-2">
       {move.error ? <Alert>{errorMessage(move.error)}</Alert> : null}
-      <ul className="divide-y rounded-md border text-sm" aria-label="Card transactions">
-        {splits.map((s) => (
-          <li
-            key={s.split_id}
-            className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
-          >
-            <span className={cn("min-w-0", s.moved_out && "text-muted-foreground line-through")}>
-              <span className="tabular-nums text-muted-foreground">{s.date}</span>{" "}
-              <Link
-                to="/transactions/$groupId/edit"
-                params={{ groupId: s.group_id }}
-                className="hover:underline"
-              >
-                {s.description}
-              </Link>{" "}
-              <span className="text-muted-foreground">· {s.counterparty.name}</span>
-              {s.moved_in ? (
-                <Badge className="ml-1">from {shortMonth(shiftMonth(cycle, -1))}</Badge>
-              ) : null}
-              {s.moved_out ? (
-                <Badge className="ml-1">to {shortMonth(shiftMonth(cycle, 1))}</Badge>
-              ) : null}
-            </span>
-            <span className="flex items-center gap-2">
-              <Amount value={s.amount} currency={card.currency} />
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={move.isPending}
-                onClick={() => move.mutate({ split: s.split_id, back: s.moved_in || s.moved_out })}
-              >
-                {s.moved_in || s.moved_out ? "Move back" : "Count in next month"}
-              </Button>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {splits.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No card transactions in this month.</p>
+      ) : (
+        <ul className="divide-y rounded-md border text-sm" aria-label="Card transactions">
+          {splits.map((s) => {
+            const moved = s.moved_in || s.moved_out;
+            return row(s, moved ? "Move back" : "Count in next month", moved);
+          })}
+        </ul>
+      )}
+      {earlier.length > 0 ? (
+        <section className="flex flex-col gap-1" aria-labelledby="card-earlier">
+          <h3 id="card-earlier" className="text-sm font-medium">
+            {monthLabel(shiftMonth(cycle, -1))}, before the plan
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Not counted in any budget. Count here the ones paid with this month&apos;s statement.
+          </p>
+          <ul className="divide-y rounded-md border text-sm" aria-label="Before the plan">
+            {earlier.map((s) => row(s, "Count in this month", false))}
+          </ul>
+        </section>
+      ) : null}
     </div>
+  );
+}
+
+interface SplitRowProps {
+  card: Account;
+  cycle: string;
+  split: CardSplit;
+  action: string;
+  disabled: boolean;
+  onAction: () => void;
+}
+
+function SplitRow({ card, cycle, split: s, action, disabled, onAction }: SplitRowProps) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+      <span className={cn("min-w-0", s.moved_out && "text-muted-foreground line-through")}>
+        <span className="tabular-nums text-muted-foreground">{s.date}</span>{" "}
+        <Link
+          to="/transactions/$groupId/edit"
+          params={{ groupId: s.group_id }}
+          className="hover:underline"
+        >
+          {s.description}
+        </Link>{" "}
+        <span className="text-muted-foreground">· {s.counterparty.name}</span>
+        {s.moved_in ? (
+          <Badge className="ml-1">from {shortMonth(shiftMonth(cycle, -1))}</Badge>
+        ) : null}
+        {s.moved_out ? <Badge className="ml-1">to {shortMonth(shiftMonth(cycle, 1))}</Badge> : null}
+      </span>
+      <span className="flex items-center gap-2">
+        <Amount value={s.amount} currency={card.currency} />
+        <Button variant="ghost" size="sm" disabled={disabled} onClick={onAction}>
+          {action}
+        </Button>
+      </span>
+    </li>
   );
 }

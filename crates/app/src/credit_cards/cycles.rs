@@ -170,9 +170,17 @@ impl CreditCardService {
             .iter()
             .filter_map(|r| split_view(&card, cycle, r).transpose())
             .collect::<Result<Vec<_>, AppError>>()?;
+        let earlier = if cycle == card.starts {
+            rows.iter()
+                .filter_map(|r| earlier_view(&card, cycle, r).transpose())
+                .collect::<Result<Vec<_>, AppError>>()?
+        } else {
+            Vec::new()
+        };
         Ok(CardCycleDetailView {
             cycle: view,
             splits,
+            earlier,
         })
     }
 
@@ -238,7 +246,24 @@ fn split_view(
     if own != cycle && !moved_in {
         return Ok(None);
     }
-    Ok(Some(CardSplitView {
+    Ok(Some(to_view(card, row, moved_in, moved_out)))
+}
+
+/// A split of the month before `cycle` that is not moved into it, or `None`.
+fn earlier_view(
+    card: &Card,
+    cycle: Cycle,
+    row: &CardSplitRow,
+) -> Result<Option<CardSplitView>, AppError> {
+    let own = Cycle::of(parse_stored(&row.date)?);
+    if row.moved || own.next() != cycle {
+        return Ok(None);
+    }
+    Ok(Some(to_view(card, row, false, false)))
+}
+
+fn to_view(card: &Card, row: &CardSplitRow, moved_in: bool, moved_out: bool) -> CardSplitView {
+    CardSplitView {
         split_id: row.id.clone(),
         group_id: row.group_id.clone(),
         date: row.date.clone(),
@@ -250,7 +275,7 @@ fn split_view(
         amount: card.money(row.amount_minor),
         moved_in,
         moved_out,
-    }))
+    }
 }
 
 /// One month's numbers. `entries` must cover the month and the one before.

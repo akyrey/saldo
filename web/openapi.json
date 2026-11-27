@@ -9774,9 +9774,17 @@
           {
             "type": "object",
             "required": [
-              "splits"
+              "splits",
+              "earlier"
             ],
             "properties": {
+              "earlier": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CardSplitView"
+                },
+                "description": "Only in the plan's first month: the transactions of the month before\nthe plan that are not counted here and can be moved in. Oldest first."
+              },
               "splits": {
                 "type": "array",
                 "items": {
@@ -11757,9 +11765,17 @@
               {
                 "type": "object",
                 "required": [
-                  "splits"
+                  "splits",
+                  "earlier"
                 ],
                 "properties": {
+                  "earlier": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CardSplitView"
+                    },
+                    "description": "Only in the plan's first month: the transactions of the month before\nthe plan that are not counted here and can be moved in. Oldest first."
+                  },
                   "splits": {
                     "type": "array",
                     "items": {

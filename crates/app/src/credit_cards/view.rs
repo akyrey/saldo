@@ -71,6 +71,9 @@ pub struct CardCycleDetailView {
     /// Oldest first: the month's own transactions (also those moved out,
     /// which do not count here) and those moved in from the month before.
     pub splits: Vec<CardSplitView>,
+    /// Only in the plan's first month: the transactions of the month before
+    /// the plan that are not counted here and can be moved in. Oldest first.
+    pub earlier: Vec<CardSplitView>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]

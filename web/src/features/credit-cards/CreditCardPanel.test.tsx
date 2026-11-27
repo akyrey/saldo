@@ -71,9 +71,18 @@ function api(extra: Record<string, unknown> = {}) {
     "GET /api/v1/accounts/c1/reconciliations": list([]),
     "GET /api/v1/accounts/c1/credit-card": { data: PLAN },
     "GET /api/v1/accounts/c1/credit-card/cycles": { data: [NOVEMBER] },
-    "GET /api/v1/accounts/c1/credit-card/cycles/2026-11": { data: { ...NOVEMBER, splits: SPLITS } },
+    "GET /api/v1/accounts/c1/credit-card/cycles/2026-11": {
+      data: { ...NOVEMBER, splits: SPLITS, earlier: [] },
+    },
     "GET /api/v1/accounts/c1/credit-card/cycles/2026-12": {
-      data: { ...NOVEMBER, cycle: "2026-12", spent: "50.00", available: "450.00", splits: [] },
+      data: {
+        ...NOVEMBER,
+        cycle: "2026-12",
+        spent: "50.00",
+        available: "450.00",
+        splits: [],
+        earlier: [],
+      },
     },
     ...extra,
   });
@@ -116,6 +125,25 @@ describe("credit card panel", () => {
     );
     await user.click(screen.getByRole("button", { name: "Move back" }));
     expect(await screen.findByText("2026-11 is closed")).toBeInTheDocument();
+  });
+
+  it("counts a purchase from before the plan in its first month", async () => {
+    const october = { ...SPLITS[0], split_id: "s0", date: "2026-10-30", description: "Hotel" };
+    const seen = api({
+      "GET /api/v1/accounts/c1/credit-card/cycles/2026-11": {
+        data: { ...NOVEMBER, splits: SPLITS, earlier: [october] },
+      },
+      "PUT /api/v1/accounts/c1/credit-card/moves/s0": new Response(null, { status: 204 }),
+    });
+    renderApp("/accounts/c1");
+    const user = userEvent.setup();
+    const earlier = await screen.findByRole("list", { name: "Before the plan" });
+    expect(screen.getByRole("heading", { name: "October 2026, before the plan" })).toBeVisible();
+    expect(earlier).toHaveTextContent("Hotel");
+    await user.click(within(earlier).getByRole("button", { name: "Count in this month" }));
+    await waitFor(() =>
+      expect(seen.some((r) => r.method === "PUT" && r.url.endsWith("/moves/s0"))).toBe(true),
+    );
   });
 
   it("switches to the next month", async () => {

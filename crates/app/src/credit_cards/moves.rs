@@ -1,4 +1,5 @@
-//! Moving a card transaction to the next month and back (decision 12).
+//! Moving a card transaction to the next month and back (decision 12),
+//! including from the month before the plan into its first month.
 
 use saldo_core::card_cycle::Cycle;
 use saldo_core::{AccountId, SplitId};
@@ -66,7 +67,15 @@ impl CreditCardService {
         }
         let own = Cycle::of(parse_stored(&split.date)?);
         let today = today_in(&mut tx, ctx, &*self.clock).await?;
-        for cycle in [own, own.next()] {
+        // The month just before the plan has no budget or payment, so a
+        // move out of it into the plan's first month only needs that month
+        // to be open.
+        let affected = if own.next() == card.starts {
+            vec![own.next()]
+        } else {
+            vec![own, own.next()]
+        };
+        for cycle in affected {
             if card.is_closed(cycle, today)? {
                 return Err(AppError::Conflict(format!(
                     "{cycle} is closed: it is before the plan or its payment is booked"
