@@ -1,4 +1,5 @@
-//! The snapshot zip: `saldo.db` plus `attachments/<sha256>` files. Writing
+//! The snapshot zip: `saldo.db` plus `attachments/<sha256>` and
+//! `sources/<sha256>` (stored statement exports) files. Writing
 //! and reading are blocking file work; callers run them off the async runtime.
 
 use std::fs::File;
@@ -16,7 +17,7 @@ pub const DATABASE_ENTRY: &str = "saldo.db";
 
 /// Folders under the data dir whose files go into a snapshot. Only files
 /// named by their SHA-256 are taken, so half-written `.partial` files stay out.
-const FILE_FOLDERS: [&str; 1] = ["attachments"];
+const FILE_FOLDERS: [&str; 2] = ["attachments", "sources"];
 
 /// Writes the zip to `out`. The database is compressed; the files are stored
 /// as they are (mostly PDFs and photos, which do not compress).
@@ -78,7 +79,7 @@ fn stored_files(folder: &Path) -> Result<Vec<(String, PathBuf)>, AppError> {
 /// What a restore wrote.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Restored {
-    /// Files written under the data dir (attachments).
+    /// Files written under the data dir (attachments and statement sources).
     pub files: usize,
 }
 
@@ -245,6 +246,26 @@ mod tests {
                 .join("attachments")
                 .join(format!("{SHA}.partial"))
                 .exists()
+        );
+    }
+
+    #[test]
+    fn round_trips_stored_statement_source_files() {
+        let source = temp_dir();
+        let database = source.join("copy.db");
+        std::fs::write(&database, b"db").unwrap();
+        std::fs::create_dir_all(source.join("sources")).unwrap();
+        std::fs::write(source.join("sources").join(SHA), b"an amazon export").unwrap();
+        let archive = source.join("snapshot.zip");
+
+        write(&database, &source, File::create(&archive).unwrap()).unwrap();
+        let target = temp_dir();
+        let restored = restore(&archive, &target.join("saldo.db"), &target).unwrap();
+
+        assert_eq!(restored, Restored { files: 1 });
+        assert_eq!(
+            std::fs::read(target.join("sources").join(SHA)).unwrap(),
+            b"an amazon export"
         );
     }
 

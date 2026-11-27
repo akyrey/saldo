@@ -43,7 +43,7 @@ pub enum Command {
         path: std::path::PathBuf,
     },
     /// Unpack a snapshot (GET /api/v1/export/snapshot) into a fresh Saldo:
-    /// the database and attachment files, then the migrations. Sessions, API
+    /// the database and stored files, then the migrations. Sessions, API
     /// tokens, webhooks and notification channels are removed from the copy.
     /// Stop the server first; the database file must not exist yet.
     Restore {
