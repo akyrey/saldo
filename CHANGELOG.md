@@ -4,9 +4,19 @@ All notable changes to Saldo. The format follows [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-27
+
 ### Added
 
 - Snapshots: with `SALDO_SNAPSHOT_DOWNLOAD=true`, the household owner can download the whole instance (database and attachment files) as a zip at `GET /api/v1/export/snapshot`, and `saldo restore <zip>` unpacks it into a fresh Saldo. The copy loses its sessions, API tokens, webhooks and notification channels, so it never reaches the original's endpoints. Only offered while the instance has a single household.
+
+### Changed
+
+- Transactions: clicking the selected saved view (or "Uncategorised") again deselects it and clears the filters.
+
+### Fixed
+
+- Transactions: an amount filter or a numbers-only search typed into the address bar (for example `?amount_min=100`) was ignored, and the saved view with those filters did not show as selected.
 
 ## [0.12.1] - 2026-11-27
 
