@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT type AS kind, currency_code FROM accounts WHERE household_id = ? AND id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "type"
+          }
+        }
+      },
+      {
+        "name": "currency_code",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "accounts",
+            "name": "currency_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "106ae0dc8e0b6c5349266e7074dc7c0bf7bfe4ca6db91b7521c7b52824a13fa3"
+}

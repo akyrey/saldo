@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM splits\n         WHERE household_id = ?1 AND id = ?2 AND (source_account_id = ?3 OR destination_account_id = ?3)",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c6e9856da8e11cc124999d423e4e3106fea5b8b59c230eafc6fbc22d17db9e4d"
+}

@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM statement_imports WHERE household_id = ?1 AND (?2 IS NULL OR account_id = ?2)",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "47838a203cffbdf156bf370ac8c749ec830d1214e5d8c866c55aa320a0e932a1"
+}

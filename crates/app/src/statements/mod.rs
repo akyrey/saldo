@@ -1,8 +1,12 @@
 //! Bank and Satispay statement import (Phase 13, Track B).
 
+mod classify;
+mod import_repo;
+mod imports;
 pub mod parse;
 mod profile_repo;
 mod profiles;
+mod views;
 
 use sqlx::{SqliteConnection, SqlitePool};
 
@@ -11,6 +15,7 @@ use crate::error::AppError;
 use crate::transactions::TransactionService;
 
 pub use profiles::{Preset, ProfileInput, ProfileView, TransferRule, presets};
+pub use views::{ImportDetail, ImportView, LineUpdate, LineView, PartView, UploadInput};
 
 #[derive(Clone)]
 pub struct StatementService {

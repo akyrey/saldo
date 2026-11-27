@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO statement_imports\n            (id, household_id, account_id, profile_id, filename, sha256, status, currency_code,\n             opening_balance_minor, closing_balance_minor, closing_date, gap_minor, summary,\n             created_by_user_id, created_at, committed_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 16
+    },
+    "nullable": []
+  },
+  "hash": "a73ee93bd426b7bc90f6c3368ed0af9ad9f43aeb5442b9ec361b9ceb5b721c98"
+}

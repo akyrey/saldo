@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE statement_imports SET status = ?, committed_at = COALESCE(?, committed_at) WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d7ae4cdc25b11408b3877244b30d9285b08b693de6e4ca73fc5cf306f1b02126"
+}
