@@ -39,20 +39,33 @@ fn records<T: Clone>(rows: &[SourceRow<T>]) -> Vec<T> {
 }
 
 #[test]
-fn paypal_xlsx_with_a_serial_date_a_time_fraction_and_italian_text_amounts() {
-    let rows = parse_paypal(Format::Xlsx, &fixture("paypal.xlsx"), &currencies()).unwrap();
+fn paypal_csv_model_with_a_payment_and_its_pending_funding() {
+    let rows = parse_paypal(Format::Csv, &fixture("paypal.csv"), &currencies()).unwrap();
     let found: Vec<PayPalRecord> = records(&rows);
-    assert_eq!(found.len(), 1);
-    let record = &found[0];
-    assert_eq!(record.row, 2);
-    assert_eq!(record.date, NaiveDate::from_ymd_opt(2025, 2, 1).unwrap());
-    assert_eq!(record.time, NaiveTime::from_hms_opt(21, 25, 42));
-    assert_eq!(record.name, "QUATTROZAMPE DI SANTONI LEONARDO");
-    assert_eq!(record.kind, PayPalKind::Payment);
-    assert_eq!(record.status, "Completata");
-    assert_eq!(record.gross, eur(-20_437));
-    assert_eq!(record.net, Some(eur(-20_437)));
-    assert_eq!(record.transaction_code, "1246914761AFHA");
+    assert_eq!(found.len(), 2);
+    let payment = &found[0];
+    assert_eq!(payment.row, 2);
+    // Italian day-first: 2 January (Excel in a US locale had read 1 February).
+    assert_eq!(payment.date, NaiveDate::from_ymd_opt(2025, 1, 2).unwrap());
+    assert_eq!(payment.time, NaiveTime::from_hms_opt(21, 25, 42));
+    assert_eq!(payment.timezone.as_deref(), Some("CET"));
+    assert_eq!(payment.name, "QUATTROZAMPE DI SANTONI LEONARDO");
+    assert_eq!(payment.kind, PayPalKind::Payment);
+    assert_eq!(payment.status, "Completata");
+    assert_eq!(payment.gross, eur(-20_437));
+    assert_eq!(payment.fee, Some(eur(0)));
+    assert_eq!(payment.net, Some(eur(-20_437)));
+    assert_eq!(payment.transaction_code, "3TY84170W6972831K");
+    assert_eq!(payment.description, None);
+
+    // The bank transfer that paid it: same second, still pending, and its
+    // type carries a trailing space.
+    let funding = &found[1];
+    assert_eq!(funding.kind, PayPalKind::Funding);
+    assert_eq!(funding.status, "In sospeso");
+    assert_eq!(funding.gross, eur(20_437));
+    assert_eq!(funding.time, payment.time);
+    assert_eq!(funding.transaction_code, "1E190962717344019");
 }
 
 #[test]
