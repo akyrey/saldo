@@ -85,6 +85,7 @@ pub mod goal;
 pub mod ids;
 pub mod kind;
 pub mod lookup;
+pub mod matching;
 pub mod money;
 pub mod period;
 pub mod piggy_bank;

@@ -19,7 +19,7 @@ Every agent reads this file before starting and updates it before stopping. Keep
 | 10 Usability | done | main / 05c2a35 | Brief e6f8aef, decisions confirmed by the owner on 2026-11-20 (plus decision 10: scheduled recurrence bookings notify). Track A dark mode (2433594), B filters + saved views (cde4bd3, 8d39455), C shortcuts + palette (8218df2), D alerts + digest (cb91f57), E reports (3ea88f6), F goals + safe to spend (a9c50ae), Playwright flows (05c2a35). 645 Rust tests, 368 Vitest, 18 Playwright flows; initial route 185 kB gzipped (palette chunk 6 kB) |
 | 11 Bill history | done | main / 721d9a1 | Brief e5183bc. Decisions in section 4 taken as proposed when the owner asked for the phase to be implemented on 2026-11-20 (not confirmed one by one). Core 84ebabe, app db67778, server `GET /bills/{id}/history` 9b9fdc4, web chart + summary + linked transactions 9a17615, Playwright flow 721d9a1. 668 Rust tests, 377 Vitest, 19 Playwright flows; 95.93% line coverage (`saldo-core::bill_history` 100%); initial route 185.6 kB gzipped (unchanged) |
 | 12 Credit card plans | done | main / see below | Brief 4c4a634; all decisions confirmed by the owner on 2026-11-26 (1–4 chosen; 13 changed to a budget per month). Core faee0ea, app + export ec5d02c, server 1db9d6c, web 634123f, Playwright flow and docs in the last commit. 738 Rust tests (96.06% lines; `card_cycle` 98.3%), 401 Vitest, 24 Playwright flows |
-| 13 Statement import | in progress | phase-13-statement-import | Brief written 2026-11-27 (replaces Phase 9 Track E); decision 3 (Satispay as an asset account) and the out-of-scope combination matching confirmed by the owner on 2026-11-27; the other decisions in section 4 taken as proposed when the owner asked for the phase to be implemented on 2026-11-27 (not confirmed one by one); samples from the owner's banks, Amazon, PayPal and Satispay still needed |
+| 13 Statement import | in progress | phase-13-statement-import | Track A (matching core, `saldo-core::matching`) done: 99 unit and property tests, 98.8â100% line coverage per file, reviewed by two independent agents and their findings fixed. Tracks BâE not started. Brief written 2026-11-27 (replaces Phase 9 Track E); decision 3 (Satispay as an asset account) and the out-of-scope combination matching confirmed by the owner on 2026-11-27; the other decisions in section 4 taken as proposed when the owner asked for the phase to be implemented on 2026-11-27 (not confirmed one by one); samples from the owner's banks, Amazon, PayPal and Satispay still needed |
 
 States: not started, in progress, blocked (say on what), done.
 
@@ -76,6 +76,13 @@ Record every place where the code differs from the architecture document, why, a
 
 Choices the briefs left open (crate picked, naming, a trade-off), with one line of reasoning each, so later phases follow them.
 
+- 2026-11-27 Phase 13 Track A: decisions taken while building the matching core (also in ARCHITECTURE.md 4.3).
+  - A remembered link (pin) wins whatever its amount and date, because it is the owner's decision.
+  - A line naming any Amazon order ID, even one missing from the export, is never matched by amount, because the ID is authoritative.
+  - A zero-priced Amazon item makes split by item impossible, so the caller keeps one split.
+  - `month_end_balances` became `balances_at(closing, lines, dates)`, with the caller choosing the dates.
+  - `match_paypal` and `match_amazon` take the statement range, so stored rows outside it are not findings.
+  - `saldo-core` now depends on `sha2` for fingerprints.
 - 2026-11-26 Phase 12 (differences from the brief; the owner may revisit):
   - The accounts list gets each card's current month from a new `GET /credit-cards` instead of a `credit_card` field on `GET /accounts` and `/accounts/balances`: `AccountView` is also the event payload, and one small call per page is simpler.
   - The plan is set up and edited from a "Monthly plan" card on the card's account page, not on the account edit page, so it has its own save button and sits next to what it controls.
